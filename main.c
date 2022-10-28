@@ -7,6 +7,8 @@
 #include <concord/jsmn.h>
 #include <concord/jsmn-find.h>
 
+#define COGLINK_SUCCESS 0
+
 #define COGLINK_JSMNF_ERROR_PARSE -1
 #define COGLINK_JSMNF_ERROR_LOAD -2
 #define COGLINK_JSMNF_ERROR_FIND -3
@@ -36,7 +38,7 @@ static size_t __coglink_WriteMemoryCallback(void *contents, size_t size, size_t 
   char *ptr = realloc(mem->body, mem->size + realsize + 1);
   if (!ptr) {
     log_fatal("[SYSTEM] Not enough memory to realloc.\n");
-    return 0;
+    return 1;
   }
 
   mem->body = ptr;
@@ -260,13 +262,11 @@ int coglink_searchMusic(struct lavaInfo *lavaInfo, char *music, struct httpReque
 
   *res = req;
 
-  free(req.body);
-
-  return 0;
+  return COGLINK_SUCCESS;
 }
 
 void coglink_searchMusicCleanup(struct httpRequest req) {
-  //free(req.body);
+  free(req.body);
 }
 
 int coglink_parseMusicSearch(struct httpRequest req, char *musicPos, struct lavaMusic *musicStruct) {
@@ -324,41 +324,38 @@ int coglink_parseMusicSearch(struct httpRequest req, char *musicPos, struct lava
   path[3] = "sourceName";
   jsmnf_pair *sourceName = jsmnf_find_path(pairs, req.body, path, 4);
 
-  printf("%s\n", req.body);
-
   if (!track || !identifier || !isSeekable || !author || !length || !isStream || !position || !title || !uri || !sourceName) {
     log_fatal("[coglink:jsmnf-find] Error while trying to find %s field.", !track ? "track" : !identifier ? "identifier": !isSeekable ? "isSeekable" : !author ? "author" : !length ? "length" : !isStream ? "isStream" : !position ? "position" : !title ? "title" : !uri ? "uri" : !sourceName ? "sourceName" : "???");
     return COGLINK_JSMNF_ERROR_FIND;
   }
 
-  char Track[512], Identifier[16], IsSeekable[8], Author[64], Length[32], IsStream[8], Position[16], Title[128], Uri[32], SourceName[16];
-  snprintf(Track, 512, "%.*s", (int)track->v.len, req.body + track->v.pos);
-  snprintf(Identifier, 16, "%.*s", (int)identifier->v.len, req.body + identifier->v.pos);
-  snprintf(IsSeekable, 8, "%.*s", (int)isSeekable->v.len, req.body + isSeekable->v.pos);
-  snprintf(Author, 64, "%.*s", (int)author->v.len, req.body + author->v.pos);
-  snprintf(Length, 32, "%.*s", (int)length->v.len, req.body + length->v.pos);
-  snprintf(IsStream, 8, "%.*s", (int)isStream->v.len, req.body + isStream->v.pos);
-  snprintf(Position, 16, "%.*s", (int)position->v.len, req.body + position->v.pos);
-  snprintf(Title, 128, "%.*s", (int)title->v.len, req.body + title->v.pos);
-  snprintf(Uri, 32, "%.*s", (int)uri->v.len, req.body + uri->v.pos);
-  snprintf(SourceName, 16, "%.*s", (int)sourceName->v.len, req.body + sourceName->v.pos);
+  char Track[512], Identifier[16], IsSeekable[8], Author[64], Length[32], IsStream[8], Position[16], Title[256], Uri[32], SourceName[16];
 
- struct lavaMusic musicStructRedefined = {
-   .track = Track,
-   .identifier = Identifier,
-   .isSeekable = IsSeekable,
-   .author = Author,
-   .length = Length,
-   .isStream = IsStream,
-   .position = Position,
-   .title = Title,
-   .uri = Uri,
-   .sourceName = SourceName
- };
+  snprintf(Track, sizeof(Track), "%.*s", (int)track->v.len, req.body + track->v.pos);
+  snprintf(Identifier, sizeof(Identifier), "%.*s", (int)identifier->v.len, req.body + identifier->v.pos);
+  snprintf(IsSeekable, sizeof(IsSeekable), "%.*s", (int)isSeekable->v.len, req.body + isSeekable->v.pos);
+  snprintf(Author, sizeof(Author), "%.*s", (int)author->v.len, req.body + author->v.pos);
+  snprintf(Length, sizeof(Length), "%.*s", (int)length->v.len, req.body + length->v.pos);
+  snprintf(IsStream, sizeof(IsStream), "%.*s", (int)isStream->v.len, req.body + isStream->v.pos);
+  snprintf(Position, sizeof(Position), "%.*s", (int)position->v.len, req.body + position->v.pos);
+  snprintf(Title, sizeof(Title), "%.*s", (int)title->v.len, req.body + title->v.pos);
+  snprintf(Uri, sizeof(Uri), "%.*s", (int)uri->v.len, req.body + uri->v.pos);
+  snprintf(SourceName, sizeof(SourceName), "%.*s", (int)sourceName->v.len, req.body + sourceName->v.pos);
 
- *musicStruct = musicStructRedefined;
+  *musicStruct = (struct lavaMusic) {
+    .track = Track,
+    .identifier = Identifier,
+    .isSeekable = IsSeekable,
+    .author = Author,
+    .length = Length,
+    .isStream = IsStream,
+    .position = Position,
+    .title = Title,
+    .uri = Uri,
+    .sourceName = SourceName
+  };
 
-  return 0;
+  return COGLINK_SUCCESS;
 }
 
 void coglink_wsLoop(struct lavaInfo *lavaInfo) {
@@ -377,7 +374,7 @@ void __coglink_sendPayload(struct lavaInfo *lavaInfo, char payload[], char *payl
 }
 
 void coglink_playMusic(struct lavaInfo *lavaInfo, char *track, u64snowflake guildId) {
-  char payload[1024];
+  char payload[2048];
   snprintf(payload, sizeof(payload), "{\"op\":\"play\",\"guildId\":\"%"PRIu64"\",\"track\":\"%s\",\"noReplace\":false,\"pause\":false}", guildId, track);
 
   __coglink_sendPayload(lavaInfo, payload, "play");
@@ -536,5 +533,5 @@ int coglink_connectNode(struct lavaInfo *lavaInfo, struct lavaNode *node) {
   lavaInfo->tstamp = tstamp;
   lavaInfo->node = node;
 
-  return 0;
+  return COGLINK_SUCCESS;
 }
