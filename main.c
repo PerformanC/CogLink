@@ -62,7 +62,7 @@ struct lavaEvents {
   // BASICS
   void (*onRaw)();
   void (*onConnect)();
-  void (*onClose)();
+  void (*onClose)(enum ws_close_reason wscode, const char *reason);
   // MUSIC
   void (*onTrackStart)(char *track, u64snowflake guildId);
 };
@@ -73,6 +73,7 @@ struct lavaInfo {
   struct websockets *ws;
   uint64_t tstamp;
   struct lavaNode *node;
+  int debug;
 };
 
 struct lavaMusic {
@@ -110,9 +111,8 @@ void onCloseEvent(void *data, struct websockets *ws, struct ws_info *info, enum 
 }
 
 void onTextEvent(void *data, struct websockets *ws, struct ws_info *info, const char *text, size_t len) {
-  (void) ws; (void) info; (void) len;
+  (void) ws; (void) info;
   struct lavaInfo *lavaInfo = data;
-  printf("%s\n", text);
 
   jsmn_parser parser;
   jsmntok_t tokens[1024];
@@ -121,7 +121,7 @@ void onTextEvent(void *data, struct websockets *ws, struct ws_info *info, const 
   int r = jsmn_parse(&parser, text, len, tokens, sizeof(tokens));
 
   if (r < 0) {
-    log_error("[coglink:jsmn-find] Failed to parse JSON.");
+    if (lavaInfo->debug) log_error("[coglink:jsmn-find] Failed to parse JSON.");
     return;
   }
 
@@ -132,14 +132,14 @@ void onTextEvent(void *data, struct websockets *ws, struct ws_info *info, const 
   r = jsmnf_load(&loader, text, tokens, parser.toknext, pairs, 1024);
 
   if (r < 0) {
-    log_error("[coglink:jsmn-find] Failed to load jsmn-find.");
+    if (lavaInfo->debug) log_error("[coglink:jsmn-find] Failed to load jsmn-find.");
     return;
   }
 
   jsmnf_pair *op = jsmnf_find(pairs, text, "op", 2);
 
   if (!op) {
-    log_error("[coglink:jsmn-find] Failed to find op.");
+    if (lavaInfo->debug) log_error("[coglink:jsmn-find] Failed to find op.");
     return;
   }
 
@@ -150,7 +150,7 @@ void onTextEvent(void *data, struct websockets *ws, struct ws_info *info, const 
     jsmnf_pair *type = jsmnf_find(pairs, text, "type", 4);
 
     if (!type) {
-      log_error("[coglink:-find] Failed to find type.");
+      if (lavaInfo->debug) log_error("[coglink:-find] Failed to find type.");
       return;
     }
 
@@ -160,7 +160,7 @@ void onTextEvent(void *data, struct websockets *ws, struct ws_info *info, const 
     jsmnf_pair *guildId = jsmnf_find(pairs, text, "guildId", 7);
 
     if (!guildId) {
-      log_error("[coglink:-find] Failed to find guildId.");
+      if (lavaInfo->debug) log_error("[coglink:-find] Failed to find guildId.");
       return;
     }
 
@@ -171,7 +171,7 @@ void onTextEvent(void *data, struct websockets *ws, struct ws_info *info, const 
       jsmnf_pair *track = jsmnf_find(pairs, text, "track", 5);
 
       if (!track) {
-        log_error("[coglink:-find] Failed to find track.");
+        if (lavaInfo->debug) log_error("[coglink:-find] Failed to find track.");
         return;
       }
 
@@ -203,21 +203,19 @@ int coglink_searchMusic(struct lavaInfo *lavaInfo, char *music, struct httpReque
   curl_free(musicE);
 
   if (!curl) {
-    log_fatal("[coglink:libcurl] Error while initializing libcurl.");
+    if (lavaInfo->debug) log_fatal("[coglink:libcurl] Error while initializing libcurl.");
     return COGLINK_LIBCURL_FAIL_INITIALIZE;
   }
-  
-  CURLcode cRes;
 
   struct httpRequest req;
 
   req.body = malloc(1);
   req.size = 0;
 
-  cRes = curl_easy_setopt(curl, CURLOPT_URL, lavaURL);
+  CURLcode cRes = curl_easy_setopt(curl, CURLOPT_URL, lavaURL);
 
   if (cRes != CURLE_OK) {
-    log_fatal("[coglink:libcurl] curl_easy_setopt [1] failed: %s\n", curl_easy_strerror(cRes));
+    if (lavaInfo->debug) log_fatal("[coglink:libcurl] curl_easy_setopt [1] failed: %s\n", curl_easy_strerror(cRes));
     return COGLINK_LIBCURL_FAIL_SETOPT;
   }
 
@@ -230,37 +228,39 @@ int coglink_searchMusic(struct lavaInfo *lavaInfo, char *music, struct httpReque
   }
   chunk = curl_slist_append(chunk, "Client-Name: Coglink");
   chunk = curl_slist_append(chunk, "User-Agent: libcurl");
-  chunk = curl_slist_append(chunk, "Cleanup-Threshold: 600");
+//  chunk = curl_slist_append(chunk, "Cleanup-Threshold: 600");
 
   cRes = curl_easy_setopt(curl, CURLOPT_HTTPHEADER, chunk);
   if (cRes != CURLE_OK) {
-    log_fatal("[coglink:libcurl] curl_easy_setopt [2] failed: %s\n", curl_easy_strerror(cRes));
+    if (lavaInfo->debug) log_fatal("[coglink:libcurl] curl_easy_setopt [2] failed: %s\n", curl_easy_strerror(cRes));
     return COGLINK_LIBCURL_FAIL_SETOPT;
   } 
 
   cRes = curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, __coglink_WriteMemoryCallback);
   if (cRes != CURLE_OK) {
-    log_fatal("[coglink:libcurl] curl_easy_setopt [3] failed: %s\n", curl_easy_strerror(cRes));
+    if (lavaInfo->debug) log_fatal("[coglink:libcurl] curl_easy_setopt [3] failed: %s\n", curl_easy_strerror(cRes));
     return COGLINK_LIBCURL_FAIL_SETOPT;
   }
 
   cRes = curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&req);
   if (cRes != CURLE_OK) {
-    log_fatal("[coglink:libcurl] curl_easy_setopt [4] failed: %s\n", curl_easy_strerror(cRes));
+    if (lavaInfo->debug) log_fatal("[coglink:libcurl] curl_easy_setopt [4] failed: %s\n", curl_easy_strerror(cRes));
     return COGLINK_LIBCURL_FAIL_SETOPT;
   }
 
   cRes = curl_easy_perform(curl);
   if (cRes != CURLE_OK) {
-    log_fatal("[coglink:libcurl] curl_easy_perform failed: %s\n", curl_easy_strerror(cRes));
+    if (lavaInfo->debug) log_fatal("[coglink:libcurl] curl_easy_perform failed: %s\n", curl_easy_strerror(cRes));
     return COGLINK_LIBCURL_FAIL_SETOPT;
   }
 
   curl_easy_cleanup(curl);
   curl_slist_free_all(chunk);
-  curl_global_cleanup();
+  curl_global_cleanup(); 
 
   *res = req;
+  
+  if (lavaInfo->debug) log_debug("[coglink:libcurl] Search music done, response: %s", res->body);
 
   return COGLINK_SUCCESS;
 }
@@ -269,7 +269,7 @@ void coglink_searchMusicCleanup(struct httpRequest req) {
   free(req.body);
 }
 
-int coglink_parseMusicSearch(struct httpRequest req, char *musicPos, struct lavaMusic *musicStruct) {
+int coglink_parseMusicSearch(struct lavaInfo *lavaInfo, struct httpRequest req, char *musicPos, struct lavaMusic *musicStruct) {
   jsmn_parser parser;
   jsmntok_t tokens[1024];
 
@@ -277,7 +277,7 @@ int coglink_parseMusicSearch(struct httpRequest req, char *musicPos, struct lava
   int r = jsmn_parse(&parser, req.body, req.size, tokens, sizeof(tokens));
 
   if (r < 0) {
-    log_error("[coglink:jsmn-find] Failed to parse JSON.");
+    if (lavaInfo->debug) log_error("[coglink:jsmn-find] Failed to parse JSON.");
     return COGLINK_JSMNF_ERROR_PARSE;
   }
 
@@ -288,7 +288,7 @@ int coglink_parseMusicSearch(struct httpRequest req, char *musicPos, struct lava
   r = jsmnf_load(&loader, req.body, tokens, parser.toknext, pairs, 1024);
 
   if (r < 0) {
-    log_error("[coglink:jsmn-find] Failed to load jsmn-find.");
+    if (lavaInfo->debug) log_error("[coglink:jsmn-find] Failed to load jsmn-find.");
     return COGLINK_JSMNF_ERROR_LOAD;
   }
 
@@ -296,7 +296,6 @@ int coglink_parseMusicSearch(struct httpRequest req, char *musicPos, struct lava
   jsmnf_pair *track = jsmnf_find_path(pairs, req.body, path, 3);
 
   path[2] = "info";
-
   path[3] = "identifier";
   jsmnf_pair *identifier = jsmnf_find_path(pairs, req.body, path, 4);
 
@@ -325,7 +324,7 @@ int coglink_parseMusicSearch(struct httpRequest req, char *musicPos, struct lava
   jsmnf_pair *sourceName = jsmnf_find_path(pairs, req.body, path, 4);
 
   if (!track || !identifier || !isSeekable || !author || !length || !isStream || !position || !title || !uri || !sourceName) {
-    log_fatal("[coglink:jsmnf-find] Error while trying to find %s field.", !track ? "track" : !identifier ? "identifier": !isSeekable ? "isSeekable" : !author ? "author" : !length ? "length" : !isStream ? "isStream" : !position ? "position" : !title ? "title" : !uri ? "uri" : !sourceName ? "sourceName" : "???");
+    if (lavaInfo->debug) log_fatal("[coglink:jsmnf-find] Error while trying to find %s field.", !track ? "track" : !identifier ? "identifier": !isSeekable ? "isSeekable" : !author ? "author" : !length ? "length" : !isStream ? "isStream" : !position ? "position" : !title ? "title" : !uri ? "uri" : !sourceName ? "sourceName" : "???");
     return COGLINK_JSMNF_ERROR_FIND;
   }
 
@@ -341,6 +340,8 @@ int coglink_parseMusicSearch(struct httpRequest req, char *musicPos, struct lava
   snprintf(Title, sizeof(Title), "%.*s", (int)title->v.len, req.body + title->v.pos);
   snprintf(Uri, sizeof(Uri), "%.*s", (int)uri->v.len, req.body + uri->v.pos);
   snprintf(SourceName, sizeof(SourceName), "%.*s", (int)sourceName->v.len, req.body + sourceName->v.pos);
+
+  if (lavaInfo->debug) log_debug("[coglink:jsmn-find] Parsed music search json, results:\n> track: %s\n> identifier: %s\n> isSeekable: %s\n> author: %s\n> length: %s\n> isStream: %s\n> position: %s\n> title: %s\n> uri: %s\n> sourceName: %s", Track, Identifier, IsSeekable, Author, Length, IsStream, Position, Title, Uri, SourceName);
 
   *musicStruct = (struct lavaMusic) {
     .track = Track,
@@ -359,16 +360,15 @@ int coglink_parseMusicSearch(struct httpRequest req, char *musicPos, struct lava
 }
 
 void coglink_wsLoop(struct lavaInfo *lavaInfo) {
-  uint64_t tstamp;
-  ws_easy_run(lavaInfo->ws, 5, &tstamp);
+  ws_easy_run(lavaInfo->ws, 5, &lavaInfo->tstamp);
 }
 
 void __coglink_sendPayload(struct lavaInfo *lavaInfo, char payload[], char *payloadOP) {
   if (ws_send_text(lavaInfo->ws, NULL, payload, strlen(payload)) == false) {
-    log_fatal("[LIBCURL] Something went wrong while sending a payload with op %s to Lavalink.", payloadOP);
+    if (lavaInfo->debug) log_fatal("[coglink:libcurl] Something went wrong while sending a payload with op %s to Lavalink.", payloadOP);
     return;
   } else {
-    log_debug("[LIBCURL] Sucessfully sent a payload with op %s to Lavalink.", payloadOP);
+    if (lavaInfo->debug) log_debug("[coglink:libcurl] Sucessfully sent a payload with op %s to Lavalink.", payloadOP);
     ws_easy_run(lavaInfo->ws, 5, &lavaInfo->tstamp);
   }
 }
@@ -380,15 +380,15 @@ void coglink_playMusic(struct lavaInfo *lavaInfo, char *track, u64snowflake guil
   __coglink_sendPayload(lavaInfo, payload, "play");
 }
 
-void coglink_joinVoiceChannel(struct discord *client, u64snowflake voiceChannelId, u64snowflake guildId) {
+void coglink_joinVoiceChannel(struct lavaInfo *lavaInfo, struct discord *client, u64snowflake voiceChannelId, u64snowflake guildId) {
   char joinVCPayload[128];
   snprintf(joinVCPayload, sizeof(joinVCPayload), "{\"op\":4,\"d\":{\"guild_id\":%"PRIu64",\"channel_id\":\"%"PRIu64"\",\"self_mute\":false,\"self_deaf\":true}}", guildId, voiceChannelId);
 
   if (ws_send_text(client->gw.ws, NULL, joinVCPayload, strlen(joinVCPayload)) == false) {
-    log_fatal("[LIBCURL] Something went wrong while sending a payload with op 4 to Discord.");
+    if (lavaInfo->debug) log_fatal("[coglink:libcurl] Something went wrong while sending a payload with op 4 to Discord.");
     return;
   } else {
-    log_debug("[LIBCURL] Sucessfully sent the payload with op 4 to Discord.");
+    if (lavaInfo->debug) log_debug("[coglink:libcurl] Sucessfully sent the payload with op 4 to Discord.");
   }
 }
 
@@ -405,7 +405,7 @@ int coglink_handleScheduler(struct lavaInfo *lavaInfo, struct discord *client, c
       int r = jsmn_parse(&parser, data, size, tokens, sizeof(tokens));
 
       if (r < 0) {
-        log_error("[coglink:jsmn-find] Failed to parse JSON.");
+        if (lavaInfo->debug) log_error("[coglink:jsmn-find] Failed to parse JSON.");
         return DISCORD_EVENT_IGNORE;
       }
 
@@ -416,21 +416,21 @@ int coglink_handleScheduler(struct lavaInfo *lavaInfo, struct discord *client, c
       r = jsmnf_load(&loader, data, tokens, parser.toknext, pairs, 128);
 
       if (r < 0) {
-        log_error("[coglink:jsmn-find] Failed to load jsmn-find.");
+        if (lavaInfo->debug) log_error("[coglink:jsmn-find] Failed to load jsmn-find.");
         return DISCORD_EVENT_IGNORE;
       }
 
       jsmnf_pair *VGI = jsmnf_find(pairs, data, "guild_id", 8);
 
       if (!VGI) {
-        log_error("[coglink:jsmn-find] Failed to find guild_id.");
+        if (lavaInfo->debug) log_error("[coglink:jsmn-find] Failed to find guild_id.");
         return DISCORD_EVENT_IGNORE;
       }
 
       jsmnf_pair *VUI = jsmnf_find(pairs, data, "user_id", 7);
 
       if (!VUI) {
-        log_error("[coglink:jsmn-find] Failed to find user_id.");
+        if (lavaInfo->debug) log_error("[coglink:jsmn-find] Failed to find user_id.");
         return DISCORD_EVENT_IGNORE;
       }
 
@@ -440,7 +440,7 @@ int coglink_handleScheduler(struct lavaInfo *lavaInfo, struct discord *client, c
       jsmnf_pair *SSI = jsmnf_find(pairs, data, "session_id", 10);
 
       if (!SSI) {
-        log_error("[coglink:jsmn-find] Failed to find channel_id.");
+        if (lavaInfo->debug) log_error("[coglink:jsmn-find] Failed to find session_id.");
         return DISCORD_EVENT_IGNORE;
       }
 
@@ -448,11 +448,14 @@ int coglink_handleScheduler(struct lavaInfo *lavaInfo, struct discord *client, c
 
       snprintf(sessionId, sizeof(sessionId), "%.*s", (int)SSI->v.len, data + SSI->v.pos);
 
+      if (lavaInfo->debug) log_debug("[coglink:jsmn-find] Parsed voice state update json, results:\n> guild_id: %.*s\n> user_id: %s\n> session_id: %s", (int)VGI->v.len, data + VGI->v.pos, userId, sessionId);
+
       if (0 == strcmp(userId, lavaInfo->node->botId)) {
         if (0 != strcmp(sessionId, "null")) {
           snprintf(sessionID, sizeof(sessionID), "%s", sessionId);
+          if (lavaInfo->debug) log_debug("[coglink:jsmn-find] The user that got updated is the bot, saving the sessionId.");
         } else {
-
+          return DISCORD_EVENT_IGNORE;
         }
       }
 
@@ -465,7 +468,7 @@ int coglink_handleScheduler(struct lavaInfo *lavaInfo, struct discord *client, c
       int r = jsmn_parse(&parser, data, size, tokens, sizeof(tokens));
 
       if (r < 0) {
-        log_error("[jsmn-find] Failed to parse JSON.");
+        if (lavaInfo->debug) log_error("[jsmn-find] Failed to parse JSON.");
         return DISCORD_EVENT_IGNORE;
       }
 
@@ -476,14 +479,14 @@ int coglink_handleScheduler(struct lavaInfo *lavaInfo, struct discord *client, c
       r = jsmnf_load(&loader, data, tokens, parser.toknext, pairs, 128);
 
       if (r < 0) {
-        log_error("[jsmn-find] Failed to load jsmn-find.");
+        if (lavaInfo->debug) log_error("[jsmn-find] Failed to load jsmn-find.");
         return DISCORD_EVENT_IGNORE;
       }
 
       jsmnf_pair *VGI = jsmnf_find(pairs, data, "guild_id", 8);
 
       if (!VGI) {
-        log_error("[jsmn-find] Failed to find guild_id.");
+        if (lavaInfo->debug) log_error("[jsmn-find] Failed to find guild_id.");
         return DISCORD_EVENT_IGNORE;
       }
   
@@ -529,7 +532,7 @@ int coglink_connectNode(struct lavaInfo *lavaInfo, struct lavaNode *node) {
 
   lavaInfo->mhandle = mhandle;
   lavaInfo->ws = ws;
-  uint64_t tstamp;
+  uint64_t tstamp = 0;
   lavaInfo->tstamp = tstamp;
   lavaInfo->node = node;
 
