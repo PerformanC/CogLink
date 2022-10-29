@@ -15,6 +15,7 @@
 
 #define COGLINK_LIBCURL_FAIL_INITIALIZE -4
 #define COGLINK_LIBCURL_FAIL_SETOPT -5
+#define COGLINK_LIBCURL_FAIL_PERFORM -6
 
 
 /*
@@ -26,27 +27,27 @@ struct httpRequest {
   size_t size;
 };
 
-struct musicSearch {
+struct songSearch {
   char *body;
   size_t size;
 };
 
 static size_t __coglink_WriteMemoryCallback(void *contents, size_t size, size_t nmemb, void *userp) {
-  size_t realsize = size * nmemb;
+  size_t writeSize = size * nmemb;
   struct httpRequest *mem = (struct httpRequest *)userp;
 
-  char *ptr = realloc(mem->body, mem->size + realsize + 1);
+  char *ptr = realloc(mem->body, mem->size + writeSize + 1);
   if (!ptr) {
     log_fatal("[SYSTEM] Not enough memory to realloc.\n");
     return 1;
   }
 
   mem->body = ptr;
-  memcpy(&(mem->body[mem->size]), contents, realsize);
-  mem->size += realsize;
+  memcpy(&(mem->body[mem->size]), contents, writeSize);
+  mem->size += writeSize;
   mem->body[mem->size] = 0;
 
-  return realsize;
+  return writeSize;
 }
 
 struct lavaNode {
@@ -63,7 +64,7 @@ struct lavaEvents {
   void (*onRaw)();
   void (*onConnect)();
   void (*onClose)(enum ws_close_reason wscode, const char *reason);
-  // MUSIC
+  // EVENTS
   void (*onTrackStart)(char *track, u64snowflake guildId);
 };
 
@@ -76,7 +77,7 @@ struct lavaInfo {
   int debug;
 };
 
-struct lavaMusic {
+struct lavaSong {
   char *track;
   char *identifier;
   char *isSeekable;
@@ -90,13 +91,8 @@ struct lavaMusic {
 };
 
 /*
-  STRUCTURES
-*/
-
-/*
   EVENTS
 */
-
 
 void onConnectEvent(void *data, struct websockets *ws, struct ws_info *info, const char *protocols) {
   (void)ws; (void)info; (void)protocols;
@@ -187,20 +183,20 @@ void onTextEvent(void *data, struct websockets *ws, struct ws_info *info, const 
   EVENTS
 */
 
-int coglink_searchMusic(struct lavaInfo *lavaInfo, char *music, struct httpRequest *res) {
+int coglink_searchSong(struct lavaInfo *lavaInfo, char *song, struct httpRequest *res) {
   curl_global_init(CURL_GLOBAL_ALL);
 
   CURL *curl = curl_easy_init();
-  char *musicE = curl_easy_escape(curl, music, strlen(music));
+  char *songEncoded = curl_easy_escape(curl, song, strlen(song));
 
   char lavaURL[1024];
   if (lavaInfo->node->ssl) snprintf(lavaURL, sizeof(lavaURL), "https://%s/loadtracks?identifier=", lavaInfo->node->hostname);
   else snprintf(lavaURL, sizeof(lavaURL), "http://%s/loadtracks?identifier=", lavaInfo->node->hostname);
 
-  if (0 != strncmp(music, "https://", 8)) strncat(lavaURL, "ytsearch:", sizeof(lavaURL) - 1);
-  strncat(lavaURL, musicE, sizeof(lavaURL) - 1);
+  if (0 != strncmp(songEncoded, "https://", 8)) strncat(lavaURL, "ytsearch:", sizeof(lavaURL) - 1);
+  strncat(lavaURL, songEncoded, sizeof(lavaURL) - 1);
 
-  curl_free(musicE);
+  curl_free(songEncoded);
 
   if (!curl) {
     if (lavaInfo->debug) log_fatal("[coglink:libcurl] Error while initializing libcurl.");
@@ -251,7 +247,7 @@ int coglink_searchMusic(struct lavaInfo *lavaInfo, char *music, struct httpReque
   cRes = curl_easy_perform(curl);
   if (cRes != CURLE_OK) {
     if (lavaInfo->debug) log_fatal("[coglink:libcurl] curl_easy_perform failed: %s\n", curl_easy_strerror(cRes));
-    return COGLINK_LIBCURL_FAIL_SETOPT;
+    return COGLINK_LIBCURL_FAIL_PERFORM;
   }
 
   curl_easy_cleanup(curl);
@@ -260,16 +256,16 @@ int coglink_searchMusic(struct lavaInfo *lavaInfo, char *music, struct httpReque
 
   *res = req;
   
-  if (lavaInfo->debug) log_debug("[coglink:libcurl] Search music done, response: %s", res->body);
+  if (lavaInfo->debug) log_debug("[coglink:libcurl] Search song done, response: %s", res->body);
 
   return COGLINK_SUCCESS;
 }
 
-void coglink_searchMusicCleanup(struct httpRequest req) {
+void coglink_searchCleanup(struct httpRequest req) {
   free(req.body);
 }
 
-int coglink_parseMusicSearch(struct lavaInfo *lavaInfo, struct httpRequest req, char *musicPos, struct lavaMusic *musicStruct) {
+int coglink_parseSearch(struct lavaInfo *lavaInfo, struct httpRequest req, char *songPos, struct lavaSong *songStruct) {
   jsmn_parser parser;
   jsmntok_t tokens[1024];
 
@@ -292,7 +288,7 @@ int coglink_parseMusicSearch(struct lavaInfo *lavaInfo, struct httpRequest req, 
     return COGLINK_JSMNF_ERROR_LOAD;
   }
 
-  char *path[] = { "tracks", musicPos, "track", NULL };
+  char *path[] = { "tracks", songPos, "track", NULL };
   jsmnf_pair *track = jsmnf_find_path(pairs, req.body, path, 3);
 
   path[2] = "info";
@@ -341,9 +337,9 @@ int coglink_parseMusicSearch(struct lavaInfo *lavaInfo, struct httpRequest req, 
   snprintf(Uri, sizeof(Uri), "%.*s", (int)uri->v.len, req.body + uri->v.pos);
   snprintf(SourceName, sizeof(SourceName), "%.*s", (int)sourceName->v.len, req.body + sourceName->v.pos);
 
-  if (lavaInfo->debug) log_debug("[coglink:jsmn-find] Parsed music search json, results:\n> track: %s\n> identifier: %s\n> isSeekable: %s\n> author: %s\n> length: %s\n> isStream: %s\n> position: %s\n> title: %s\n> uri: %s\n> sourceName: %s", Track, Identifier, IsSeekable, Author, Length, IsStream, Position, Title, Uri, SourceName);
+  if (lavaInfo->debug) log_debug("[coglink:jsmn-find] Parsed song search json, results:\n> track: %s\n> identifier: %s\n> isSeekable: %s\n> author: %s\n> length: %s\n> isStream: %s\n> position: %s\n> title: %s\n> uri: %s\n> sourceName: %s", Track, Identifier, IsSeekable, Author, Length, IsStream, Position, Title, Uri, SourceName);
 
-  *musicStruct = (struct lavaMusic) {
+  *songStruct = (struct lavaSong) {
     .track = Track,
     .identifier = Identifier,
     .isSeekable = IsSeekable,
@@ -368,12 +364,12 @@ void __coglink_sendPayload(struct lavaInfo *lavaInfo, char payload[], char *payl
     if (lavaInfo->debug) log_fatal("[coglink:libcurl] Something went wrong while sending a payload with op %s to Lavalink.", payloadOP);
     return;
   } else {
-    if (lavaInfo->debug) log_debug("[coglink:libcurl] Sucessfully sent a payload with op %s to Lavalink.", payloadOP);
+    if (lavaInfo->debug) log_debug("[coglink:libcurl] Successfully sent a payload with op %s to Lavalink.", payloadOP);
     ws_easy_run(lavaInfo->ws, 5, &lavaInfo->tstamp);
   }
 }
 
-void coglink_playMusic(struct lavaInfo *lavaInfo, char *track, u64snowflake guildId) {
+void coglink_playSong(struct lavaInfo *lavaInfo, char *track, u64snowflake guildId) {
   char payload[2048];
   snprintf(payload, sizeof(payload), "{\"op\":\"play\",\"guildId\":\"%"PRIu64"\",\"track\":\"%s\",\"noReplace\":false,\"pause\":false}", guildId, track);
 
@@ -388,7 +384,7 @@ void coglink_joinVoiceChannel(struct lavaInfo *lavaInfo, struct discord *client,
     if (lavaInfo->debug) log_fatal("[coglink:libcurl] Something went wrong while sending a payload with op 4 to Discord.");
     return;
   } else {
-    if (lavaInfo->debug) log_debug("[coglink:libcurl] Sucessfully sent the payload with op 4 to Discord.");
+    if (lavaInfo->debug) log_debug("[coglink:libcurl] Successfully sent the payload with op 4 to Discord.");
   }
 }
 
