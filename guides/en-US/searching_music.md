@@ -2,7 +2,7 @@
 
 ## Search from WHERE?
 
-Lavalink allows you search from a lot sources, and in this guide, you will be able to customize the search to search from a specific source, or from all sources.
+Lavalink allows you to search from a lot of sources, and in this guide, you will be able to customize the search to search from a specific source, or from all sources.
 
 ## Searching
 
@@ -10,7 +10,7 @@ For searching for songs, we will be using the `coglink_searchSong` function, it 
 
 ### Why Coglink doesn't parse it automatically
 
-Coglink was made with performance in mind, if it was parsing the whole JSON, it would cause a lot of performance loss, so we decided to create a function that you can choose to select to parse the first, second, third on any song in that position, so it will be faster and better.
+Coglink was made with performance in mind, if it was parsing the whole JSON, it would cause a lot of performance loss, so we decided to create a function that you can choose to select to parse the first, second, and third on any song in that position, so it will be faster and better.
 
 Follow the example above of the `coglink_searchSong` function:
 

@@ -2,7 +2,7 @@
 
 ## What is it?
 
-[Lavalink](https://github.com/freyacodes/Lavalink) is a powerful audio processing system, which allows you to play audio from videos of YouTube into Discord. Lavalink nodes are not fully connected directly to your bot, they can be run in another machine with no problem, and you can have multiple nodes either in the same machine or multiple machines, providing better stability for big bots, not overloading one single node and causing it to ratelimit.
+[Lavalink](https://github.com/freyacodes/Lavalink) is a powerful audio processing system, which allows you to play audio from videos of YouTube into Discord. Lavalink nodes are not fully connected directly to your bot, they can be run in another machine with no problem, and you can have multiple nodes either in the same machine or multiple machines, providing better stability for big bots, not overloading one single node and causing it to rate limit.
 
 ## Why?
 
