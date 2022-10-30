@@ -2,7 +2,7 @@
 
 ## About it
 
-Coglink (not defined yet, name idea by `ap8650#5478`, AKA HackerSmacker), the firsts [Concord](https://github.com/Cogmasters/concord)'s specific lavalink wrapper, still trying to be low-level, where you are able to control a lot of things, and still with the amazing Concord's function design.
+Coglink (not defined yet, name idea by `ap8650#5478`, AKA HackerSmacker), the firsts [Concord](https://github.com/Cogmasters/concord)'s specific Lavalink wrapper, still trying to be low-level, where you are able to control a lot of things, and still with the amazing Concord's function design.
 
 ## Why?
 
@@ -23,7 +23,13 @@ This library wouldn't be possible without [Cogmaster](https://discord.gg/YcaK3pu
 
 ## Dependencies
 
-* `Concord (master/dev)` latest
-* `jsmn-find` latest
-* `jsmn` latest
-* `Concord's websocket` latests
+* `Concord (master/dev)` 2.2.0
+* `jsmn-find` included on Concord 2.2.0
+* `jsmn` included on Concord 2.2.0
+* `Concord's websocket` 2.2.0
+* `libcurl` latest
+* `libssl` latest
+* `libcrypto` latest
+* `libpthread` latest
+
+*Tested on:* Ubuntu 22.04.1 x64
