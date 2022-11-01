@@ -1,8 +1,9 @@
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 #include <concord/discord.h>
-#include <concord/discord-internal.h>
+#include <concord/log.h>
 
 #include <concord/jsmn.h>
 #include <concord/jsmn-find.h>
