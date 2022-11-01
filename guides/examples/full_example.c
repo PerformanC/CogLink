@@ -145,10 +145,10 @@ int main(void) {
 
   struct lavaNode params = {
     .name = "Node1",
-    .hostname = "localhost:2333",
-    .password = "FogueteLavalink",
+    .hostname = "Node hostname",
+    .password = "youshallnotpass",
     .shards = "1",
-    .botId = "807374209277493308",
+    .botId = "123456789012345678",
     .ssl = 0
   };
 
