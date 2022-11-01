@@ -6,7 +6,7 @@
 
 ## Why?
 
-Besides being slow and heavy, Lavalink is an easy option for playing youtube videos in Discord, since doing it manually would require a lot of work for people who don't already have a base, and it provides effects and a lot of other features that would be hard to implement manually. It also provides an easy way to play songs from other sources, like SoundCloud, Bandcamp, Twitch, Vimeo, Mixer, and more.
+Besides being slow and heavy, Lavalink is an easy option for playing YouTube videos in Discord, since doing it manually would require a lot of work for people who don't already have a base, and it provides effects and a lot of other features that would be hard to implement manually. It also provides an easy way to play songs from other sources, like SoundCloud, Bandcamp, Twitch, Vimeo, Mixer, and more.
 
 ## How?
 
@@ -16,4 +16,4 @@ Lavalink is powered by Java, together with Kotlin, when you download its binarie
 
 Concord is an asynchronous C99 [Discord](https://discord.com) API wrapper, providing low-level functions to control your bot with it, and still providing high performance, not losing the original structures of the Discord API responses, making it easy to maintain, fix, improve, update and much more.
 
-*Guide made by*: @ThePedroo
+* *Guide made by*: @ThePedroo

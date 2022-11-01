@@ -30,8 +30,8 @@ log_debug("Body response of Lavalink: %s", res.body);
 coglink_searchCleanup(res);
 ```
 
-Done, it will print the response of the Lavalink search request, but in case it fails, it will report the int value of what happened wrong.
+Done, it will print the response of the Lavalink search request, but in case it fails, it will return the int value of what happened wrong.
 
 You can proceed following the next guide, the [`parsing search song`](/guides/en-US/parsing_search.md) guide.
 
-*Guide made by*: @ThePedroo
+* *Guide made by*: @ThePedroo

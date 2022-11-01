@@ -52,4 +52,4 @@ for (int i = 0; i < 10; i++) {
 
 Done, it will print the name of the first 10 songs found.
 
-*Guide made by*: @ThePedroo
+* *Guide made by*: @ThePedroo
