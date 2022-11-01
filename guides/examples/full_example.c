@@ -138,6 +138,9 @@ void on_message(struct discord *client, const struct discord_message *message) {
   if (0 == strcmp(".destroy", message->content)) {
     coglink_destroyPlayer(&lavaInfo, message->guild_id);
   }
+  if (0 == strcmp(".closeNode", message->content)) {
+    coglink_closeNode(&lavaInfo);
+  }
 }
 
 int main(void) {

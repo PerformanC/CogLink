@@ -551,11 +551,22 @@ int coglink_handleScheduler(struct lavaInfo *lavaInfo, struct discord *client, c
   }
 }
 
+void coglink_freeNodeInfo(struct lavaInfo *lavaInfo) {
+  if (lavaInfo) lavaInfo = NULL;
+}
+
+void coglink_disconnectNode(struct lavaInfo *lavaInfo) {
+  ws_close(lavaInfo->ws, 1000, "Requested to be closed", sizeof("Requested to be closed"));
+}
+
 void coglink_connectNodeCleanup(struct lavaInfo *lavaInfo) {
   if (hashtable) chash_free(hashtable, STRING_TABLE);
   ws_end(lavaInfo->ws);
   ws_cleanup(lavaInfo->ws);
   curl_multi_cleanup(lavaInfo->mhandle);
+  curl_global_cleanup();
+  coglink_freeNodeInfo(lavaInfo);
+  if (lavaInfo) lavaInfo = NULL;
 }
 
 int coglink_connectNode(struct lavaInfo *lavaInfo, struct lavaNode *node) {

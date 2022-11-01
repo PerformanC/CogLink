@@ -91,6 +91,10 @@ void coglink_joinVoiceChannel(struct lavaInfo *lavaInfo, struct discord *client,
 
 int coglink_handleScheduler(struct lavaInfo *lavaInfo, struct discord *client, const char data[], size_t size, enum discord_gateway_events event);
 
+void coglink_freeNodeInfo(struct lavaInfo *lavaInfo);
+
+void coglink_disconnectNode(struct lavaInfo *lavaInfo);
+
 void coglink_connectNodeCleanup(struct lavaInfo *lavaInfo);
 
 int coglink_connectNode(struct lavaInfo *lavaInfo, struct lavaNode *node);
