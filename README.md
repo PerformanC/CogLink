@@ -2,7 +2,7 @@
 
 ## About it
 
-Coglink (not defined yet, name idea by `ap8650#5478`, AKA HackerSmacker), the firsts [Concord](https://github.com/Cogmasters/concord)'s specific Lavalink wrapper, still trying to be low-level, where you are able to control a lot of things, and still with the amazing Concord's function design.
+Coglink (not defined yet, name idea by `ap8650#5478`, AKA HackerSmacker), the firsts [Concord](https://github.com/Cogmasters/concord)'s specific Lavalink wrapper, still trying to be low-level, where you can control a lot of things, and still with the amazing Concord's function design.
 
 ## Why?
 
@@ -11,7 +11,7 @@ Also uses a lot of Concord's pre-installed libraries, being considered fully sta
 
 ## Performance
 
-Even without proof, it's really fast, built with performance in mind, always. Any type of performance issue can be reported and will be fixed in the best way possible, but we aren't going to sacrifice stability to get more performance, don't worry.
+Even without proof, it's fast, built with performance in mind, always. Any type of performance issue can be reported and will be fixed in the best way possible, but we aren't going to sacrifice stability to get more performance, don't worry.
 
 ## Status
 
@@ -33,3 +33,43 @@ This library wouldn't be possible without [Cogmaster](https://discord.gg/YcaK3pu
 * `libpthread` latest
 
 *Tested on:* Ubuntu 22.04.1 x64
+
+## Installation
+
+This library is not available on any package manager, so you will need to compile it yourself, but don't worry, it's really easy.
+
+*This library was tested on Linux Ubuntu only, modifications on Makefile to compile on other OSes are probably needed, but the code will PROBABLY not change.*
+
+### Compiling
+
+First, you will need to install the dependencies, you can do it with the following command (Debian based OSes):
+
+```console
+$ apt install -y make clang git
+```
+
+*This is supposed you already have Concord installed on your machine, this library was made and optimized for Concord.*
+
+Then, you will clone this repository, and compile it:
+
+```console
+$ git clone https://github.com/ThePedroo/Coglink && cd Coglink && make && make install
+```
+
+The `make` command will compile Coglink files and the `make install` will include the library on your system, so you can use it on your projects.
+
+### Using
+
+To use Coglink, you will need to include it on your project, you can do it with the following command:
+
+```c
+#include <coglink/lavalink.h> // Websocket related Coglink functions
+#include <coglink/definitions.h> // The definitions of defines like COGLINK_SUCCESS
+#include <coglink/rest-lavalink.h> // Functions from Coglink that uses Lavalink rest API
+```
+
+And then, compile your project with the additional flag: `-lcoglink`.
+
+## Documentation/Guides (Quick start)
+
+We don't have a documentation, but you can take on the guides and see what is the need since there will have everything briefly explained.
