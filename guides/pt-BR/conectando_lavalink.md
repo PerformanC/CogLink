@@ -45,7 +45,13 @@ Pronto, agora você já vai estar conectando à sua Lavalink sem problemas, caso
 
 ## Desconectando
 
-Isso ainda não é suportado, infelizmente, mas no futuro, a gente vai adicionar isso, agorinha, bem agorinha!
+Para você fechar a conexão WebSocket com a Lavalink, você pode usar a função `coglink_disconnectNode`, olhe o exemplo a baixo:
+
+```c
+coglink_closeNode(&lavaInfo);
+```
+
+Sim, é fácil assim, e pronto, a conexão WebSocket com a Lavalink já vai estar fechada.
 
 * *Guia por*: @ThePedroo
 * Feito com amor por um brasileiro! ❤️
