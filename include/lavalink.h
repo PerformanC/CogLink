@@ -22,6 +22,12 @@ struct lavaMemory {
   char allocated[32];
 };
 
+struct lavaFStats {
+  char sent[16];
+  char deficit[16];
+  char nulled[16];
+};
+
 struct lavaCPU {
   char cores[8];
   char systemLoad[32];
@@ -59,13 +65,13 @@ struct lavaEvents {
   void (*onTrackStart)(char *track, u64snowflake guildId);
   void (*onTrackEnd)(char *reason, char *track, u64snowflake guildId);
   void (*onTrackException)(char *track, char *message, char *severity, char *cause, u64snowflake guildId);
-  void (*onTrackStuck)(char *track, char *thresholdMs, u64snowflake guildId);
-  void (*onWebSocketClosed)(char *code, char *reason, char *byRemote, u64snowflake guildId);
+  void (*onTrackStuck)(char *track, int thresholdMs, u64snowflake guildId);
+  void (*onWebSocketClosed)(int code, char *reason, char *byRemote, u64snowflake guildId);
   void (*onUnknownEvent)(char *type, const char *text, u64snowflake guildId);
   // PLAYER EVENTS
-  void (*onPlayerUpdate)(char *time, char *position, char *connected, char *ping, u64snowflake guildId);
+  void (*onPlayerUpdate)(int time, int position, char *connected, int ping, u64snowflake guildId);
   // OTHER EVENTS
-  void (*onStats)(char *playingPlayers, struct lavaMemory infoMemory, char *players, struct lavaCPU infoCPU, char *uptime);
+  void (*onStats)(int playingPlayers, struct lavaMemory *infoMemory, int players, struct lavaFStats *infoFrameStats, struct lavaCPU *infoCPU, int uptime);
 };
 
 void onConnectEvent(void *data, struct websockets *ws, struct ws_info *info, const char *protocols);

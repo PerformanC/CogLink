@@ -70,7 +70,6 @@ int coglink_searchSong(struct lavaInfo *lavaInfo, char *song, struct httpRequest
   }
   chunk = curl_slist_append(chunk, "Client-Name: Coglink");
   chunk = curl_slist_append(chunk, "User-Agent: libcurl");
-//  chunk = curl_slist_append(chunk, "Cleanup-Threshold: 600");
 
   cRes = curl_easy_setopt(curl, CURLOPT_HTTPHEADER, chunk);
   if (cRes != CURLE_OK) {

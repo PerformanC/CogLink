@@ -32,7 +32,7 @@ struct lavaNode {
 struct lavaMemory {
   char reservable[16];
   char used[16];
-  char free[16];
+  char free[32];
   char allocated[16];
 };
 
@@ -79,13 +79,13 @@ struct lavaEvents {
   void (*onTrackStart)(char *track, u64snowflake guildId);
   void (*onTrackEnd)(char *reason, char *track, u64snowflake guildId);
   void (*onTrackException)(char *track, char *message, char *severity, char *cause, u64snowflake guildId);
-  void (*onTrackStuck)(char *track, char *thresholdMs, u64snowflake guildId);
-  void (*onWebSocketClosed)(char *code, char *reason, char *byRemote, u64snowflake guildId);
+  void (*onTrackStuck)(char *track, int thresholdMs, u64snowflake guildId);
+  void (*onWebSocketClosed)(int code, char *reason, char *byRemote, u64snowflake guildId);
   void (*onUnknownEvent)(char *type, const char *text, u64snowflake guildId);
   // PLAYER EVENTS
-  void (*onPlayerUpdate)(char *time, char *position, char *connected, char *ping, u64snowflake guildId);
+  void (*onPlayerUpdate)(int time, int position, char *connected, int ping, u64snowflake guildId);
   // OTHER EVENTS
-  void (*onStats)(char *playingPlayers, struct lavaMemory infoMemory, char *players, struct lavaFStats infoFrameStats, struct lavaCPU infoCPU, char *uptime);
+  void (*onStats)(int playingPlayers, struct lavaMemory *infoMemory, int players, struct lavaFStats *infoFrameStats, struct lavaCPU *infoCPU, int uptime);
 };
 
 /*
@@ -242,7 +242,7 @@ void onTextEvent(void *data, struct websockets *ws, struct ws_info *info, const 
       char ThresholdMs[16];
       snprintf(ThresholdMs, sizeof(ThresholdMs), "%.*s", (int)thresholdMs->v.len, text + thresholdMs->v.pos);
 
-      if (lavaInfo->events->onTrackStuck) lavaInfo->events->onTrackStuck(Track, ThresholdMs, strtoull(u_guildId, NULL, 10));
+      if (lavaInfo->events->onTrackStuck) lavaInfo->events->onTrackStuck(Track, atoi(ThresholdMs), strtoull(u_guildId, NULL, 10));
     } else if (0 == strcmp(Type, "WebSocketClosedEvent")) {
       jsmnf_pair *code = jsmnf_find(pairs, text, "code", 4);
       if (__coglink_checkParse(lavaInfo, code, "code") != COGLINK_PROCEED) return;
@@ -262,7 +262,7 @@ void onTextEvent(void *data, struct websockets *ws, struct ws_info *info, const 
       char ByRemote[8];
       snprintf(ByRemote, sizeof(ByRemote), "%.*s", (int)byRemote->v.len, text + byRemote->v.pos);
 
-      if (lavaInfo->events->onWebSocketClosed) lavaInfo->events->onWebSocketClosed(Code, Reason, ByRemote, strtoull(u_guildId, NULL, 10));
+      if (lavaInfo->events->onWebSocketClosed) lavaInfo->events->onWebSocketClosed(atoi(Code), Reason, ByRemote, strtoull(u_guildId, NULL, 10));
     } else if (0 == strcmp(Type, "playerUpdate")) {
       char *path[] = { "state", "time" };
       jsmnf_pair *time = jsmnf_find_path(pairs, text, path, 2);
@@ -292,11 +292,12 @@ void onTextEvent(void *data, struct websockets *ws, struct ws_info *info, const 
       char Ping[8];
       snprintf(Ping, sizeof(Ping), "%.*s", (int)ping->v.len, text + ping->v.pos);
 
-      if (lavaInfo->events->onPlayerUpdate) lavaInfo->events->onPlayerUpdate(Time, Position, Connected, Ping, strtoull(u_guildId, NULL, 10));
+      if (lavaInfo->events->onPlayerUpdate) lavaInfo->events->onPlayerUpdate(atoi(Time), atoi(Position), Connected, atoi(Ping), strtoull(u_guildId, NULL, 10));
     } else {
       if (lavaInfo->events->onUnknownEvent) lavaInfo->events->onUnknownEvent(Type, text, strtoull(u_guildId, NULL, 10));
     }
   } else if (0 == strcmp(Op, "stats")) {
+    log_warn("%s", text);
     jsmnf_pair *playingPlayers = jsmnf_find(pairs, text, "playingPlayers", 14);
     if (__coglink_checkParse(lavaInfo, playingPlayers, "playingPlayers") != COGLINK_PROCEED) return;
 
@@ -318,10 +319,10 @@ void onTextEvent(void *data, struct websockets *ws, struct ws_info *info, const 
     snprintf(infoMemory.used, 16, "%.*s", (int)used->v.len, text + used->v.pos);
 
     path[1] = "free";
-    jsmnf_pair *free = jsmnf_find_path(pairs, text, path, 2);
-    if (__coglink_checkParse(lavaInfo, free, "free") != COGLINK_PROCEED) return;
+    jsmnf_pair *lavaFree = jsmnf_find_path(pairs, text, path, 2);
+    if (__coglink_checkParse(lavaInfo, lavaFree, "lavaFree") != COGLINK_PROCEED) return;
 
-    snprintf(infoMemory.free, 16, "%.*s", (int)free->v.len, text + free->v.pos);
+    snprintf(infoMemory.free, 32, "%.*s", (int)lavaFree->v.len, text + lavaFree->v.pos);
 
     path[1] = "allocated";
     jsmnf_pair *allocated = jsmnf_find_path(pairs, text, path, 2);
@@ -362,7 +363,7 @@ void onTextEvent(void *data, struct websockets *ws, struct ws_info *info, const 
     path[1] = "cores";
     jsmnf_pair *cores = jsmnf_find_path(pairs, text, path, 2);
     if (__coglink_checkParse(lavaInfo, cores, "cores") != COGLINK_PROCEED) return;
-    
+
     snprintf(infoCPU.cores, 8, "%.*s", (int)cores->v.len, text + cores->v.pos);
 
     path[1] = "systemLoad";
@@ -383,7 +384,7 @@ void onTextEvent(void *data, struct websockets *ws, struct ws_info *info, const 
     char Uptime[32];
     snprintf(Uptime, sizeof(Uptime), "%.*s", (int)uptime->v.len, text + uptime->v.pos);
 
-    if (lavaInfo->events->onStats) lavaInfo->events->onStats(PlayingPlayers, infoMemory, Players, infoFrameStats, infoCPU, Uptime);
+    if (lavaInfo->events->onStats) lavaInfo->events->onStats(atoi(PlayingPlayers), &infoMemory, atoi(Players), &infoFrameStats, &infoCPU, atoi(Uptime));
   }
 }
 
@@ -536,7 +537,7 @@ int coglink_handleScheduler(struct lavaInfo *lavaInfo, struct discord *client, c
 }
 
 void coglink_connectNodeCleanup(struct lavaInfo *lavaInfo) {
-  chash_free(hashtable, STRING_TABLE);
+  if (hashtable) chash_free(hashtable, STRING_TABLE);
   ws_end(lavaInfo->ws);
   ws_cleanup(lavaInfo->ws);
   curl_multi_cleanup(lavaInfo->mhandle);
