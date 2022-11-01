@@ -66,6 +66,7 @@ To use Coglink, you will need to include it on your project, you can do it with 
 #include <coglink/lavalink.h> // Websocket related Coglink functions
 #include <coglink/definitions.h> // The definitions of defines like COGLINK_SUCCESS
 #include <coglink/rest-lavalink.h> // Functions from Coglink that uses Lavalink rest API
+#include <coglink/player.h> // The functions related to the music player
 ```
 
 And then, compile your project with the additional flag: `-lcoglink`.

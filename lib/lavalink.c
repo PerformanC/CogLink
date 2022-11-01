@@ -86,6 +86,7 @@ struct lavaEvents {
   void (*onPlayerUpdate)(int time, int position, char *connected, int ping, u64snowflake guildId);
   // OTHER EVENTS
   void (*onStats)(int playingPlayers, struct lavaMemory *infoMemory, int players, struct lavaFStats *infoFrameStats, struct lavaCPU *infoCPU, int uptime);
+  void (*onUnknownOp)(char *op, const char *text);
 };
 
 /*
@@ -96,7 +97,7 @@ struct lavaEvents {
 #define STRING_TABLE_BUCKET struct StringBucket
 #define STRING_TABLE_FREE_KEY(key) free(key)
 #define STRING_TABLE_HASH(key, hash) chash_string_hash(key, hash)
-#define STRING_TABLE_FREE_VALUE(value) free(value)
+#define STRING_TABLE_FREE_VALUE(value) // free(value)
 #define STRING_TABLE_COMPARE(cmp_a, cmp_b) chash_string_compare(cmp_a, cmp_b)
 #define STRING_TABLE_INIT(bucket, _key, _value) chash_default_init(bucket, _key, _value)
 
@@ -172,11 +173,11 @@ void onTextEvent(void *data, struct websockets *ws, struct ws_info *info, const 
     char Type[32];
     snprintf(Type, sizeof(Type), "%.*s", (int)type->v.len, text + type->v.pos);
 
-    jsmnf_pair *guildId = jsmnf_find(pairs, text, "guildId", 7);
-    if (__coglink_checkParse(lavaInfo, guildId, "guildId") != COGLINK_PROCEED) return;
+    jsmnf_pair *jsmnf_guildId = jsmnf_find(pairs, text, "guildId", 7);
+    if (__coglink_checkParse(lavaInfo, jsmnf_guildId, "guildId") != COGLINK_PROCEED) return;
 
-    char u_guildId[32];
-    snprintf(u_guildId, sizeof(u_guildId), "%.*s", (int)guildId->v.len, text + guildId->v.pos);
+    char guildId[32];
+    snprintf(guildId, sizeof(guildId), "%.*s", (int)jsmnf_guildId->v.len, text + jsmnf_guildId->v.pos);
 
     if (0 == strcmp(Type, "TrackStartEvent")) {
       jsmnf_pair *track = jsmnf_find(pairs, text, "track", 5);
@@ -185,7 +186,7 @@ void onTextEvent(void *data, struct websockets *ws, struct ws_info *info, const 
       char Track[512];
       snprintf(Track, sizeof(Track), "%.*s", (int)track->v.len, text + track->v.pos);
 
-      if (lavaInfo->events->onTrackStart) lavaInfo->events->onTrackStart(Track, strtoull(u_guildId, NULL, 10));
+      if (lavaInfo->events->onTrackStart) lavaInfo->events->onTrackStart(Track, strtoull(guildId, NULL, 10));
     } else if (0 == strcmp(Type, "TrackEndEvent")) {
       jsmnf_pair *reason = jsmnf_find(pairs, text, "reason", 6);
       if (__coglink_checkParse(lavaInfo, reason, "reason") != COGLINK_PROCEED) return;
@@ -199,7 +200,7 @@ void onTextEvent(void *data, struct websockets *ws, struct ws_info *info, const 
       char Track[512];
       snprintf(Track, sizeof(Track), "%.*s", (int)track->v.len, text + track->v.pos);
 
-      if (lavaInfo->events->onTrackEnd) lavaInfo->events->onTrackEnd(Track, Reason, strtoull(u_guildId, NULL, 10));
+      if (lavaInfo->events->onTrackEnd) lavaInfo->events->onTrackEnd(Track, Reason, strtoull(guildId, NULL, 10));
     } else if (0 == strcmp(Type, "TrackExceptionEvent")) {
       jsmnf_pair *track = jsmnf_find(pairs, text, "track", 5);
       if (__coglink_checkParse(lavaInfo, track, "track") != COGLINK_PROCEED) return;
@@ -228,7 +229,7 @@ void onTextEvent(void *data, struct websockets *ws, struct ws_info *info, const 
       char Cause[512];
       snprintf(Cause, sizeof(Cause), "%.*s", (int)cause->v.len, text + cause->v.pos);
 
-      if (lavaInfo->events->onTrackException) lavaInfo->events->onTrackException(Track, Message, Severity, Cause, strtoull(u_guildId, NULL, 10));
+      if (lavaInfo->events->onTrackException) lavaInfo->events->onTrackException(Track, Message, Severity, Cause, strtoull(guildId, NULL, 10));
     } else if (0 == strcmp(Type, "TrackStuckEvent")) {
       jsmnf_pair *track = jsmnf_find(pairs, text, "track", 5);
       if (__coglink_checkParse(lavaInfo, track, "track") != COGLINK_PROCEED) return;
@@ -242,7 +243,7 @@ void onTextEvent(void *data, struct websockets *ws, struct ws_info *info, const 
       char ThresholdMs[16];
       snprintf(ThresholdMs, sizeof(ThresholdMs), "%.*s", (int)thresholdMs->v.len, text + thresholdMs->v.pos);
 
-      if (lavaInfo->events->onTrackStuck) lavaInfo->events->onTrackStuck(Track, atoi(ThresholdMs), strtoull(u_guildId, NULL, 10));
+      if (lavaInfo->events->onTrackStuck) lavaInfo->events->onTrackStuck(Track, atoi(ThresholdMs), strtoull(guildId, NULL, 10));
     } else if (0 == strcmp(Type, "WebSocketClosedEvent")) {
       jsmnf_pair *code = jsmnf_find(pairs, text, "code", 4);
       if (__coglink_checkParse(lavaInfo, code, "code") != COGLINK_PROCEED) return;
@@ -262,39 +263,9 @@ void onTextEvent(void *data, struct websockets *ws, struct ws_info *info, const 
       char ByRemote[8];
       snprintf(ByRemote, sizeof(ByRemote), "%.*s", (int)byRemote->v.len, text + byRemote->v.pos);
 
-      if (lavaInfo->events->onWebSocketClosed) lavaInfo->events->onWebSocketClosed(atoi(Code), Reason, ByRemote, strtoull(u_guildId, NULL, 10));
-    } else if (0 == strcmp(Type, "playerUpdate")) {
-      char *path[] = { "state", "time" };
-      jsmnf_pair *time = jsmnf_find_path(pairs, text, path, 2);
-      if (__coglink_checkParse(lavaInfo, time, "time") != COGLINK_PROCEED) return;
-
-      char Time[32];
-      snprintf(Time, sizeof(Time), "%.*s", (int)time->v.len, text + time->v.pos);
-
-      path[1] = "position";
-      jsmnf_pair *position = jsmnf_find_path(pairs, text, path, 2);
-      if (__coglink_checkParse(lavaInfo, position, "position") != COGLINK_PROCEED) return;
-
-      char Position[32];
-      snprintf(Position, sizeof(Position), "%.*s", (int)position->v.len, text + position->v.pos);
-
-      path[1] = "connected";
-      jsmnf_pair *connected = jsmnf_find_path(pairs, text, path, 2);
-      if (__coglink_checkParse(lavaInfo, connected, "connected") != COGLINK_PROCEED) return;
-
-      char Connected[8];
-      snprintf(Connected, sizeof(Connected), "%.*s", (int)connected->v.len, text + connected->v.pos);
-
-      path[1] = "ping";
-      jsmnf_pair *ping = jsmnf_find_path(pairs, text, path, 2);
-      if (__coglink_checkParse(lavaInfo, ping, "ping") != COGLINK_PROCEED) return;
-
-      char Ping[8];
-      snprintf(Ping, sizeof(Ping), "%.*s", (int)ping->v.len, text + ping->v.pos);
-
-      if (lavaInfo->events->onPlayerUpdate) lavaInfo->events->onPlayerUpdate(atoi(Time), atoi(Position), Connected, atoi(Ping), strtoull(u_guildId, NULL, 10));
+      if (lavaInfo->events->onWebSocketClosed) lavaInfo->events->onWebSocketClosed(atoi(Code), Reason, ByRemote, strtoull(guildId, NULL, 10));
     } else {
-      if (lavaInfo->events->onUnknownEvent) lavaInfo->events->onUnknownEvent(Type, text, strtoull(u_guildId, NULL, 10));
+      if (lavaInfo->events->onUnknownEvent) lavaInfo->events->onUnknownEvent(Type, text, strtoull(guildId, NULL, 10));
     }
   } else if (0 == strcmp(Op, "stats")) {
     log_warn("%s", text);
@@ -385,6 +356,44 @@ void onTextEvent(void *data, struct websockets *ws, struct ws_info *info, const 
     snprintf(Uptime, sizeof(Uptime), "%.*s", (int)uptime->v.len, text + uptime->v.pos);
 
     if (lavaInfo->events->onStats) lavaInfo->events->onStats(atoi(PlayingPlayers), &infoMemory, atoi(Players), &infoFrameStats, &infoCPU, atoi(Uptime));
+  } else if (0 == strcmp(Op, "playerUpdate")) {
+    jsmnf_pair *jsmnf_guildId = jsmnf_find(pairs, text, "guildId", 7);
+    if (__coglink_checkParse(lavaInfo, jsmnf_guildId, "guildId") != COGLINK_PROCEED) return;
+
+    char guildId[32];
+    snprintf(guildId, sizeof(guildId), "%.*s", (int)jsmnf_guildId->v.len, text + jsmnf_guildId->v.pos);
+
+    char *path[] = { "state", "time" };
+    jsmnf_pair *time = jsmnf_find_path(pairs, text, path, 2);
+    if (__coglink_checkParse(lavaInfo, time, "time") != COGLINK_PROCEED) return;
+
+    char Time[32];
+    snprintf(Time, sizeof(Time), "%.*s", (int)time->v.len, text + time->v.pos);
+
+    path[1] = "position";
+    jsmnf_pair *position = jsmnf_find_path(pairs, text, path, 2);
+
+    char Position[32];
+    if (position) snprintf(Position, sizeof(Position), "%.*s", (int)position->v.len, text + position->v.pos);
+    else snprintf(Position, sizeof(Position), "NULL");
+
+    path[1] = "connected";
+    jsmnf_pair *connected = jsmnf_find_path(pairs, text, path, 2);
+    if (__coglink_checkParse(lavaInfo, connected, "connected") != COGLINK_PROCEED) return;
+
+    char Connected[8];
+    snprintf(Connected, sizeof(Connected), "%.*s", (int)connected->v.len, text + connected->v.pos);
+
+    path[1] = "ping";
+    jsmnf_pair *ping = jsmnf_find_path(pairs, text, path, 2);
+    if (__coglink_checkParse(lavaInfo, ping, "ping") != COGLINK_PROCEED) return;
+
+    char Ping[8];
+    snprintf(Ping, sizeof(Ping), "%.*s", (int)ping->v.len, text + ping->v.pos);
+
+    if (lavaInfo->events->onPlayerUpdate) lavaInfo->events->onPlayerUpdate(atoi(Time), atoi(Position), Connected, atoi(Ping), strtoull(guildId, NULL, 10));
+  } else {
+    if (lavaInfo->events->onUnknownOp) lavaInfo->events->onUnknownOp(Op, text);
   }
 }
 
@@ -466,7 +475,7 @@ int coglink_handleScheduler(struct lavaInfo *lavaInfo, struct discord *client, c
       char *sessionId = malloc(128);
       snprintf(sessionId, 128, "%.*s", (int)SSI->v.len, data + SSI->v.pos);
 
-      if (lavaInfo->debug) log_debug("[coglink:jsmn-find] Parsed voice state update json, results:\n> guild_id: %.*s\n> user_id: %s\n> session_id: %s", guildId, userId, sessionId);
+      if (lavaInfo->debug) log_debug("[coglink:jsmn-find] Parsed voice state update json, results:\n> guild_id: %s\n> user_id: %s\n> session_id: %s", guildId, userId, sessionId);
 
       if (0 == strcmp(userId, lavaInfo->node->botId)) {
         if (0 != strcmp(sessionId, "null")) {
@@ -478,7 +487,13 @@ int coglink_handleScheduler(struct lavaInfo *lavaInfo, struct discord *client, c
 
           if (lavaInfo->debug) log_debug("[coglink:jsmn-find] The user that got updated is the bot, saving the sessionId.");
         } else {
-          return DISCORD_EVENT_IGNORE;
+          if (!hashtable) return DISCORD_EVENT_IGNORE;
+
+          int exists = chash_contains(hashtable, guildId, exists, STRING_TABLE);
+          if (exists == 0) return DISCORD_EVENT_IGNORE;
+
+          chash_delete(hashtable, guildId, STRING_TABLE);
+          if (lavaInfo->debug) log_debug("[coglink:jsmn-find] The user that got updated is the bot, but the sessionId is null, removing the sessionId from the hashtable.");
         }
       }
 

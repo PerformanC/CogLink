@@ -30,8 +30,8 @@ struct lavaFStats {
 
 struct lavaCPU {
   char cores[8];
-  char systemLoad[32];
-  char lavalinkLoad[32];
+  char systemLoad[16];
+  char lavalinkLoad[16];
 };
 
 struct lavaInfo {
@@ -72,6 +72,7 @@ struct lavaEvents {
   void (*onPlayerUpdate)(int time, int position, char *connected, int ping, u64snowflake guildId);
   // OTHER EVENTS
   void (*onStats)(int playingPlayers, struct lavaMemory *infoMemory, int players, struct lavaFStats *infoFrameStats, struct lavaCPU *infoCPU, int uptime);
+  void (*onUnknownOp)(char *op, const char *text);
 };
 
 void onConnectEvent(void *data, struct websockets *ws, struct ws_info *info, const char *protocols);

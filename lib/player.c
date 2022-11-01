@@ -21,7 +21,7 @@ void coglink_seekTrack(struct lavaInfo *lavaInfo, u64snowflake guildID, char *po
   __coglink_sendPayload(lavaInfo, payload, "seek");
 }
 
-void coglink_volumePlayer(struct lavaInfo *lavaInfo, u64snowflake guildID, char *volume) {
+void coglink_setPlayerVolume(struct lavaInfo *lavaInfo, u64snowflake guildID, char *volume) {
   char payload[128];
   sprintf(payload, "{\"op\":\"volume\",\"guildId\":\"%"PRIu64"\",\"volume\":%s}", guildID, volume);
   __coglink_sendPayload(lavaInfo, payload, "volume");
