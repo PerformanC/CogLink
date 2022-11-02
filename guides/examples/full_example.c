@@ -87,7 +87,10 @@ struct lavaInfo lavaInfo = {
       .onPlayerUpdate = &onPlayerUpdate,
       .onUnknownOp = &onUnknownOp
     },
-  .debug = 1 // 1 = true, 0 = false
+    .debugging = 
+      &(struct coglinkDebugging) {
+        .allDebugging = true
+      }
 };
 
 void on_cycle(struct discord *client) {
@@ -102,44 +105,44 @@ void on_message(struct discord *client, const struct discord_message *message) {
   if (message->author->bot) return;
   if (0 == strncmp(".play ", message->content, 6)) {
     char *songName = message->content + 6;
-    coglink_joinVoiceChannel(&lavaInfo, client, VOICE_ID, message->guild_id);
+    coglink_joinVoiceChannel(lavaInfo, client, VOICE_ID, message->guild_id);
 
     struct httpRequest res;
-    coglink_searchSong(&lavaInfo, songName, &res);
+    coglink_searchSong(lavaInfo, songName, &res);
 
     struct lavaSong *song;
     
-    coglink_parseSearch(&lavaInfo, res, "0", &song);
+    coglink_parseSearch(lavaInfo, res, "0", &song);
 
-    coglink_playSong(&lavaInfo, song->track, message->guild_id);
+    coglink_playSong(lavaInfo, song->track, message->guild_id);
 
-    coglink_parseCleanup(song);
+    coglink_parseCleanup(lavaInfo, song);
     coglink_searchCleanup(res);
   }
   if (0 == strcmp(".stop", message->content)) {
-    coglink_stopPlayer(&lavaInfo, message->guild_id);
+    coglink_stopPlayer(lavaInfo, message->guild_id);
   }
   if (0 == strcmp(".pause", message->content)) {
-    coglink_pausePlayer(&lavaInfo, message->guild_id, "true");
+    coglink_pausePlayer(lavaInfo, message->guild_id, "true");
   }
   if (0 == strcmp(".resume", message->content)) {
-    coglink_pausePlayer(&lavaInfo, message->guild_id, "false");
+    coglink_pausePlayer(lavaInfo, message->guild_id, "false");
   }
   if (0 == strncmp(".seek ", message->content, 6)) {
     char *seek = message->content + 6;
 
-    coglink_seekTrack(&lavaInfo, message->guild_id, seek);
+    coglink_seekTrack(lavaInfo, message->guild_id, seek);
   }
   if (0 == strncmp(".volume ", message->content, 8)) {
     char *volume = message->content + 8;
 
-    coglink_setPlayerVolume(&lavaInfo, message->guild_id, volume);
+    coglink_setPlayerVolume(lavaInfo, message->guild_id, volume);
   }
   if (0 == strcmp(".destroy", message->content)) {
-    coglink_destroyPlayer(&lavaInfo, message->guild_id);
+    coglink_destroyPlayer(lavaInfo, message->guild_id);
   }
   if (0 == strcmp(".closeNode", message->content)) {
-    coglink_disconnectNode(&lavaInfo);
+    coglink_disconnectNode(lavaInfo);
   }
 }
 
@@ -156,6 +159,9 @@ int main(void) {
   };
 
   coglink_connectNode(&lavaInfo, &params);
+
+  /* Or to set events, you can also use */
+  // coglink_setEvents(&lavaInfo, &lavaInfo->events);
 
   discord_set_on_ready(client, &on_ready);
   discord_set_on_cycle(client, &on_cycle);
