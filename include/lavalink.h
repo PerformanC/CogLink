@@ -34,13 +34,35 @@ struct lavaCPU {
   char lavalinkLoad[16];
 };
 
+struct coglinkDebugging {
+  int allDebugging;
+  int sendPayloadErrorsDebugging;
+  int sendPayloadSuccessDebugging;
+  int checkParseErrorsDebugging;
+  int checkParseSuccessDebugging;
+  int joinVoiceDebugging;
+  int jsmnfErrorsDebugging;
+  int jsmnfSuccessDebugging;
+  int handleSchedulerVoiceStateDebugging;
+  int handleSchedulerVoiceServerDebugging;
+  int chashErrorsDebugging;
+  int chashSuccessDebugging;
+  int parseSearchErrorsDebugging;
+  int parseSearchSuccessDebugging;
+  int searchSongErrorsDebugging;
+  int searchSongSuccessDebugging;
+  int curlErrorsDebugging;
+  int curlSuccessDebugging;
+  int memoryDebugging;
+};
+
 struct lavaInfo {
   struct lavaEvents *events;
   CURLM *mhandle;
   struct websockets *ws;
   uint64_t tstamp;
-  struct lavaNode *node;
-  int debug;
+  struct lavaNode node;
+  struct coglinkDebugging *debugging;
 };
 
 struct lavaSong {
@@ -81,13 +103,9 @@ void onCloseEvent(void *data, struct websockets *ws, struct ws_info *info, enum 
 
 void onTextEvent(void *data, struct websockets *ws, struct ws_info *info, const char *text, size_t len);
 
-void coglink_parseCleanup(struct lavaSong *songStruct);
-
 void coglink_wsLoop(struct lavaInfo *lavaInfo);
 
-void coglink_playSong(struct lavaInfo *lavaInfo, char *track, u64snowflake guildId);
-
-void coglink_joinVoiceChannel(struct lavaInfo *lavaInfo, struct discord *client, u64snowflake voiceChannelId, u64snowflake guildId);
+void coglink_joinVoiceChannel(struct lavaInfo lavaInfo, struct discord *client, u64snowflake voiceChannelId, u64snowflake guildId);
 
 int coglink_handleScheduler(struct lavaInfo *lavaInfo, struct discord *client, const char data[], size_t size, enum discord_gateway_events event);
 
@@ -97,6 +115,6 @@ void coglink_disconnectNode(struct lavaInfo *lavaInfo);
 
 void coglink_connectNodeCleanup(struct lavaInfo *lavaInfo);
 
-int coglink_connectNode(struct lavaInfo *lavaInfo, struct lavaNode *node);
+int coglink_connectNode(struct lavaInfo *lavaInfo, struct lavaNode node);
 
 #endif
