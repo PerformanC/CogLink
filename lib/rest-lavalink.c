@@ -29,15 +29,15 @@ size_t __coglink_WriteMemoryCallback(void *contents, size_t size, size_t nmemb, 
   return writeSize;
 }
 
-int coglink_searchSong(struct lavaInfo *lavaInfo, char *song, struct httpRequest *res) {
+int coglink_searchSong(struct lavaInfo lavaInfo, char *song, struct httpRequest *res) {
   curl_global_init(CURL_GLOBAL_ALL);
 
   CURL *curl = curl_easy_init();
   char *songEncoded = curl_easy_escape(curl, song, strlen(song));
 
   char lavaURL[1024];
-  if (lavaInfo->node->ssl) snprintf(lavaURL, sizeof(lavaURL), "https://%s/loadtracks?identifier=", lavaInfo->node->hostname);
-  else snprintf(lavaURL, sizeof(lavaURL), "http://%s/loadtracks?identifier=", lavaInfo->node->hostname);
+  if (lavaInfo.node.ssl) snprintf(lavaURL, sizeof(lavaURL), "https://%s/loadtracks?identifier=", lavaInfo.node.hostname);
+  else snprintf(lavaURL, sizeof(lavaURL), "http://%s/loadtracks?identifier=", lavaInfo.node.hostname);
 
   if (0 != strncmp(songEncoded, "https://", 8)) strncat(lavaURL, "ytsearch:", sizeof(lavaURL) - 1);
   strncat(lavaURL, songEncoded, sizeof(lavaURL) - 1);
@@ -45,7 +45,7 @@ int coglink_searchSong(struct lavaInfo *lavaInfo, char *song, struct httpRequest
   curl_free(songEncoded);
 
   if (!curl) {
-    if (lavaInfo->debug) log_fatal("[coglink:libcurl] Error while initializing libcurl.");
+    if (lavaInfo.debugging->allDebugging || lavaInfo.debugging->curlErrorsDebugging) log_fatal("[coglink:libcurl] Error while initializing libcurl.");
     return COGLINK_LIBCURL_FAIL_INITIALIZE;
   }
 
@@ -57,41 +57,46 @@ int coglink_searchSong(struct lavaInfo *lavaInfo, char *song, struct httpRequest
   CURLcode cRes = curl_easy_setopt(curl, CURLOPT_URL, lavaURL);
 
   if (cRes != CURLE_OK) {
-    if (lavaInfo->debug) log_fatal("[coglink:libcurl] curl_easy_setopt [1] failed: %s\n", curl_easy_strerror(cRes));
+    if (lavaInfo.debugging->allDebugging || lavaInfo.debugging->curlErrorsDebugging) log_fatal("[coglink:libcurl] curl_easy_setopt [1] failed: %s\n", curl_easy_strerror(cRes));
     return COGLINK_LIBCURL_FAIL_SETOPT;
   }
 
   struct curl_slist *chunk = NULL;
     
-  if (lavaInfo->node->password) {
+  if (lavaInfo.node.password) {
     char AuthorizationH[256];
-    snprintf(AuthorizationH, sizeof(AuthorizationH), "Authorization: %s", lavaInfo->node->password);
+    snprintf(AuthorizationH, sizeof(AuthorizationH), "Authorization: %s", lavaInfo.node.password);
     chunk = curl_slist_append(chunk, AuthorizationH);
+
+    if (lavaInfo.debugging->allDebugging || lavaInfo.debugging->parseSearchErrorsDebugging || lavaInfo.debugging->curlSuccessDebugging) log_debug("[coglink:libcurl] Authorization header set.");
   }
   chunk = curl_slist_append(chunk, "Client-Name: Coglink");
+  if (lavaInfo.debugging->allDebugging || lavaInfo.debugging->parseSearchErrorsDebugging || lavaInfo.debugging->curlSuccessDebugging) log_debug("[coglink:libcurl] Client-Name header set.");
+
   chunk = curl_slist_append(chunk, "User-Agent: libcurl");
+  if (lavaInfo.debugging->allDebugging || lavaInfo.debugging->parseSearchErrorsDebugging || lavaInfo.debugging->curlSuccessDebugging) log_debug("[coglink:libcurl] User-Agent header set.");
 
   cRes = curl_easy_setopt(curl, CURLOPT_HTTPHEADER, chunk);
   if (cRes != CURLE_OK) {
-    if (lavaInfo->debug) log_fatal("[coglink:libcurl] curl_easy_setopt [2] failed: %s\n", curl_easy_strerror(cRes));
+    if (lavaInfo.debugging->allDebugging || lavaInfo.debugging->parseSearchErrorsDebugging || lavaInfo.debugging->curlErrorsDebugging) log_fatal("[coglink:libcurl] curl_easy_setopt [2] failed: %s\n", curl_easy_strerror(cRes));
     return COGLINK_LIBCURL_FAIL_SETOPT;
   } 
 
   cRes = curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, __coglink_WriteMemoryCallback);
   if (cRes != CURLE_OK) {
-    if (lavaInfo->debug) log_fatal("[coglink:libcurl] curl_easy_setopt [3] failed: %s\n", curl_easy_strerror(cRes));
+    if (lavaInfo.debugging->allDebugging || lavaInfo.debugging->parseSearchErrorsDebugging || lavaInfo.debugging->curlErrorsDebugging) log_fatal("[coglink:libcurl] curl_easy_setopt [3] failed: %s\n", curl_easy_strerror(cRes));
     return COGLINK_LIBCURL_FAIL_SETOPT;
   }
 
   cRes = curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&req);
   if (cRes != CURLE_OK) {
-    if (lavaInfo->debug) log_fatal("[coglink:libcurl] curl_easy_setopt [4] failed: %s\n", curl_easy_strerror(cRes));
+    if (lavaInfo.debugging->allDebugging || lavaInfo.debugging->parseSearchErrorsDebugging || lavaInfo.debugging->curlErrorsDebugging) log_fatal("[coglink:libcurl] curl_easy_setopt [4] failed: %s\n", curl_easy_strerror(cRes));
     return COGLINK_LIBCURL_FAIL_SETOPT;
   }
 
   cRes = curl_easy_perform(curl);
   if (cRes != CURLE_OK) {
-    if (lavaInfo->debug) log_fatal("[coglink:libcurl] curl_easy_perform failed: %s\n", curl_easy_strerror(cRes));
+    if (lavaInfo.debugging->allDebugging || lavaInfo.debugging->parseSearchErrorsDebugging || lavaInfo.debugging->curlErrorsDebugging) log_fatal("[coglink:libcurl] curl_easy_perform failed: %s\n", curl_easy_strerror(cRes));
     return COGLINK_LIBCURL_FAIL_PERFORM;
   }
 
@@ -101,7 +106,7 @@ int coglink_searchSong(struct lavaInfo *lavaInfo, char *song, struct httpRequest
 
   *res = req;
   
-  if (lavaInfo->debug) log_debug("[coglink:libcurl] Search song done, response: %s", res->body);
+  if (lavaInfo.debugging->allDebugging || lavaInfo.debugging->parseSearchSuccessDebugging || lavaInfo.debugging->curlSuccessDebugging) log_debug("[coglink:libcurl] Search song done, response: %s", res->body);
 
   return COGLINK_SUCCESS;
 }
@@ -110,7 +115,7 @@ void coglink_searchCleanup(struct httpRequest req) {
   free(req.body);
 }
 
-int coglink_parseSearch(struct lavaInfo *lavaInfo, struct httpRequest req, char *songPos, struct lavaSong **songStruct) {
+int coglink_parseSearch(struct lavaInfo lavaInfo, struct httpRequest req, char *songPos, struct lavaSong **songStruct) {
   jsmn_parser parser;
   jsmntok_t tokens[1024];
 
@@ -118,8 +123,10 @@ int coglink_parseSearch(struct lavaInfo *lavaInfo, struct httpRequest req, char 
   int r = jsmn_parse(&parser, req.body, req.size, tokens, sizeof(tokens));
 
   if (r < 0) {
-    if (lavaInfo->debug) log_error("[coglink:jsmn-find] Failed to parse JSON.");
+    if (lavaInfo.debugging->allDebugging || lavaInfo.debugging->parseSearchErrorsDebugging || lavaInfo.debugging->jsmnfErrorsDebugging) log_error("[coglink:jsmn-find] Failed to parse JSON.");
     return COGLINK_JSMNF_ERROR_PARSE;
+  } else {
+    if (lavaInfo.debugging->allDebugging || lavaInfo.debugging->handleSchedulerVoiceServerDebugging || lavaInfo.debugging->jsmnfSuccessDebugging) log_debug("[jsmn-find] Successfully parsed JSON.");
   }
 
   jsmnf_loader loader;
@@ -129,9 +136,12 @@ int coglink_parseSearch(struct lavaInfo *lavaInfo, struct httpRequest req, char 
   r = jsmnf_load(&loader, req.body, tokens, parser.toknext, pairs, 1024);
 
   if (r < 0) {
-    if (lavaInfo->debug) log_error("[coglink:jsmn-find] Failed to load jsmn-find.");
+    if (lavaInfo.debugging->allDebugging || lavaInfo.debugging->parseSearchErrorsDebugging || lavaInfo.debugging->jsmnfErrorsDebugging) log_error("[coglink:jsmn-find] Failed to load jsmn-find.");
     return COGLINK_JSMNF_ERROR_LOAD;
+  } else {
+    if (lavaInfo.debugging->allDebugging || lavaInfo.debugging->handleSchedulerVoiceServerDebugging || lavaInfo.debugging->jsmnfSuccessDebugging) log_error("[coglink:jsmn-find] Successfully loaded jsmn-find.");
   }
+
 
   char *path[] = { "tracks", songPos, "track", NULL };
   jsmnf_pair *track = jsmnf_find_path(pairs, req.body, path, 3);
@@ -165,7 +175,7 @@ int coglink_parseSearch(struct lavaInfo *lavaInfo, struct httpRequest req, char 
   jsmnf_pair *sourceName = jsmnf_find_path(pairs, req.body, path, 4);
 
   if (!track || !identifier || !isSeekable || !author || !length || !isStream || !position || !title || !uri || !sourceName) {
-    if (lavaInfo->debug) log_fatal("[coglink:jsmnf-find] Error while trying to find %s field.", !track ? "track" : !identifier ? "identifier": !isSeekable ? "isSeekable" : !author ? "author" : !length ? "length" : !isStream ? "isStream" : !position ? "position" : !title ? "title" : !uri ? "uri" : !sourceName ? "sourceName" : "???");
+    if (lavaInfo.debugging->allDebugging || lavaInfo.debugging->parseSearchErrorsDebugging || lavaInfo.debugging->jsmnfErrorsDebugging) log_fatal("[coglink:jsmnf-find] Error while trying to find %s field.", !track ? "track" : !identifier ? "identifier": !isSeekable ? "isSeekable" : !author ? "author" : !length ? "length" : !isStream ? "isStream" : !position ? "position" : !title ? "title" : !uri ? "uri" : !sourceName ? "sourceName" : "???");
     return COGLINK_JSMNF_ERROR_FIND;
   }
 
@@ -182,7 +192,7 @@ int coglink_parseSearch(struct lavaInfo *lavaInfo, struct httpRequest req, char 
   snprintf(Uri, sizeof(Uri), "%.*s", (int)uri->v.len, req.body + uri->v.pos);
   snprintf(SourceName, sizeof(SourceName), "%.*s", (int)sourceName->v.len, req.body + sourceName->v.pos);
 
-  if (lavaInfo->debug) log_debug("[coglink:jsmn-find] Parsed song search json, results:\n> track: %s\n> identifier: %s\n> isSeekable: %s\n> author: %s\n> length: %s\n> isStream: %s\n> position: %s\n> title: %s\n> uri: %s\n> sourceName: %s", Track, Identifier, IsSeekable, Author, Length, IsStream, Position, Title, Uri, SourceName);
+  if (lavaInfo.debugging->allDebugging || lavaInfo.debugging->parseSearchErrorsDebugging || lavaInfo.debugging->jsmnfErrorsDebugging) log_debug("[coglink:jsmn-find] Parsed song search json, results:\n> track: %s\n> identifier: %s\n> isSeekable: %s\n> author: %s\n> length: %s\n> isStream: %s\n> position: %s\n> title: %s\n> uri: %s\n> sourceName: %s", Track, Identifier, IsSeekable, Author, Length, IsStream, Position, Title, Uri, SourceName);
 
   struct lavaSong *song = malloc(sizeof(struct lavaSong));
 
@@ -197,6 +207,8 @@ int coglink_parseSearch(struct lavaInfo *lavaInfo, struct httpRequest req, char 
   song->uri = malloc(sizeof(Uri) + 1);
   song->sourceName = malloc(sizeof(SourceName) + 1);
 
+  if (lavaInfo.debugging->allDebugging || lavaInfo.debugging->memoryDebugging) log_debug("[coglink:memory-malloc] Allocated %d bytes for song structure.", sizeof(struct lavaSong) + sizeof(Track) + sizeof(Identifier) + sizeof(IsSeekable) + sizeof(Author) + sizeof(Length) + sizeof(IsStream) + sizeof(Position) + sizeof(Title) + sizeof(Uri) + sizeof(SourceName) + 10);
+
   strcpy(song->track, Track);
   strcpy(song->identifier, Identifier);
   strcpy(song->isSeekable, IsSeekable);
@@ -208,7 +220,25 @@ int coglink_parseSearch(struct lavaInfo *lavaInfo, struct httpRequest req, char 
   strcpy(song->uri, Uri);
   strcpy(song->sourceName, SourceName);
 
+  if (lavaInfo.debugging->allDebugging || lavaInfo.debugging->memoryDebugging) log_debug("[coglink:memory-strcpy] Copied %d bytes to song structure.", sizeof(Track) + sizeof(Identifier) + sizeof(IsSeekable) + sizeof(Author) + sizeof(Length) + sizeof(IsStream) + sizeof(Position) + sizeof(Title) + sizeof(Uri) + sizeof(SourceName) + 10);
+
   *songStruct = song;
 
   return COGLINK_SUCCESS;
+}
+
+void coglink_parseCleanup(struct lavaInfo lavaInfo, struct lavaSong *songStruct) {
+  if (songStruct->track) free(songStruct->track);
+  if (songStruct->identifier) free(songStruct->identifier);
+  if (songStruct->isSeekable) free(songStruct->isSeekable);
+  if (songStruct->author) free(songStruct->author);
+  if (songStruct->length) free(songStruct->length);
+  if (songStruct->isStream) free(songStruct->isStream);
+  if (songStruct->position) free(songStruct->position);
+  if (songStruct->title) free(songStruct->title);
+  if (songStruct->uri) free(songStruct->uri);
+  if (songStruct->sourceName) free(songStruct->sourceName);
+  if (songStruct) free(songStruct);
+
+  if (lavaInfo.debugging->allDebugging || lavaInfo.debugging->memoryDebugging) log_debug("[coglink:memory-free] Freed %d bytes from song structure.", sizeof(struct lavaSong) + sizeof(songStruct->track) + sizeof(songStruct->identifier) + sizeof(songStruct->isSeekable) + sizeof(songStruct->author) + sizeof(songStruct->length) + sizeof(songStruct->isStream) + sizeof(songStruct->position) + sizeof(songStruct->title) + sizeof(songStruct->uri) + sizeof(songStruct->sourceName) + 10);
 }

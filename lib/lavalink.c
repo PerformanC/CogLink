@@ -48,13 +48,33 @@ struct lavaCPU {
   char lavalinkLoad[16];
 };
 
+struct coglinkDebugging {
+  int allDebugging;
+  int sendPayloadErrorsDebugging;
+  int sendPayloadSuccessDebugging;
+  int checkParseErrorsDebugging;
+  int checkParseSuccessDebugging;
+  int joinVoiceDebugging;
+  int jsmnfErrorsDebugging;
+  int jsmnfSuccessDebugging;
+  int handleSchedulerVoiceStateDebugging;
+  int handleSchedulerVoiceServerDebugging;
+  int chashErrorsDebugging;
+  int chashSuccessDebugging;
+  int parseSearchErrorsDebugging;
+  int parseSearchSuccessDebugging;
+  int curlErrorsDebugging;
+  int curlSuccessDebugging;
+  int memoryDebugging;
+};
+
 struct lavaInfo {
   struct lavaEvents *events;
   CURLM *mhandle;
   struct websockets *ws;
   uint64_t tstamp;
-  struct lavaNode *node;
-  int debug;
+  struct lavaNode node;
+  struct coglinkDebugging *debugging;
 };
 
 struct lavaSong {
@@ -97,7 +117,7 @@ struct lavaEvents {
 #define STRING_TABLE_BUCKET struct StringBucket
 #define STRING_TABLE_FREE_KEY(key) free(key)
 #define STRING_TABLE_HASH(key, hash) chash_string_hash(key, hash)
-#define STRING_TABLE_FREE_VALUE(value) // free(value)
+#define STRING_TABLE_FREE_VALUE(value) free(value)
 #define STRING_TABLE_COMPARE(cmp_a, cmp_b) chash_string_compare(cmp_a, cmp_b)
 #define STRING_TABLE_INIT(bucket, _key, _value) chash_default_init(bucket, _key, _value)
 
@@ -144,7 +164,7 @@ void onTextEvent(void *data, struct websockets *ws, struct ws_info *info, const 
   int r = jsmn_parse(&parser, text, len, tokens, sizeof(tokens));
 
   if (r < 0) {
-    if (lavaInfo->debug) log_error("[coglink:jsmn-find] Failed to parse JSON.");
+    if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_error("[coglink:jsmn-find] Failed to parse JSON.");
     return;
   }
 
@@ -155,7 +175,7 @@ void onTextEvent(void *data, struct websockets *ws, struct ws_info *info, const 
   r = jsmnf_load(&loader, text, tokens, parser.toknext, pairs, 1024);
 
   if (r < 0) {
-    if (lavaInfo->debug) log_error("[coglink:jsmn-find] Failed to load jsmn-find.");
+    if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_error("[coglink:jsmn-find] Failed to load jsmn-find.");
     return;
   }
 
@@ -401,30 +421,19 @@ void onTextEvent(void *data, struct websockets *ws, struct ws_info *info, const 
   EVENTS
 */
 
-void coglink_parseCleanup(struct lavaSong *songStruct) {
-  free(songStruct);
-}
-
 void coglink_wsLoop(struct lavaInfo *lavaInfo) {
   ws_easy_run(lavaInfo->ws, 5, &lavaInfo->tstamp);
 }
 
-void coglink_playSong(struct lavaInfo *lavaInfo, char *track, u64snowflake guildId) {
-  char payload[2048];
-  snprintf(payload, sizeof(payload), "{\"op\":\"play\",\"guildId\":\"%"PRIu64"\",\"track\":\"%s\",\"noReplace\":false,\"pause\":false}", guildId, track);
-
-  __coglink_sendPayload(lavaInfo, payload, "play");
-}
-
-void coglink_joinVoiceChannel(struct lavaInfo *lavaInfo, struct discord *client, u64snowflake voiceChannelId, u64snowflake guildId) {
+void coglink_joinVoiceChannel(struct lavaInfo lavaInfo, struct discord *client, u64snowflake voiceChannelId, u64snowflake guildId) {
   char joinVCPayload[512];
   snprintf(joinVCPayload, sizeof(joinVCPayload), "{\"op\":4,\"d\":{\"guild_id\":%"PRIu64",\"channel_id\":\"%"PRIu64"\",\"self_mute\":false,\"self_deaf\":true}}", guildId, voiceChannelId);
 
   if (ws_send_text(client->gw.ws, NULL, joinVCPayload, strlen(joinVCPayload)) == false) {
-    if (lavaInfo->debug) log_fatal("[coglink:libcurl] Something went wrong while sending a payload with op 4 to Discord.");
+    if (lavaInfo.debugging->allDebugging || lavaInfo.debugging->sendPayloadErrorsDebugging) log_fatal("[coglink:libcurl] Something went wrong while sending a payload with op 4 to Discord.");
     return;
   } else {
-    if (lavaInfo->debug) log_debug("[coglink:libcurl] Successfully sent the payload with op 4 to Discord.");
+    if (lavaInfo.debugging->allDebugging || lavaInfo.debugging->sendPayloadSuccessDebugging) log_debug("[coglink:libcurl] Successfully sent the payload with op 4 to Discord.");
   }
 }
 
@@ -439,7 +448,7 @@ int coglink_handleScheduler(struct lavaInfo *lavaInfo, struct discord *client, c
       int r = jsmn_parse(&parser, data, size, tokens, sizeof(tokens));
 
       if (r < 0) {
-        if (lavaInfo->debug) log_error("[coglink:jsmn-find] Failed to parse JSON.");
+        if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->jsmnfErrorsDebugging || lavaInfo->debugging->handleSchedulerVoiceStateDebugging) log_error("[coglink:jsmn-find] Failed to parse JSON.");
         return DISCORD_EVENT_IGNORE;
       }
 
@@ -450,7 +459,7 @@ int coglink_handleScheduler(struct lavaInfo *lavaInfo, struct discord *client, c
       r = jsmnf_load(&loader, data, tokens, parser.toknext, pairs, 128);
 
       if (r < 0) {
-        if (lavaInfo->debug) log_error("[coglink:jsmn-find] Failed to load jsmn-find.");
+        if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->jsmnfErrorsDebugging || lavaInfo->debugging->handleSchedulerVoiceStateDebugging) log_error("[coglink:jsmn-find] Failed to load jsmn-find.");
         return DISCORD_EVENT_IGNORE;
       }
 
@@ -475,17 +484,20 @@ int coglink_handleScheduler(struct lavaInfo *lavaInfo, struct discord *client, c
       char *sessionId = malloc(128);
       snprintf(sessionId, 128, "%.*s", (int)SSI->v.len, data + SSI->v.pos);
 
-      if (lavaInfo->debug) log_debug("[coglink:jsmn-find] Parsed voice state update json, results:\n> guild_id: %s\n> user_id: %s\n> session_id: %s", guildId, userId, sessionId);
+      if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging)  log_debug("[coglink:memory] Allocated 128 bytes for sessionId to save in the hashtable.");
 
-      if (0 == strcmp(userId, lavaInfo->node->botId)) {
+      if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->handleSchedulerVoiceStateDebugging) log_debug("[coglink:jsmn-find] Parsed voice state update json, results:\n> guild_id: %s\n> user_id: %s\n> session_id: %s", guildId, userId, sessionId);
+
+      if (0 == strcmp(userId, lavaInfo->node.botId)) {
         if (0 != strcmp(sessionId, "null")) {
           if (!hashtable) {
             hashtable = chash_init(hashtable, STRING_TABLE);
+            if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->handleSchedulerVoiceStateDebugging || lavaInfo->debugging->chashSuccessDebugging) log_debug("[coglink:hashtable] Created hashtable, since it wasn't created before.");
           }
 
           chash_assign(hashtable, guildId, sessionId, STRING_TABLE);
 
-          if (lavaInfo->debug) log_debug("[coglink:jsmn-find] The user that got updated is the bot, saving the sessionId.");
+          if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->handleSchedulerVoiceStateDebugging || lavaInfo->debugging->chashSuccessDebugging) log_debug("[coglink:jsmn-find] The user that got updated is the bot, saving the sessionId.");
         } else {
           if (!hashtable) return DISCORD_EVENT_IGNORE;
 
@@ -493,7 +505,7 @@ int coglink_handleScheduler(struct lavaInfo *lavaInfo, struct discord *client, c
           if (exists == 0) return DISCORD_EVENT_IGNORE;
 
           chash_delete(hashtable, guildId, STRING_TABLE);
-          if (lavaInfo->debug) log_debug("[coglink:jsmn-find] The user that got updated is the bot, but the sessionId is null, removing the sessionId from the hashtable.");
+          if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->handleSchedulerVoiceStateDebugging || lavaInfo->debugging->chashSuccessDebugging) log_debug("[coglink:jsmn-find] The user that got updated is the bot, but the sessionId is null, removing the sessionId from the hashtable.");
         }
       }
 
@@ -506,8 +518,10 @@ int coglink_handleScheduler(struct lavaInfo *lavaInfo, struct discord *client, c
       int r = jsmn_parse(&parser, data, size, tokens, sizeof(tokens));
 
       if (r < 0) {
-        if (lavaInfo->debug) log_error("[jsmn-find] Failed to parse JSON.");
+        if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->handleSchedulerVoiceServerDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_error("[jsmn-find] Failed to parse JSON.");
         return DISCORD_EVENT_IGNORE;
+      } else {
+        if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->handleSchedulerVoiceServerDebugging || lavaInfo->debugging->jsmnfSuccessDebugging) log_debug("[jsmn-find] Successfully parsed JSON.");
       }
 
       jsmnf_loader loader;
@@ -517,8 +531,10 @@ int coglink_handleScheduler(struct lavaInfo *lavaInfo, struct discord *client, c
       r = jsmnf_load(&loader, data, tokens, parser.toknext, pairs, 128);
 
       if (r < 0) {
-        if (lavaInfo->debug) log_error("[jsmn-find] Failed to load jsmn-find.");
+        if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->handleSchedulerVoiceServerDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_error("[coglink:jsmn-find] Failed to load jsmn-find.");
         return DISCORD_EVENT_IGNORE;
+      } else {
+        if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->handleSchedulerVoiceServerDebugging || lavaInfo->debugging->jsmnfSuccessDebugging) log_debug("[coglink:jsmn-find] Successfully loaded jsmn-find.");
       }
 
       jsmnf_pair *VGI = jsmnf_find(pairs, data, "guild_id", 8);
@@ -529,17 +545,23 @@ int coglink_handleScheduler(struct lavaInfo *lavaInfo, struct discord *client, c
       snprintf(guildId, sizeof(guildId), "%.*s", (int)VGI->v.len, data + VGI->v.pos);
 
       if (!hashtable) {
-        if (lavaInfo->debug) log_error("[coglink:jsmn-find] The hashtable is not initialized.");
+        if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->handleSchedulerVoiceServerDebugging || lavaInfo->debugging->chashErrorsDebugging) log_error("[coglink:jsmn-find] The hashtable is not initialized.");
         return DISCORD_EVENT_IGNORE;
+      } else {
+        if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->handleSchedulerVoiceServerDebugging || lavaInfo->debugging->chashSuccessDebugging) log_debug("[coglink:jsmn-find] The hashtable is initialized.");
       }
 
       int exists = chash_contains(hashtable, guildId, exists, STRING_TABLE);
       if (0 == exists) {
-        if (lavaInfo->debug) log_error("[coglink:jsmn-find] The hashtable does not contain the guildId.");
+        if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->handleSchedulerVoiceServerDebugging || lavaInfo->debugging->chashErrorsDebugging) log_error("[coglink:jsmn-find] The hashtable does not contain the guildId.");
         return DISCORD_EVENT_IGNORE;
+      } else {
+        if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->handleSchedulerVoiceServerDebugging || lavaInfo->debugging->chashSuccessDebugging) log_debug("[coglink:jsmn-find] The hashtable contains the guildId.");
       }
 
       char *sessionID = chash_lookup(hashtable, guildId, sessionID, STRING_TABLE);
+
+      if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->handleSchedulerVoiceServerDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_debug("[coglink:jsmn-find] Successfully found the sessionID in the hashtable.");
   
       char VUP[1024];
       snprintf(VUP, sizeof(VUP), "{\"op\":\"voiceUpdate\",\"guildId\":\"%s\",\"sessionId\":\"%s\",\"event\":%.*s}", guildId, sessionID, (int)size, data);
@@ -565,11 +587,17 @@ void coglink_connectNodeCleanup(struct lavaInfo *lavaInfo) {
   ws_cleanup(lavaInfo->ws);
   curl_multi_cleanup(lavaInfo->mhandle);
   curl_global_cleanup();
+  ws_end(lavaInfo->ws);
+  ws_cleanup(lavaInfo->ws);
   coglink_freeNodeInfo(lavaInfo);
   if (lavaInfo) lavaInfo = NULL;
 }
 
-int coglink_connectNode(struct lavaInfo *lavaInfo, struct lavaNode *node) {
+void coglink_setEvents(struct lavaInfo *lavaInfo, struct lavaEvents *lavaEvents) {
+  lavaInfo->events = lavaEvents;
+}
+
+int coglink_connectNode(struct lavaInfo *lavaInfo, struct lavaNode node) {
   struct ws_callbacks callbacks = {
     .on_text = &onTextEvent,
     .on_connect = &onConnectEvent,
@@ -577,20 +605,22 @@ int coglink_connectNode(struct lavaInfo *lavaInfo, struct lavaNode *node) {
     .data = (void *)lavaInfo
   };
 
+  curl_global_init(CURL_GLOBAL_ALL);
+
   CURLM *mhandle = curl_multi_init();
   struct websockets *ws = ws_init(&callbacks, mhandle, NULL);
 
-  char hostname[strlen(node->hostname) + 7];
-  if (node->ssl) snprintf(hostname, sizeof(hostname), "wss://%s", node->hostname);
-  else snprintf(hostname, sizeof(hostname), "ws://%s", node->hostname);
+  char hostname[strlen(node.hostname) + 7];
+  if (node.ssl) snprintf(hostname, sizeof(hostname), "wss://%s", node.hostname);
+  else snprintf(hostname, sizeof(hostname), "ws://%s", node.hostname);
 
   ws_set_url(ws, hostname, NULL);
 
   ws_start(ws);
 
-  ws_add_header(ws, "Authorization", node->password);
-  ws_add_header(ws, "Num-Shards", node->shards);
-  ws_add_header(ws, "User-Id", node->botId);
+  ws_add_header(ws, "Authorization", node.password);
+  ws_add_header(ws, "Num-Shards", node.shards);
+  ws_add_header(ws, "User-Id", node.botId);
   ws_add_header(ws, "Client-Name", "coglink");
 
   lavaInfo->mhandle = mhandle;
