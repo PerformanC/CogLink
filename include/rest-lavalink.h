@@ -5,8 +5,18 @@ int coglink_searchSong(struct lavaInfo lavaInfo, char *song, struct httpRequest 
 
 void coglink_searchCleanup(struct httpRequest req);
 
-int coglink_parseSearch(struct lavaInfo lavaInfo, struct httpRequest req, char *songPos, struct lavaSong **songStruct);
+int coglink_parseLoadtype(struct lavaInfo lavaInfo, struct httpRequest req, int *loadTypeValue);
 
-void coglink_parseCleanup(struct lavaInfo lavaInfo, struct lavaSong *songStruct);
+int coglink_parseTrack(struct lavaInfo lavaInfo, struct httpRequest req, char *songPos, struct lavaParsedTrack **songStruct);
+
+int coglink_parsePlaylist(struct lavaInfo lavaInfo, struct httpRequest req, struct lavaParsedPlaylist **playlistStruct);
+
+int coglink_parseError(struct lavaInfo lavaInfo, struct httpRequest req, struct lavaParsedError **errorStruct);
+
+void coglink_parseTrackCleanup(struct lavaInfo lavaInfo, struct lavaParsedTrack *songStruct);
+
+void coglink_parsePlaylistCleanup(struct lavaInfo lavaInfo, struct lavaParsedPlaylist *playlistStruct);
+
+void coglink_parseErrorCleanup(struct lavaInfo lavaInfo, struct lavaParsedError *errorStruct);
 
 #endif
