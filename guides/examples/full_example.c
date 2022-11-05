@@ -105,18 +105,31 @@ void on_message(struct discord *client, const struct discord_message *message) {
   if (message->author->bot) return;
   if (0 == strncmp(".play ", message->content, 6)) {
     char *songName = message->content + 6;
+
     coglink_joinVoiceChannel(lavaInfo, client, VOICE_ID, message->guild_id);
 
     struct httpRequest res;
     coglink_searchSong(lavaInfo, songName, &res);
 
-    struct lavaSong *song;
-    
-    coglink_parseSearch(lavaInfo, res, "0", &song);
+    int loadType;
 
-    coglink_playSong(lavaInfo, song->track, message->guild_id);
+    coglink_parseLoadtype(lavaInfo, res, &loadType);
 
-    coglink_parseCleanup(lavaInfo, song);
+    switch(loadType) {
+      case COGLING_LOADTYPE_SEARCH_RESULT: {
+        struct lavaParsedTrack *song;
+        coglink_parseTrack(lavaInfo, res, "0", &song);
+        coglink_playSong(lavaInfo, song->track, message->guild_id);
+
+        coglink_parseTrackCleanup(lavaInfo, song);
+        break;
+      }
+      // You can add handler to other loadTypes here.
+      default:
+        log_error("Unknown loadtype");
+        break;
+    }
+
     coglink_searchCleanup(res);
   }
   if (0 == strcmp(".stop", message->content)) {
