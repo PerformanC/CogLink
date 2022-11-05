@@ -11,13 +11,13 @@ void coglink_playSong(struct lavaInfo lavaInfo, char *track, u64snowflake guildI
 }
 
 void coglink_stopPlayer(struct lavaInfo lavaInfo, u64snowflake guildID) {
-  char payload[128];
+  char payload[64];
   sprintf(payload, "{\"op\":\"stop\",\"guildId\":\"%"PRIu64"\"}", guildID);
   __coglink_sendPayload(&lavaInfo, payload, "stop");
 }
 
 void coglink_pausePlayer(struct lavaInfo lavaInfo, u64snowflake guildID, char *pause) {
-  char payload[128];
+  char payload[64];
   sprintf(payload, "{\"op\":\"pause\",\"guildId\":\"%"PRIu64"\",\"pause\":%s}", guildID, pause);
   __coglink_sendPayload(&lavaInfo, payload, "pause");
 }
@@ -35,7 +35,7 @@ void coglink_setPlayerVolume(struct lavaInfo lavaInfo, u64snowflake guildID, cha
 }
 
 void coglink_destroyPlayer(struct lavaInfo lavaInfo, u64snowflake guildID) {
-  char payload[128];
+  char payload[64];
   sprintf(payload, "{\"op\":\"destroy\",\"guildId\":\"%"PRIu64"\"}", guildID);
   __coglink_sendPayload(&lavaInfo, payload, "destroy");
 }
