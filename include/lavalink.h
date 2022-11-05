@@ -40,6 +40,8 @@ struct coglinkDebugging {
   int sendPayloadSuccessDebugging;
   int checkParseErrorsDebugging;
   int checkParseSuccessDebugging;
+  int getCachedUserVoiceIdErrorsDebugging;
+  int getCachedUserVoiceIdSuccessDebugging;
   int joinVoiceDebugging;
   int jsmnfErrorsDebugging;
   int jsmnfSuccessDebugging;
@@ -47,8 +49,14 @@ struct coglinkDebugging {
   int handleSchedulerVoiceServerDebugging;
   int chashErrorsDebugging;
   int chashSuccessDebugging;
-  int parseSearchErrorsDebugging;
-  int parseSearchSuccessDebugging;
+  int parseTrackErrorsDebugging;
+  int parseTrackSuccessDebugging;
+  int parsePlaylistErrorsDebugging;
+  int parsePlaylistSuccessDebugging;
+  int parseErrorErrorsDebugging;
+  int parseErrorSuccessDebugging;
+  int parseLoadtypeErrorsDebugging;
+  int parseLoadtypeSuccessDebugging;
   int searchSongErrorsDebugging;
   int searchSongSuccessDebugging;
   int curlErrorsDebugging;
@@ -63,9 +71,10 @@ struct lavaInfo {
   uint64_t tstamp;
   struct lavaNode node;
   struct coglinkDebugging *debugging;
+  int allowJoinVoiceCaching;
 };
 
-struct lavaSong {
+struct lavaParsedTrack {
   char *track;
   char *identifier;
   char *isSeekable;
@@ -76,6 +85,16 @@ struct lavaSong {
   char *title;
   char *uri;
   char *sourceName;
+};
+
+struct lavaParsedPlaylist {
+  char *name;
+  char *selectedTrack;
+};
+
+struct lavaParsedError {
+  char *message;
+  char *severity;
 };
 
 struct lavaEvents {
@@ -97,6 +116,26 @@ struct lavaEvents {
   void (*onUnknownOp)(char *op, const char *text);
 };
 
+#define STRING_TABLE_HEAP 1
+#define STRING_TABLE_BUCKET struct StringBucket
+#define STRING_TABLE_HASH(key, hash) chash_string_hash(key, hash)
+#define STRING_TABLE_FREE_KEY(key) NULL
+#define STRING_TABLE_FREE_VALUE(value)// free(value)
+#define STRING_TABLE_COMPARE(cmp_a, cmp_b) (0 == strcmp(cmp_a, cmp_b))//chash_string_compare(cmp_a, cmp_b)
+#define STRING_TABLE_INIT(bucket, _key, _value) chash_default_init(bucket, _key, _value)
+
+struct StringBucket {
+  char *key;
+  char *value;
+  int state;
+};
+
+struct StringHashtable {
+  int length;
+  int capacity;
+  struct StringBucket *buckets;
+};
+
 void onConnectEvent(void *data, struct websockets *ws, struct ws_info *info, const char *protocols);
 
 void onCloseEvent(void *data, struct websockets *ws, struct ws_info *info, enum ws_close_reason wscode, const char *reason, size_t len);
@@ -106,6 +145,8 @@ void onTextEvent(void *data, struct websockets *ws, struct ws_info *info, const 
 void coglink_wsLoop(struct lavaInfo *lavaInfo);
 
 void coglink_joinVoiceChannel(struct lavaInfo lavaInfo, struct discord *client, u64snowflake voiceChannelId, u64snowflake guildId);
+
+int coglink_getCachedUserVoiceId(struct lavaInfo lavaInfo, char *userId, char **voiceId);
 
 int coglink_handleScheduler(struct lavaInfo *lavaInfo, struct discord *client, const char data[], size_t size, enum discord_gateway_events event);
 
