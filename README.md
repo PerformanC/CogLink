@@ -15,11 +15,13 @@ Even without proof, it's fast, built with performance in mind, always. Any type 
 
 ## Status
 
-Sadly, it's not recommended for production for now, in some days, it's expected to get more functions and better stability, for now, you can use it to have some fun, but **DO NOT USE IT IN PRODUCTION**.
+Coglink can be used in production, what so ever it's not recommended for big bots since stability is the #1. Coglink is still in development and major updates are still expected to improve user experience. If you want to contribute, feel free to open a pull request. And would be awesome if you could let me know if you already made a bot with Coglink, please let me know at my Discord, `Pedro.js#9446`.
 
 ## Credits
 
 This library wouldn't be possible without [Cogmaster](https://discord.gg/YcaK3puy49)'s guild members, they helped me all the way through, and special thanks to `müller#1001`, Concord's lead developer, without him, nothing of this would be possible, thank you! ❤️
+
+Yep, me, the lead developer, or the single developer of this library, what so ever I got a lot of help from other people to make possible this library, thanks.
 
 ## Dependencies
 
@@ -27,10 +29,6 @@ This library wouldn't be possible without [Cogmaster](https://discord.gg/YcaK3pu
 * `jsmn-find` included on Concord 2.2.0
 * `jsmn` included on Concord 2.2.0
 * `Concord's websocket` 2.2.0
-* `libcurl` latest
-* `libssl` latest
-* `libcrypto` latest
-* `libpthread` latest
 
 *Tested on:* Ubuntu 22.04.1 x64
 
@@ -73,4 +71,14 @@ And then, compile your project with the additional flag: `-lcoglink`.
 
 ## Documentation/Guides (Quick start)
 
-We don't have a documentation, but you can take on the guides and see what is the need since there will have everything briefly explained.
+We don't have documentation, but you can take on the guides and see what is the need since there will have everything briefly explained.
+
+## Why this library? Why have I created it?
+
+Concord, an awesome Discord wrapper, with not have the attention it should deserve, so I saw that no Lavalink wrappers were made for it, and neither were made with C, so since I already created a Lavalink powered bot with Concord, I decided that a lot of people should meet Concord, and also see how powerful C can be, blazingly fast and with its awesome low-level control.
+
+I'm not an expert at C, but I do what I can do, I'll help if I'm able to, and if I can make Concord deserve what it should get, I'll do it.
+
+I also know that this library is far away from being as famous as some JS libraries like erela.js, which was archived, but being famous here it's not the point, the point here is to help.
+
+If you are currently using Coglink, please let me know, would be an honor to see people use this little project. :)
