@@ -116,14 +116,6 @@ struct lavaEvents {
   void (*onUnknownOp)(char *op, const char *text);
 };
 
-#define STRING_TABLE_HEAP 1
-#define STRING_TABLE_BUCKET struct StringBucket
-#define STRING_TABLE_HASH(key, hash) chash_string_hash(key, hash)
-#define STRING_TABLE_FREE_KEY(key) NULL
-#define STRING_TABLE_FREE_VALUE(value)// free(value)
-#define STRING_TABLE_COMPARE(cmp_a, cmp_b) (0 == strcmp(cmp_a, cmp_b))//chash_string_compare(cmp_a, cmp_b)
-#define STRING_TABLE_INIT(bucket, _key, _value) chash_default_init(bucket, _key, _value)
-
 struct StringBucket {
   char *key;
   char *value;
