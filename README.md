@@ -82,3 +82,7 @@ I'm not an expert at C, but I do what I can do, I'll help if I'm able to, and if
 I also know that this library is far away from being as famous as some JS libraries like erela.js, which was archived, but being famous here it's not the point, the point here is to help.
 
 If you are currently using Coglink, please let me know, would be an honor to see people use this little project. :)
+
+## Support
+
+If you need any support, feel absolutely free to ask for help in our [Discor server](https://discord.gg/uPveNfTuCJ). No one starts knowing everything, and we are here to help you. ^^

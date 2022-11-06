@@ -40,8 +40,6 @@ struct coglinkDebugging {
   int sendPayloadSuccessDebugging;
   int checkParseErrorsDebugging;
   int checkParseSuccessDebugging;
-  int getCachedUserVoiceIdErrorsDebugging;
-  int getCachedUserVoiceIdSuccessDebugging;
   int joinVoiceDebugging;
   int jsmnfErrorsDebugging;
   int jsmnfSuccessDebugging;
