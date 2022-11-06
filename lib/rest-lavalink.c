@@ -36,7 +36,7 @@ int coglink_searchSong(struct lavaInfo lavaInfo, char *song, struct httpRequest 
   CURL *curl = curl_easy_init();
   char *songEncoded = curl_easy_escape(curl, song, strlen(song));
 
-  char lavaURL[1024];
+  char lavaURL[strlen(lavaInfo.node.hostname) + strlen(song) + 40];
   if (lavaInfo.node.ssl) snprintf(lavaURL, sizeof(lavaURL), "https://%s/loadtracks?identifier=", lavaInfo.node.hostname);
   else snprintf(lavaURL, sizeof(lavaURL), "http://%s/loadtracks?identifier=", lavaInfo.node.hostname);
 
