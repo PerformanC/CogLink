@@ -124,7 +124,7 @@ void onTextEvent(void *data, struct websockets *ws, struct ws_info *info, const 
           jsmnf_pair *message = jsmnf_find_path(pairs, text, path, 2);
           if (__coglink_checkParse(lavaInfo, message, "message") != COGLINK_PROCEED) return;
 
-          char Message[216];
+          char Message[128];
           snprintf(Message, sizeof(Message), "%.*s", (int)message->v.len, text + message->v.pos);
 
           path[1] = "severity";
@@ -138,7 +138,7 @@ void onTextEvent(void *data, struct websockets *ws, struct ws_info *info, const 
           jsmnf_pair *cause = jsmnf_find_path(pairs, text, path, 2);
           if (__coglink_checkParse(lavaInfo, cause, "cause") != COGLINK_PROCEED) return;
 
-          char Cause[512];
+          char Cause[256];
           snprintf(Cause, sizeof(Cause), "%.*s", (int)cause->v.len, text + cause->v.pos);
 
           if (lavaInfo->events->onTrackException) lavaInfo->events->onTrackException(Track, Message, Severity, Cause, strtoull(guildId, NULL, 10));
@@ -170,13 +170,13 @@ void onTextEvent(void *data, struct websockets *ws, struct ws_info *info, const 
           jsmnf_pair *reason = jsmnf_find(pairs, text, "reason", 6);
           if (__coglink_checkParse(lavaInfo, reason, "reason") != COGLINK_PROCEED) return;
 
-          char Reason[216];
+          char Reason[128];
           snprintf(Reason, sizeof(Reason), "%.*s", (int)reason->v.len, text + reason->v.pos);
 
           jsmnf_pair *byRemote = jsmnf_find(pairs, text, "byRemote", 8);
           if (__coglink_checkParse(lavaInfo, byRemote, "byRemote") != COGLINK_PROCEED) return;
 
-          char ByRemote[8];
+          char ByRemote[TRUE_FALSE_LENGTH];
           snprintf(ByRemote, sizeof(ByRemote), "%.*s", (int)byRemote->v.len, text + byRemote->v.pos);
 
           if (lavaInfo->events->onWebSocketClosed) lavaInfo->events->onWebSocketClosed(atoi(Code), Reason, ByRemote, strtoull(guildId, NULL, 10));
@@ -290,13 +290,13 @@ void onTextEvent(void *data, struct websockets *ws, struct ws_info *info, const 
       jsmnf_pair *time = jsmnf_find_path(pairs, text, path, 2);
       if (__coglink_checkParse(lavaInfo, time, "time") != COGLINK_PROCEED) return;
 
-      char Time[32];
+      char Time[16];
       snprintf(Time, sizeof(Time), "%.*s", (int)time->v.len, text + time->v.pos);
 
       path[1] = "position";
       jsmnf_pair *position = jsmnf_find_path(pairs, text, path, 2);
 
-      char Position[32];
+      char Position[16];
       if (position) snprintf(Position, sizeof(Position), "%.*s", (int)position->v.len, text + position->v.pos);
       else snprintf(Position, sizeof(Position), "NULL");
 
@@ -304,15 +304,14 @@ void onTextEvent(void *data, struct websockets *ws, struct ws_info *info, const 
       jsmnf_pair *connected = jsmnf_find_path(pairs, text, path, 2);
       if (__coglink_checkParse(lavaInfo, connected, "connected") != COGLINK_PROCEED) return;
 
-      char Connected[8];
+      char Connected[TRUE_FALSE_LENGTH];
       snprintf(Connected, sizeof(Connected), "%.*s", (int)connected->v.len, text + connected->v.pos);
 
       path[1] = "ping";
       jsmnf_pair *ping = jsmnf_find_path(pairs, text, path, 2);
-      if (__coglink_checkParse(lavaInfo, ping, "ping") != COGLINK_PROCEED) return;
-
+      
       char Ping[8];
-      snprintf(Ping, sizeof(Ping), "%.*s", (int)ping->v.len, text + ping->v.pos);
+      if (ping) snprintf(Ping, sizeof(Ping), "%.*s", (int)ping->v.len, text + ping->v.pos);
 
       if (lavaInfo->events->onPlayerUpdate) lavaInfo->events->onPlayerUpdate(atoi(Time), atoi(Position), Connected, atoi(Ping), strtoull(guildId, NULL, 10));
       break;
@@ -332,15 +331,15 @@ void coglink_wsLoop(struct lavaInfo *lavaInfo) {
   ws_easy_run(lavaInfo->ws, 5, &lavaInfo->tstamp);
 }
 
-void coglink_joinVoiceChannel(struct lavaInfo lavaInfo, struct discord *client, u64snowflake voiceChannelId, u64snowflake guildId) {
+void coglink_joinVoiceChannel(const struct lavaInfo *lavaInfo, struct discord *client, u64snowflake voiceChannelId, u64snowflake guildId) {
   char joinVCPayload[512];
   snprintf(joinVCPayload, sizeof(joinVCPayload), "{\"op\":4,\"d\":{\"guild_id\":%"PRIu64",\"channel_id\":\"%"PRIu64"\",\"self_mute\":false,\"self_deaf\":true}}", guildId, voiceChannelId);
 
   if (!ws_send_text(client->gw.ws, NULL, joinVCPayload, strlen(joinVCPayload))) {
-    if (lavaInfo.debugging->allDebugging || lavaInfo.debugging->sendPayloadErrorsDebugging) log_fatal("[coglink:libcurl] Something went wrong while sending a payload with op 4 to Discord.");
+    if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->sendPayloadErrorsDebugging) log_fatal("[coglink:libcurl] Something went wrong while sending a payload with op 4 to Discord.");
     return;
   } else {
-    if (lavaInfo.debugging->allDebugging || lavaInfo.debugging->sendPayloadSuccessDebugging) log_debug("[coglink:libcurl] Successfully sent the payload with op 4 to Discord.");
+    if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->sendPayloadSuccessDebugging) log_debug("[coglink:libcurl] Successfully sent the payload with op 4 to Discord.");
   }
 }
 
@@ -464,10 +463,10 @@ int coglink_handleScheduler(struct lavaInfo *lavaInfo, struct discord *client, c
 
       if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->handleSchedulerVoiceServerDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_debug("[coglink:jsmn-find] Successfully found the sessionID in the hashtable.");
   
-      char VUP[1024];
-      snprintf(VUP, sizeof(VUP), "{\"op\":\"voiceUpdate\",\"guildId\":\"%s\",\"sessionId\":\"%s\",\"event\":%.*s}", guildId, sessionID, (int)size, data);
+      char payload[512];
+      snprintf(payload, sizeof(payload), "{\"op\":\"voiceUpdate\",\"guildId\":\"%s\",\"sessionId\":\"%s\",\"event\":%.*s}", guildId, sessionID, (int)size, data);
 
-      __coglink_sendPayload(lavaInfo, VUP, "voiceUpdate");
+     __coglink_sendPayload(lavaInfo, payload, "voiceUpdate");
     } return DISCORD_EVENT_IGNORE;
     default:
       return DISCORD_EVENT_MAIN_THREAD;
@@ -497,7 +496,7 @@ void coglink_setEvents(struct lavaInfo *lavaInfo, struct lavaEvents *lavaEvents)
   lavaInfo->events = lavaEvents;
 }
 
-int coglink_connectNode(struct lavaInfo *lavaInfo, struct lavaNode node) {
+int coglink_connectNode(struct lavaInfo *lavaInfo, struct discord *client, struct lavaNode *node) {
   struct ws_callbacks callbacks = {
     .on_text = &onTextEvent,
     .on_connect = &onConnectEvent,
@@ -510,18 +509,18 @@ int coglink_connectNode(struct lavaInfo *lavaInfo, struct lavaNode node) {
   CURLM *mhandle = curl_multi_init();
   struct websockets *ws = ws_init(&callbacks, mhandle, NULL);
 
-  char hostname[strlen(node.hostname) + 7];
-  if (node.ssl) snprintf(hostname, sizeof(hostname), "wss://%s", node.hostname);
-  else snprintf(hostname, sizeof(hostname), "ws://%s", node.hostname);
+  char hostname[strlen(node->hostname) + 7];
+  if (node->ssl) snprintf(hostname, sizeof(hostname), "wss://%s", node->hostname);
+  else snprintf(hostname, sizeof(hostname), "ws://%s", node->hostname);
 
   ws_set_url(ws, hostname, NULL);
 
   ws_start(ws);
 
-  ws_add_header(ws, "Authorization", node.password);
-  ws_add_header(ws, "Num-Shards", node.shards);
-  ws_add_header(ws, "User-Id", node.botId);
-  ws_add_header(ws, "Client-Name", "coglink");
+  ws_add_header(ws, "Authorization", node->password);
+  ws_add_header(ws, "Num-Shards", node->shards);
+  ws_add_header(ws, "User-Id", node->botId);
+  ws_add_header(ws, "Client-Name", "Coglink");
 
   lavaInfo->mhandle = mhandle;
   lavaInfo->ws = ws;
