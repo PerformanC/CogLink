@@ -69,7 +69,6 @@ struct lavaInfo {
   uint64_t tstamp;
   struct lavaNode node;
   struct coglinkDebugging *debugging;
-  int allowJoinVoiceCaching;
 };
 
 struct lavaParsedTrack {
@@ -134,9 +133,7 @@ void onTextEvent(void *data, struct websockets *ws, struct ws_info *info, const 
 
 void coglink_wsLoop(struct lavaInfo *lavaInfo);
 
-void coglink_joinVoiceChannel(struct lavaInfo lavaInfo, struct discord *client, u64snowflake voiceChannelId, u64snowflake guildId);
-
-int coglink_getCachedUserVoiceId(struct lavaInfo lavaInfo, char *userId, char **voiceId);
+void coglink_joinVoiceChannel(struct lavaInfo *lavaInfo, struct discord *client, u64snowflake voiceChannelId, u64snowflake guildId);
 
 int coglink_handleScheduler(struct lavaInfo *lavaInfo, struct discord *client, const char data[], size_t size, enum discord_gateway_events event);
 
@@ -146,6 +143,6 @@ void coglink_disconnectNode(struct lavaInfo *lavaInfo);
 
 void coglink_connectNodeCleanup(struct lavaInfo *lavaInfo);
 
-int coglink_connectNode(struct lavaInfo *lavaInfo, struct lavaNode node);
+int coglink_connectNode(struct lavaInfo *lavaInfo, struct lavaNode *node);
 
 #endif

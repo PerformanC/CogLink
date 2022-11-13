@@ -55,7 +55,7 @@ void onUnknownEvent(char *type, const char *text, u64snowflake guildId) {
 void onStats(int playingPlayers, struct lavaMemory *infoMemory, int players, struct lavaFStats *infoFrameStats, struct lavaCPU *infoCPU, int uptime) {
   printf("InfoMemory:\n  > Free: %s\n  > Used: %s\n  > Reservable: %s\n", infoMemory->free, infoMemory->used, infoMemory->reservable);
   printf("InfoCPU:\n  > Cores: %s\n  > SystemLoad: %s\n  > LavalinkLoad: %s\n", infoCPU->cores, infoCPU->systemLoad, infoCPU->lavalinkLoad);
-  if (infoFrameStats->sent) printf("InfoFrameStats:\n  > Sent: %s\n  > Nulled: %s\n  > Deficit: %s\n", infoFrameStats->sent, infoFrameStats->nulled, infoFrameStats->deficit);
+  if (0 == strcmp(infoFrameStats->sent, "\0")) printf("InfoFrameStats:\n  > Sent: %s\n  > Nulled: %s\n  > Deficit: %s\n", infoFrameStats->sent, infoFrameStats->nulled, infoFrameStats->deficit);
   printf("PlayingPlayers; %d\nPlayers: %d\nUptime: %d\n", playingPlayers, players, uptime);
 }
 
@@ -106,56 +106,160 @@ void on_message(struct discord *client, const struct discord_message *message) {
   if (0 == strncmp(".play ", message->content, 6)) {
     char *songName = message->content + 6;
 
-    coglink_joinVoiceChannel(lavaInfo, client, VOICE_ID, message->guild_id);
+    if (songName[0] == '\0') {
+      struct discord_embed embed[] = {
+        {
+          .description = "Sorry, you must put a music name after the command.",
+          .footer =
+            &(struct discord_embed_footer){
+              .text = "Powered by Coglink and Concord",
+              .icon_url = "https://raw.githubusercontent.com/Cogmasters/concord/master/docs/static/concord-small.png",
+            },
+          .timestamp = discord_timestamp(client),
+          .color = 16711680
+        }
+      };
+
+      struct discord_create_message params = {
+        .flags = 0,
+        .embeds =
+          &(struct discord_embeds){
+            .size = 1,
+            .array = embed,
+          },
+      };
+
+      discord_create_message(client, message->channel_id, &params, NULL);
+      return;
+    }
 
     struct httpRequest res;
-    coglink_searchSong(lavaInfo, songName, &res);
+    coglink_searchSong(&lavaInfo, songName, &res);
 
     int loadType;
 
-    coglink_parseLoadtype(lavaInfo, res, &loadType);
+    coglink_parseLoadtype(&lavaInfo, res, &loadType);
 
     switch(loadType) {
-      case COGLING_LOADTYPE_SEARCH_RESULT: {
+      case COGLINK_LOADTYPE_SEARCH_RESULT: {
         struct lavaParsedTrack *song;
-        coglink_parseTrack(lavaInfo, res, "0", &song);
-        coglink_playSong(lavaInfo, song->track, message->guild_id);
+        coglink_parseTrack(&lavaInfo, res, "0", &song);
+        coglink_playSong(&lavaInfo, song->track, message->guild_id);
 
-        coglink_parseTrackCleanup(lavaInfo, song);
+        char Message[256];
+        sprintf(Message, "Now playing `%s` from `%s`", song->title, song->author);
+
+        struct discord_embed embed[] = {
+          {
+            .title = song->title,
+            .url = song->uri,
+            .description = Message,
+            .footer =
+              &(struct discord_embed_footer){
+                .text = "Powered by Coglink and Concord",
+                .icon_url = "https://raw.githubusercontent.com/Cogmasters/concord/master/docs/static/concord-small.png",
+            },
+            .timestamp = discord_timestamp(client),
+            .color = 15615
+          }
+        };
+
+        struct discord_create_message params = {
+          .flags = 0,
+          .embeds =
+            &(struct discord_embeds){
+              .size = 1,
+              .array = embed,
+            },
+        };
+
+        discord_create_message(client, message->channel_id, &params, NULL);
+
+        coglink_parseTrackCleanup(&lavaInfo, song);
         break;
       }
-      // You can add handler to other loadTypes here.
-      default:
-        log_error("Unknown loadtype");
+      case COGLINK_LOADTYPE_NO_MATCHES: {
+        struct discord_embed embed[] = {
+          {
+            .description = "Hmmm... Lavalink was unable to find that music. :/",
+            .footer =
+              &(struct discord_embed_footer){
+                .text = "Powered by Coglink and Concord",
+                .icon_url = "https://raw.githubusercontent.com/Cogmasters/concord/master/docs/static/concord-small.png",
+              },
+            .timestamp = discord_timestamp(client),
+            .color = 16711680
+          }
+        };
+
+        struct discord_create_message params = {
+          .flags = 0,
+          .embeds =
+            &(struct discord_embeds){
+              .size = 1,
+              .array = embed,
+            },
+        };
+
+        discord_create_message(client, message->channel_id, &params, NULL);
         break;
+      }
+      case COGLINK_LOADTYPE_LOAD_FAILED: { 
+        struct discord_embed embed[] = {
+          {
+            .description = "Oop- Some wild error happened while searching the music, what so ever, it is not a Coglink error, but a Lavalink one, phew!",
+            .footer =
+              &(struct discord_embed_footer){
+                .text = "Powered by Coglink and Concord",
+                .icon_url = "https://raw.githubusercontent.com/Cogmasters/concord/master/docs/static/concord-small.png",
+              },
+            .timestamp = discord_timestamp(client),
+            .color = 16711680
+          }
+        };
+
+        struct discord_create_message params = {
+          .flags = 0,
+          .embeds =
+            &(struct discord_embeds){
+              .size = 1,
+              .array = embed,
+            },
+        };
+
+        discord_create_message(client, message->channel_id, &params, NULL);
+        break;
+      }
     }
+
+    coglink_joinVoiceChannel(&lavaInfo, client, VOICE_ID, message->guild_id);
 
     coglink_searchCleanup(res);
   }
   if (0 == strcmp(".stop", message->content)) {
-    coglink_stopPlayer(lavaInfo, message->guild_id);
+    coglink_stopPlayer(&lavaInfo, message->guild_id);
   }
   if (0 == strcmp(".pause", message->content)) {
-    coglink_pausePlayer(lavaInfo, message->guild_id, "true");
+    coglink_pausePlayer(&lavaInfo, message->guild_id, "true");
   }
   if (0 == strcmp(".resume", message->content)) {
-    coglink_pausePlayer(lavaInfo, message->guild_id, "false");
+    coglink_pausePlayer(&lavaInfo, message->guild_id, "false");
   }
   if (0 == strncmp(".seek ", message->content, 6)) {
     char *seek = message->content + 6;
 
-    coglink_seekTrack(lavaInfo, message->guild_id, seek);
+    coglink_seekTrack(&lavaInfo, message->guild_id, seek);
   }
   if (0 == strncmp(".volume ", message->content, 8)) {
     char *volume = message->content + 8;
 
-    coglink_setPlayerVolume(lavaInfo, message->guild_id, volume);
+    coglink_setPlayerVolume(&lavaInfo, message->guild_id, volume);
   }
   if (0 == strcmp(".destroy", message->content)) {
-    coglink_destroyPlayer(lavaInfo, message->guild_id);
+    coglink_destroyPlayer(&lavaInfo, message->guild_id);
   }
   if (0 == strcmp(".closeNode", message->content)) {
-    coglink_disconnectNode(lavaInfo);
+    coglink_disconnectNode(&lavaInfo);
   }
 }
 
