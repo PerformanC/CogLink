@@ -1,36 +1,18 @@
 # Coglink
 
-## About it
+## About
 
-Coglink (not defined yet, name idea by `ap8650#5478`, AKA HackerSmacker), the firsts [Concord](https://github.com/Cogmasters/concord)'s specific Lavalink wrapper, still trying to be low-level, where you can control a lot of things, and still with the amazing Concord's function design.
+Coglink is a C99 Lavalink wrapper, with semi-full coverage of all Lavalink functions and features, allowing you to easily connect to a Lavalink server and use Lavalink features.
 
-## Why?
-
-Coglink provides simple, still really customizable, functions for you to control whatever you want, and still with ease.
-Also uses a lot of Concord's pre-installed libraries, being considered fully standard (as you would need Concord in any type of way to run it).
-
-## Performance
-
-Even without proof, it's fast, built with performance in mind, always. Any type of performance issue can be reported and will be fixed in the best way possible, but we aren't going to sacrifice stability to get more performance, don't worry.
+The performance of Coglink isn't a thing you should be worried about, it provides high performance with a low memory footprint.
 
 ## Status
 
-Coglink can be used in production, what so ever it's not recommended for big bots since stability is the #1. Coglink is still in development and major updates are still expected to improve user experience. If you want to contribute, feel free to open a pull request. And would be awesome if you could let me know if you already made a bot with Coglink, please let me know at my Discord, `Pedro.js#9446`.
+While Coglink isn't fully stable, you can still use it in private bots and such, but I wouldn't recommend using it in a public bot since it still has many bugs that could be capable of causing a segmentation fault.
 
 ## Credits
 
-This library wouldn't be possible without [Cogmaster](https://discord.gg/YcaK3puy49)'s guild members, they helped me all the way through, and special thanks to `müller#1001`, Concord's lead developer, without him, nothing of this would be possible, thank you! ❤️
-
-Yep, me, the lead developer, or the single developer of this library, what so ever I got a lot of help from other people to make possible this library, thanks.
-
-## Dependencies
-
-* `Concord (master/dev)` 2.2.0
-* `jsmn-find` included on Concord 2.2.0
-* `jsmn` included on Concord 2.2.0
-* `Concord's websocket` 2.2.0
-
-*Tested on:* Ubuntu 22.04.1 x64
+Even thought I'm the single maintainer of Coglink, I got a lot of help, thanks [Cogmaster](https://discord.gg/YcaK3puy49)'s guild members for this. And special thanks to `müller#1001`, Concord's lead developer, without him, nothing of this would be possible, thank you! ❤️
 
 ## Installation
 
@@ -40,18 +22,28 @@ This library is not available on any package manager, so you will need to compil
 
 ### Compiling
 
-First, you will need to install the dependencies, you can do it with the following command (Debian based OSes):
+First of all, you need to install the dependencies, you can do it with the following command:
 
 ```console
-$ apt install -y make clang git
+// Debian based OSes:
+# apt install -y make clang git
+
+// Arch linux:
+# pacman -S make clang git
 ```
 
-*This is supposed you already have Concord installed on your machine, this library was made and optimized for Concord.*
-
-Then, you will clone this repository, and compile it:
+Then, you need to clone the repository:
 
 ```console
-$ git clone https://github.com/ThePedroo/Coglink && cd Coglink && make && make install
+$ git clone https://github.com/ThePedroo/Coglink
+```
+
+*Coglink was made with Concord to be used with Concord, so it's already expected to you have Concord installed.*
+
+Then, after cloning the repository, you will need to compile it:
+
+```console
+$ cd Coglink && make && make install
 ```
 
 The `make` command will compile Coglink files and the `make install` will include the library on your system, so you can use it on your projects.
@@ -69,7 +61,7 @@ To use Coglink, you will need to include it on your project, you can do it with 
 
 And then, compile your project with the additional flag: `-lcoglink`.
 
-## Documentation/Guides (Quick start)
+## Documentation/Guides (Quickstart)
 
 We don't have documentation, but you can take on the guides and see what is the need since there will have everything briefly explained.
 
@@ -85,4 +77,13 @@ If you are currently using Coglink, please let me know, would be an honor to see
 
 ## Support
 
-If you need any support, feel absolutely free to ask for help in our [Discor server](https://discord.gg/uPveNfTuCJ). No one starts knowing everything, and we are here to help you. ^^
+If you need any support, feel absolutely free to ask for help on our [Discord server](https://discord.gg/uPveNfTuCJ). No one starts knowing everything, and we are here to help you. ^^
+
+## Dependencies
+
+* `Concord (master/dev)` 2.2.0
+* `jsmn-find` included on Concord 2.2.0
+* `jsmn` included on Concord 2.2.0
+* `Concord's websocket` 2.2.0
+
+*Tested on:* Ubuntu 22.04.1 x64, Arch Linux x64
