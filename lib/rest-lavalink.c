@@ -36,9 +36,9 @@ int coglink_searchSong(struct lavaInfo *lavaInfo, char *song, struct httpRequest
   CURL *curl = curl_easy_init();
   char *songEncoded = curl_easy_escape(curl, song, strlen(song));
 
-  char lavaURL[strlen(lavaInfo->node.hostname) + strlen(song) + 40];
-  if (lavaInfo->node.ssl) snprintf(lavaURL, sizeof(lavaURL), "https://%s/loadtracks?identifier=", lavaInfo->node.hostname);
-  else snprintf(lavaURL, sizeof(lavaURL), "http://%s/loadtracks?identifier=", lavaInfo->node.hostname);
+  char lavaURL[strlen(lavaInfo->node->hostname) + strlen(song) + 40];
+  if (lavaInfo->node->ssl) snprintf(lavaURL, sizeof(lavaURL), "https://%s/loadtracks?identifier=", lavaInfo->node->hostname);
+  else snprintf(lavaURL, sizeof(lavaURL), "http://%s/loadtracks?identifier=", lavaInfo->node->hostname);
 
   if (0 != strncmp(songEncoded, "https://", 8)) strncat(lavaURL, "ytsearch:", sizeof(lavaURL) - 1);
   strncat(lavaURL, songEncoded, sizeof(lavaURL) - 1);
@@ -64,9 +64,9 @@ int coglink_searchSong(struct lavaInfo *lavaInfo, char *song, struct httpRequest
 
   struct curl_slist *chunk = NULL;
     
-  if (lavaInfo->node.password) {
+  if (lavaInfo->node->password) {
     char AuthorizationH[256];
-    snprintf(AuthorizationH, sizeof(AuthorizationH), "Authorization: %s", lavaInfo->node.password);
+    snprintf(AuthorizationH, sizeof(AuthorizationH), "Authorization: %s", lavaInfo->node->password);
     chunk = curl_slist_append(chunk, AuthorizationH);
 
     if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->searchSongSuccessDebugging || lavaInfo->debugging->curlSuccessDebugging) log_debug("[coglink:libcurl] Authorization header set.");

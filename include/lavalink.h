@@ -67,7 +67,7 @@ struct lavaInfo {
   CURLM *mhandle;
   struct websockets *ws;
   uint64_t tstamp;
-  struct lavaNode node;
+  struct lavaNode *node;
   struct coglinkDebugging *debugging;
 };
 

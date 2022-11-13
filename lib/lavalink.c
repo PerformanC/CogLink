@@ -331,7 +331,7 @@ void coglink_wsLoop(struct lavaInfo *lavaInfo) {
   ws_easy_run(lavaInfo->ws, 5, &lavaInfo->tstamp);
 }
 
-void coglink_joinVoiceChannel(const struct lavaInfo *lavaInfo, struct discord *client, u64snowflake voiceChannelId, u64snowflake guildId) {
+void coglink_joinVoiceChannel(struct lavaInfo *lavaInfo, struct discord *client, u64snowflake voiceChannelId, u64snowflake guildId) {
   char joinVCPayload[512];
   snprintf(joinVCPayload, sizeof(joinVCPayload), "{\"op\":4,\"d\":{\"guild_id\":%"PRIu64",\"channel_id\":\"%"PRIu64"\",\"self_mute\":false,\"self_deaf\":true}}", guildId, voiceChannelId);
 
@@ -381,7 +381,7 @@ int coglink_handleScheduler(struct lavaInfo *lavaInfo, struct discord *client, c
       char userId[USER_ID_LENGTH];
       snprintf(userId, USER_ID_LENGTH, "%.*s", (int)VUI->v.len, data + VUI->v.pos);
 
-      if (0 == strcmp(userId, lavaInfo->node.botId)) {
+      if (0 == strcmp(userId, lavaInfo->node->botId)) {
         jsmnf_pair *SSI = jsmnf_find(pairs, data, "session_id", 10);
         if (__coglink_checkParse(lavaInfo, SSI, "session_id") != COGLINK_PROCEED) return DISCORD_EVENT_IGNORE;
 
@@ -496,7 +496,7 @@ void coglink_setEvents(struct lavaInfo *lavaInfo, struct lavaEvents *lavaEvents)
   lavaInfo->events = lavaEvents;
 }
 
-int coglink_connectNode(struct lavaInfo *lavaInfo, struct discord *client, struct lavaNode *node) {
+int coglink_connectNode(struct lavaInfo *lavaInfo, struct lavaNode *node) {
   struct ws_callbacks callbacks = {
     .on_text = &onTextEvent,
     .on_connect = &onConnectEvent,
