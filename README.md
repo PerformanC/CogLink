@@ -1,3 +1,5 @@
+<iframe src="https://discord.com/widget?id=1036045973039890522&theme=dark" width="350" height="500" allowtransparency="true" frameborder="0" sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts"></iframe>
+
 # Coglink
 
 ## About
@@ -8,7 +10,9 @@ The performance of Coglink isn't a thing you should be worried about, it provide
 
 ## Status
 
-While Coglink isn't fully stable, you can still use it in private bots and such, but I wouldn't recommend using it in a public bot since it still has many bugs that could be capable of causing a segmentation fault.
+In Ubuntu, Arch Linux, Termux, if properly compiled, it is considered as stable, at least the common functions. Other OSes are not considered stable and needs testing, it is already confirmed that Coglink doesn't work in FreeBSD, at least for now! 
+
+If any bug, please make an issue at GitHub and I'll try to fix ASAP.
 
 ## Credits
 
@@ -16,9 +20,9 @@ Even thought I'm the single maintainer of Coglink, I got a lot of help, thanks [
 
 ## Installation
 
-This library is not available on any package manager, so you will need to compile it yourself, but don't worry, it's really easy.
+This library is not available on any package manager, so you will need to compile it yourself, but don't worry, it's deadly easy.
 
-*This library was tested on Linux Ubuntu only, modifications on Makefile to compile on other OSes are probably needed, but the code will PROBABLY not change.*
+*This library was compiled and tested (with no modifications to any file to work) in Ubuntu and Arch Linux, in FreeBSD and Termux requires you to change the PREFIX or include the /usr/local/..., in Termux for you need to change PREFIX and include it. This may be required to other OSes.*
 
 ### Compiling
 
@@ -30,6 +34,9 @@ First of all, you need to install the dependencies, you can do it with the follo
 
 // Arch linux:
 # pacman -S make clang git
+
+// FreeBSD/Termux:
+# pkg install make clang git
 ```
 
 Then, you need to clone the repository:
@@ -42,8 +49,10 @@ $ git clone https://github.com/ThePedroo/Coglink
 
 Then, after cloning the repository, you will need to compile it:
 
+*Note that on FreeBSD systems, you will need to add to the compiler default directories /usr/local/..., since by default, it is not added into it on FreeBSD.*
+
 ```console
-$ cd Coglink && make && make install
+# cd Coglink && make && make install
 ```
 
 The `make` command will compile Coglink files and the `make install` will include the library on your system, so you can use it on your projects.
@@ -86,4 +95,6 @@ If you need any support, feel absolutely free to ask for help on our [Discord se
 * `jsmn` included on Concord 2.2.0
 * `Concord's websocket` 2.2.0
 
-*Tested on:* Ubuntu 22.04.1 x64, Arch Linux x64
+*Tested on:* Ubuntu 22.04.1 x64, Arch Linux x64, Termux Aarch64 (Android 12)
+
+*Bugs with:* FreeBSD 13.1 (in chash functions | may also affect other versions)

@@ -4,15 +4,15 @@ PREFIX := /usr/local
 LIBDIR := $(PREFIX)/lib
 INCLUDEDIR := $(PREFIX)/include/coglink
 
-CFLAGS := -Wall -Wextra -Wpedantic -Ofast -Wno-incompatible-pointer-types
-LDFLAGS := -std=gnu99 -ldiscord -lcurl -pthread
+CFLAGS := -Wall -Wextra -Wpedantic -Wno-incompatible-pointer-types
+LDFLAGS := -std=gnu99 -I$(PREFIX)/include
 
 all:
-	@ sudo mkdir -p $(INCLUDEDIR)
-	sudo cp include/* $(INCLUDEDIR)
-	$(CC) -c $(CFLAGS) $(LDFLAGS) -fpic lib/*.c
+	@ mkdir -p $(INCLUDEDIR)
+	cp include/* $(INCLUDEDIR)
+	$(CC) -c $(CFLAGS) $(LDFLAGS) -Ofast -fpic lib/*.c
 	ar qv libcoglink.a *.o
 	rm -rf *.o
 
 install:
-	sudo mv libcoglink.a $(LIBDIR)
+	mv libcoglink.a $(LIBDIR)
