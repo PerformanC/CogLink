@@ -97,7 +97,7 @@ struct lavaParsedError {
 struct lavaEvents {
   // BASICS
   int (*onRaw)(struct lavaInfo *lavaInfo, const char *data, size_t length);
-  void (*onConnect)();
+  void (*onConnect)(void);
   void (*onClose)(enum ws_close_reason wscode, const char *reason);
   // EVENTS
   void (*onTrackStart)(char *track, u64snowflake guildId);
@@ -124,6 +124,8 @@ struct StringHashtable {
   int capacity;
   struct StringBucket *buckets;
 };
+
+struct ws_info;
 
 void onConnectEvent(void *data, struct websockets *ws, struct ws_info *info, const char *protocols);
 
