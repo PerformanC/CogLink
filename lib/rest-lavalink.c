@@ -11,7 +11,7 @@
 
 #include <coglink/lavalink.h>
 #include <coglink/lavalink-internal.h>
-#include <coglink/definations.h>
+#include <coglink/definitions.h>
 
 size_t __coglink_WriteMemoryCallback(void *contents, size_t size, size_t nmemb, void *userp) {
   size_t writeSize = size * nmemb;
@@ -35,19 +35,22 @@ int coglink_searchSong(struct lavaInfo *lavaInfo, char *song, struct httpRequest
   curl_global_init(CURL_GLOBAL_ALL);
 
   CURL *curl = curl_easy_init();
-  char *songEncoded = curl_easy_escape(curl, song, strlen(song));
+  char *songEncoded = curl_easy_escape(curl, song, strnlen(song) + 1);
 
-  char lavaURL[strlen(lavaInfo->node->hostname) + strlen(song) + 40];
+  char lavaURL[strnlen(lavaInfo->node->hostname) + strnlen(song) + 40];
   if (lavaInfo->node->ssl) snprintf(lavaURL, sizeof(lavaURL), "https://%s/loadtracks?identifier=", lavaInfo->node->hostname);
   else snprintf(lavaURL, sizeof(lavaURL), "http://%s/loadtracks?identifier=", lavaInfo->node->hostname);
 
-  if (0 != strncmp(songEncoded, "https://", 8)) strncat(lavaURL, "ytsearch:", sizeof(lavaURL) - 1);
-  strncat(lavaURL, songEncoded, sizeof(lavaURL) - 1);
+  if (0 != strncmp(songEncoded, "https://", 8)) strlcat(lavaURL, "ytsearch:", sizeof(lavaURL));
+  strlcat(lavaURL, songEncoded, sizeof(lavaURL));
 
   curl_free(songEncoded);
 
   if (!curl) {
     if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->curlErrorsDebugging) log_fatal("[coglink:libcurl] Error while initializing libcurl.");
+
+    curl_global_cleanup();
+
     return COGLINK_LIBCURL_FAILED_INITIALIZE;
   }
 
@@ -60,6 +63,11 @@ int coglink_searchSong(struct lavaInfo *lavaInfo, char *song, struct httpRequest
 
   if (cRes != CURLE_OK) {
     if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->curlErrorsDebugging) log_fatal("[coglink:libcurl] curl_easy_setopt [1] failed: %s\n", curl_easy_strerror(cRes));
+
+    curl_easy_cleanup(curl);
+    curl_global_cleanup();
+    free(req.body);
+
     return COGLINK_LIBCURL_FAILED_SETOPT;
   }
 
@@ -81,24 +89,48 @@ int coglink_searchSong(struct lavaInfo *lavaInfo, char *song, struct httpRequest
   cRes = curl_easy_setopt(curl, CURLOPT_HTTPHEADER, chunk);
   if (cRes != CURLE_OK) {
     if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->searchSongErrorsDebugging || lavaInfo->debugging->curlErrorsDebugging) log_fatal("[coglink:libcurl] curl_easy_setopt [2] failed: %s\n", curl_easy_strerror(cRes));
+
+    curl_easy_cleanup(curl);
+    curl_slist_free_all(chunk);
+    curl_global_cleanup();
+    free(req.body);
+
     return COGLINK_LIBCURL_FAILED_SETOPT;
   } 
 
   cRes = curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, __coglink_WriteMemoryCallback);
   if (cRes != CURLE_OK) {
     if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->searchSongErrorsDebugging || lavaInfo->debugging->curlErrorsDebugging) log_fatal("[coglink:libcurl] curl_easy_setopt [3] failed: %s\n", curl_easy_strerror(cRes));
+
+    curl_easy_cleanup(curl);
+    curl_slist_free_all(chunk);
+    curl_global_cleanup();
+    free(req.body);
+
     return COGLINK_LIBCURL_FAILED_SETOPT;
   }
 
   cRes = curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&req);
   if (cRes != CURLE_OK) {
     if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->searchSongErrorsDebugging || lavaInfo->debugging->curlErrorsDebugging) log_fatal("[coglink:libcurl] curl_easy_setopt [4] failed: %s\n", curl_easy_strerror(cRes));
+ 
+    curl_easy_cleanup(curl);
+    curl_slist_free_all(chunk);
+    curl_global_cleanup();
+    free(req.body);
+
     return COGLINK_LIBCURL_FAILED_SETOPT;
   }
 
   cRes = curl_easy_perform(curl);
   if (cRes != CURLE_OK) {
     if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->searchSongErrorsDebugging || lavaInfo->debugging->curlErrorsDebugging) log_fatal("[coglink:libcurl] curl_easy_perform failed: %s\n", curl_easy_strerror(cRes));
+
+    curl_easy_cleanup(curl);
+    curl_slist_free_all(chunk);
+    curl_global_cleanup();
+    free(req.body);
+
     return COGLINK_LIBCURL_FAILED_PERFORM;
   }
 
@@ -239,7 +271,7 @@ int coglink_parseTrack(const struct lavaInfo *lavaInfo, struct httpRequest req, 
     return COGLINK_JSMNF_ERROR_FIND;
   }
 
-  char Track[TRACK_LENGTH], Identifier[16], IsSeekable[TRUE_FALSE_LENGTH], Author[32], Length[16], IsStream[TRUE_FALSE_LENGTH], Position[16], Title[128], Uri[32], SourceName[16];
+  char Track[TRACK_LENGTH], Identifier[IDENTIFIER_LENGTH], IsSeekable[TRUE_FALSE_LENGTH], Author[AUTHOR_NAME_LENGTH], Length[VIDEO_LENGTH], IsStream[TRUE_FALSE_LENGTH], Position[VIDEO_LENGTH], Title[TRACK_TITLE_LENGTH], Uri[URL_LENGTH], SourceName[SOURCENAME_LENGTH];
 
   snprintf(Track, sizeof(Track), "%.*s", (int)track->v.len, req.body + track->v.pos);
   snprintf(Identifier, sizeof(Identifier), "%.*s", (int)identifier->v.len, req.body + identifier->v.pos);
@@ -256,31 +288,31 @@ int coglink_parseTrack(const struct lavaInfo *lavaInfo, struct httpRequest req, 
 
   struct lavaParsedTrack *song = malloc(sizeof(struct lavaParsedTrack));
 
-  song->track = malloc(sizeof(Track) + 1);
-  song->identifier = malloc(sizeof(Identifier) + 1);
-  song->isSeekable = malloc(sizeof(IsSeekable) + 1);
-  song->author = malloc(sizeof(Author) + 1);
-  song->length = malloc(sizeof(Length) + 1);
-  song->isStream = malloc(sizeof(IsStream) + 1);
-  song->position = malloc(sizeof(Position) + 1);
-  song->title = malloc(sizeof(Title) + 1);
-  song->uri = malloc(sizeof(Uri) + 1);
-  song->sourceName = malloc(sizeof(SourceName) + 1);
+  song->track = malloc(sizeof(Track));
+  song->identifier = malloc(sizeof(Identifier));
+  song->isSeekable = malloc(sizeof(IsSeekable));
+  song->author = malloc(sizeof(Author));
+  song->length = malloc(sizeof(Length));
+  song->isStream = malloc(sizeof(IsStream));
+  song->position = malloc(sizeof(Position));
+  song->title = malloc(sizeof(Title));
+  song->uri = malloc(sizeof(Uri));
+  song->sourceName = malloc(sizeof(SourceName));
 
   if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-malloc] Allocated %d bytes for song structure.", sizeof(struct lavaParsedTrack) + sizeof(Track) + sizeof(Identifier) + sizeof(IsSeekable) + sizeof(Author) + sizeof(Length) + sizeof(IsStream) + sizeof(Position) + sizeof(Title) + sizeof(Uri) + sizeof(SourceName) + 10);
 
-  strncpy(song->track, Track, sizeof(Track) + 1);
-  strncpy(song->identifier, Identifier, sizeof(Identifier) + 1);
-  strncpy(song->isSeekable, IsSeekable, sizeof(IsSeekable) + 1);
-  strncpy(song->author, Author, sizeof(Author) + 1);
-  strncpy(song->length, Length, sizeof(Length) + 1);
-  strncpy(song->isStream, IsStream, sizeof(IsStream) + 1);
-  strncpy(song->position, Position, sizeof(Position) + 1);
-  strncpy(song->title, Title, sizeof(Title) + 1);
-  strncpy(song->uri, Uri, sizeof(Uri) + 1);
-  strncpy(song->sourceName, SourceName, sizeof(SourceName) + 1);
+  strlcpy(song->track, Track, TRACK_LENGTH);
+  strlcpy(song->identifier, Identifier, IDENTIFIER_LENGTH);
+  strlcpy(song->isSeekable, IsSeekable, TRUE_FALSE_LENGTH);
+  strlcpy(song->author, Author, AUTHOR_NAME_LENGTH);
+  strlcpy(song->length, Length, VIDEO_LENGTH);
+  strlcpy(song->isStream, IsStream, TRUE_FALSE_LENGTH);
+  strlcpy(song->position, Position, VIDEO_LENGTH);
+  strlcpy(song->title, Title, TRACK_TITLE_LENGTH);
+  strlcpy(song->uri, Uri, URL_LENGTH);
+  strlcpy(song->sourceName, SourceName, SOURCENAME_LENGTH);
 
-  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-strncpy] Copied %d bytes to song structure.", sizeof(Track) + sizeof(Identifier) + sizeof(IsSeekable) + sizeof(Author) + sizeof(Length) + sizeof(IsStream) + sizeof(Position) + sizeof(Title) + sizeof(Uri) + sizeof(SourceName) + 10);
+  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-strlcpy] Copied %d bytes to song structure.", sizeof(Track) + sizeof(Identifier) + sizeof(IsSeekable) + sizeof(Author) + sizeof(Length) + sizeof(IsStream) + sizeof(Position) + sizeof(Title) + sizeof(Uri) + sizeof(SourceName) + 10);
 
   *songStruct = song;
 
@@ -334,15 +366,15 @@ int coglink_parsePlaylist(const struct lavaInfo *lavaInfo, struct httpRequest re
 
   struct lavaParsedPlaylist *playlist = malloc(sizeof(struct lavaParsedPlaylist));
 
-  playlist->name = malloc(sizeof(Name) + 1);
-  playlist->selectedTrack = malloc(sizeof(SelectedTrack) + 1);
+  playlist->name = malloc(sizeof(Name));
+  playlist->selectedTrack = malloc(sizeof(SelectedTrack));
 
   if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-malloc] Allocated %d bytes for playlist structure.", sizeof(struct lavaParsedPlaylist) + sizeof(Name) + sizeof(SelectedTrack) + 2);
 
-  strncpy(playlist->name, Name, sizeof(Name) + 1);
-  strncpy(playlist->selectedTrack, SelectedTrack, sizeof(SelectedTrack) + 1);
+  strlcpy(playlist->name, Name, PLAYLIST_NAME_LENGTH);
+  strlcpy(playlist->selectedTrack, SelectedTrack, 8);
 
-  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-strncpy] Copied %d bytes to playlist structure.", sizeof(Name) + sizeof(SelectedTrack) + 2);
+  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-strlcpy] Copied %d bytes to playlist structure.", sizeof(Name) + sizeof(SelectedTrack) + 2);
 
   *playlistStruct = playlist;
 
@@ -396,15 +428,15 @@ int coglink_parseError(const struct lavaInfo *lavaInfo, struct httpRequest req, 
 
   struct lavaParsedError *error = malloc(sizeof(struct lavaParsedError));
 
-  error->message = malloc(sizeof(Message) + 1);
-  error->severity = malloc(sizeof(Severity) + 1);
+  error->message = malloc(sizeof(Message));
+  error->severity = malloc(sizeof(Severity));
 
   if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-malloc] Allocated %d bytes for error structure.", sizeof(struct lavaParsedError) + sizeof(Message) + sizeof(Severity) + 2);
 
-  strncpy(error->message, Message, sizeof(Message) + 1);
-  strncpy(error->severity, Severity, sizeof(Severity) + 1);
+  strlcpy(error->message, Message, 128);
+  strlcpy(error->severity, Severity, 16);
 
-  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-strncpy] Copied %d bytes to error structure.", sizeof(Message) + sizeof(Severity) + 2);
+  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-strlcpy] Copied %d bytes to error structure.", sizeof(Message) + sizeof(Severity) + 2);
 
   *errorStruct = error;
 
