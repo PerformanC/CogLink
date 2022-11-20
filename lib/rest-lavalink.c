@@ -34,10 +34,12 @@ size_t __coglink_WriteMemoryCallback(void *contents, size_t size, size_t nmemb, 
 int coglink_searchSong(struct lavaInfo *lavaInfo, char *song, struct httpRequest *res) {
   curl_global_init(CURL_GLOBAL_ALL);
 
-  CURL *curl = curl_easy_init();
-  char *songEncoded = curl_easy_escape(curl, song, strnlen(song) + 1);
+  int songLen = strnlen(song, 2000);
 
-  char lavaURL[strnlen(lavaInfo->node->hostname) + strnlen(song) + 40];
+  CURL *curl = curl_easy_init();
+  char *songEncoded = curl_easy_escape(curl, song, songLen + 1);
+
+  char lavaURL[strnlen(lavaInfo->node->hostname, 128) + songLen + 40];
   if (lavaInfo->node->ssl) snprintf(lavaURL, sizeof(lavaURL), "https://%s/loadtracks?identifier=", lavaInfo->node->hostname);
   else snprintf(lavaURL, sizeof(lavaURL), "http://%s/loadtracks?identifier=", lavaInfo->node->hostname);
 

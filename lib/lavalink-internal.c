@@ -6,8 +6,8 @@
 #include <coglink/lavalink.h>
 #include <coglink/definitions.h>
 
-void __coglink_sendPayload(struct lavaInfo *lavaInfo, char payload[], char *payloadOP) {
-  if (ws_send_text(lavaInfo->ws, NULL, payload, strnlen(payload)) == false) {
+void __coglink_sendPayload(struct lavaInfo *lavaInfo, char payload[], int payloadMaxSize, char *payloadOP) {
+  if (ws_send_text(lavaInfo->ws, NULL, payload, strnlen(payload, payloadMaxSize)) == false) {
     if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->sendPayloadErrorsDebugging) log_fatal("[coglink:libcurl] Something went wrong while sending a payload with op %s to Lavalink.", payloadOP);
     return;
   } else {

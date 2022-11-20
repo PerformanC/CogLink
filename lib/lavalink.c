@@ -335,7 +335,7 @@ void coglink_joinVoiceChannel(struct lavaInfo *lavaInfo, struct discord *client,
   char joinVCPayload[512];
   snprintf(joinVCPayload, sizeof(joinVCPayload), "{\"op\":4,\"d\":{\"guild_id\":%"PRIu64",\"channel_id\":\"%"PRIu64"\",\"self_mute\":false,\"self_deaf\":true}}", guildId, voiceChannelId);
 
-  if (!ws_send_text(client->gw.ws, NULL, joinVCPayload, strnlen(joinVCPayload))) {
+  if (!ws_send_text(client->gw.ws, NULL, joinVCPayload, strnlen(joinVCPayload, 512))) {
     if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->sendPayloadErrorsDebugging) log_fatal("[coglink:libcurl] Something went wrong while sending a payload with op 4 to Discord.");
     return;
   } else {
@@ -466,7 +466,7 @@ int coglink_handleScheduler(struct lavaInfo *lavaInfo, struct discord *client, c
       char payload[512];
       snprintf(payload, sizeof(payload), "{\"op\":\"voiceUpdate\",\"guildId\":\"%s\",\"sessionId\":\"%s\",\"event\":%.*s}", guildId, sessionID, (int)size, data);
 
-     __coglink_sendPayload(lavaInfo, payload, "voiceUpdate");
+     __coglink_sendPayload(lavaInfo, payload, sizeof(payload), "voiceUpdate");
     } return DISCORD_EVENT_IGNORE;
     default:
       return DISCORD_EVENT_MAIN_THREAD;
@@ -509,7 +509,7 @@ int coglink_connectNode(struct lavaInfo *lavaInfo, struct lavaNode *node) {
   CURLM *mhandle = curl_multi_init();
   struct websockets *ws = ws_init(&callbacks, mhandle, NULL);
 
-  char hostname[strnlen(node->hostname) + 7];
+  char hostname[strnlen(node->hostname, 128) + 7];
   if (node->ssl) snprintf(hostname, sizeof(hostname), "wss://%s", node->hostname);
   else snprintf(hostname, sizeof(hostname), "ws://%s", node->hostname);
 
