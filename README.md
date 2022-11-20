@@ -90,11 +90,13 @@ If you need any support, feel absolutely free to ask for help on our [Discord se
 
 ## Dependencies
 
+* `libcurl` >= 7.56.1
 * `Concord (master/dev)` 2.2.0
-* `jsmn-find` included on Concord 2.2.0
-* `jsmn` included on Concord 2.2.0
 * `Concord's websocket` 2.2.0
+* `jsmn-find` (included on Concord 2.2.0)
+* `jsmn` (included on Concord 2.2.0)
+* `chash` (included on Concord 2.2.0)
 
-*Tested on:* Ubuntu 22.04.1 x64, Arch Linux x64, Termux Aarch64 (Android 12)
+*Tested on:* Ubuntu 22.04.1 x64, Arch Linux x64, Termux Aarch64 (Android 12), Void Linux latest x64
 
 *Bugs with:* FreeBSD 13.1 (in chash functions | may also affect other versions)

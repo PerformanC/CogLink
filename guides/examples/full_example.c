@@ -8,7 +8,7 @@
 #include <coglink/lavalink.h>
 #include <coglink/rest-lavalink.h>
 #include <coglink/player.h>
-#include <coglink/definations.h>
+#include <coglink/definitions.h>
 
 #define VOICE_ID 123456789012345678
 int onRaw(struct lavaInfo *lavaInfo, const char *text, size_t length) {
@@ -254,6 +254,9 @@ void on_message(struct discord *client, const struct discord_message *message) {
     char *volume = message->content + 8;
 
     coglink_setPlayerVolume(&lavaInfo, message->guild_id, volume);
+  }
+  if (0 == strcmp(message->content, ".8d")) {
+    coglink_setEffect(&lavaInfo, message->guild_id, FILTER_ROTATION, "0.2");
   }
   if (0 == strcmp(".destroy", message->content)) {
     coglink_destroyPlayer(&lavaInfo, message->guild_id);

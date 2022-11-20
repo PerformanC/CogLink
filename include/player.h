@@ -13,4 +13,6 @@ void coglink_setPlayerVolume(const struct lavaInfo *lavaInfo, u64snowflake guild
 
 void coglink_destroyPlayer(const struct lavaInfo *lavaInfo, u64snowflake guildID);
 
+void coglink_setEffect(const struct lavaInfo *lavaInfo, u64snowflake guildID, int effect, char *value);
+
 #endif
