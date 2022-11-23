@@ -432,9 +432,8 @@ enum discord_event_scheduler __coglink_handleScheduler(struct discord *client, c
       if (r < 0) {
         if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->handleSchedulerVoiceServerDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_error("[jsmn-find] Failed to parse JSON.");
         return DISCORD_EVENT_IGNORE;
-      } else {
-        if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->handleSchedulerVoiceServerDebugging || lavaInfo->debugging->jsmnfSuccessDebugging) log_debug("[jsmn-find] Successfully parsed JSON.");
       }
+      if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->handleSchedulerVoiceServerDebugging || lavaInfo->debugging->jsmnfSuccessDebugging) log_debug("[jsmn-find] Successfully parsed JSON.");
 
       jsmnf_loader loader;
       jsmnf_pair pairs[128];
@@ -445,9 +444,8 @@ enum discord_event_scheduler __coglink_handleScheduler(struct discord *client, c
       if (r < 0) {
         if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->handleSchedulerVoiceServerDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_error("[coglink:jsmn-find] Failed to load jsmn-find.");
         return DISCORD_EVENT_IGNORE;
-      } else {
-        if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->handleSchedulerVoiceServerDebugging || lavaInfo->debugging->jsmnfSuccessDebugging) log_debug("[coglink:jsmn-find] Successfully loaded jsmn-find.");
       }
+      if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->handleSchedulerVoiceServerDebugging || lavaInfo->debugging->jsmnfSuccessDebugging) log_debug("[coglink:jsmn-find] Successfully loaded jsmn-find.");
 
       jsmnf_pair *VGI = jsmnf_find(pairs, data, "guild_id", 8);
       if (__coglink_checkParse(lavaInfo, VGI, "guild_id") != COGLINK_PROCEED) return DISCORD_EVENT_IGNORE;
@@ -458,17 +456,15 @@ enum discord_event_scheduler __coglink_handleScheduler(struct discord *client, c
       if (!hashtable) {
         if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->handleSchedulerVoiceServerDebugging || lavaInfo->debugging->chashErrorsDebugging) log_error("[coglink:jsmn-find] The hashtable is not initialized.");
         return DISCORD_EVENT_IGNORE;
-      } else {
-        if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->handleSchedulerVoiceServerDebugging || lavaInfo->debugging->chashSuccessDebugging) log_debug("[coglink:jsmn-find] The hashtable is initialized.");
       }
+      if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->handleSchedulerVoiceServerDebugging || lavaInfo->debugging->chashSuccessDebugging) log_debug("[coglink:jsmn-find] The hashtable is initialized.");
 
       int exists = chash_contains(hashtable, guildId, exists, STRING_TABLE);
       if (0 == exists) {
         if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->handleSchedulerVoiceServerDebugging || lavaInfo->debugging->chashErrorsDebugging) log_error("[coglink:jsmn-find] The hashtable does not contain any data related to the guildId.");
         return DISCORD_EVENT_IGNORE;
-      } else {
-        if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->handleSchedulerVoiceServerDebugging || lavaInfo->debugging->chashSuccessDebugging) log_debug("[coglink:jsmn-find] The hashtable contains the sessionId related to the guildId.");
       }
+      if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->handleSchedulerVoiceServerDebugging || lavaInfo->debugging->chashSuccessDebugging) log_debug("[coglink:jsmn-find] The hashtable contains the sessionId related to the guildId.");
 
       char *sessionID = chash_lookup(hashtable, guildId, sessionID, STRING_TABLE);
 

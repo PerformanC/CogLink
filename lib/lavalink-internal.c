@@ -48,8 +48,6 @@ int __coglink_performRequest(const struct lavaInfo *lavaInfo, int additionalDebu
   if (lavaInfo->node->ssl) snprintf(lavaURL, sizeof(lavaURL), "https://%s%s", lavaInfo->node->hostname, path);
   else snprintf(lavaURL, sizeof(lavaURL), "http://%s%s", lavaInfo->node->hostname, path);
 
-  printf("%s\n", lavaURL);
-
   CURLcode cRes = curl_easy_setopt(curl, CURLOPT_URL, lavaURL);
 
   if (cRes != CURLE_OK) {
@@ -166,17 +164,14 @@ void __coglink_sendPayload(struct lavaInfo *lavaInfo, char payload[], int payloa
   if (ws_send_text(lavaInfo->ws, NULL, payload, strnlen(payload, payloadMaxSize)) == false) {
     if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->sendPayloadErrorsDebugging) log_fatal("[coglink:libcurl] Something went wrong while sending a payload with op %s to Lavalink.", payloadOP);
     return;
-  } else {
-    if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->sendPayloadSuccessDebugging) log_debug("[coglink:libcurl] Successfully sent a payload with op %s to Lavalink.", payloadOP);
-  }
+  } else if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->sendPayloadSuccessDebugging) log_debug("[coglink:libcurl] Successfully sent a payload with op %s to Lavalink.", payloadOP);
 }
 
 int __coglink_checkParse(struct lavaInfo *lavaInfo, jsmnf_pair *field, char *fieldName) {
   if (!field) {
     if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->checkParseErrorsDebugging) log_error("[coglink:jsmn-find] Failed to find %s field.", fieldName);
     return COGLINK_JSMNF_ERROR_FIND;
-  } else {
-    if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->checkParseSuccessDebugging) log_debug("[coglink:jsmn-find] Successfully found %s field.", fieldName);
-    return COGLINK_PROCEED;
   }
+  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->checkParseSuccessDebugging) log_debug("[coglink:jsmn-find] Successfully found %s field.", fieldName);
+  return COGLINK_PROCEED;
 }

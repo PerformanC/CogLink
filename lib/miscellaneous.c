@@ -26,9 +26,8 @@ int coglink_parseDecodeTrack(struct lavaInfo *lavaInfo, struct httpRequest *res,
   if (r < 0) {
     if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseTrackErrorsDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_error("[coglink:jsmn-find] Failed to parse JSON.");
     return COGLINK_JSMNF_ERROR_PARSE;
-  } else {
-    if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseTrackSuccessDebugging || lavaInfo->debugging->jsmnfSuccessDebugging) log_debug("[jsmn-find] Successfully parsed JSON.");
   }
+  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseTrackSuccessDebugging || lavaInfo->debugging->jsmnfSuccessDebugging) log_debug("[jsmn-find] Successfully parsed JSON.");
 
   jsmnf_loader loader;
   jsmnf_pair pairs[512];
@@ -39,9 +38,8 @@ int coglink_parseDecodeTrack(struct lavaInfo *lavaInfo, struct httpRequest *res,
   if (r < 0) {
     if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseTrackErrorsDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_error("[coglink:jsmn-find] Failed to load jsmn-find.");
     return COGLINK_JSMNF_ERROR_LOAD;
-  } else {
-    if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseTrackSuccessDebugging || lavaInfo->debugging->jsmnfSuccessDebugging) log_debug("[coglink:jsmn-find] Successfully loaded jsmn-find.");
   }
+  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseTrackSuccessDebugging || lavaInfo->debugging->jsmnfSuccessDebugging) log_debug("[coglink:jsmn-find] Successfully loaded jsmn-find.");
 
   jsmnf_pair *identifier = jsmnf_find(pairs, res->body, "identifier", 10);
   if (__coglink_checkParse(lavaInfo, identifier, "identifier") != COGLINK_PROCEED) return COGLINK_JSMNF_ERROR_FIND;
@@ -127,9 +125,8 @@ int coglink_parseDecodeTracks(const struct lavaInfo *lavaInfo, struct httpReques
   if (r < 0) {
     if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseTrackErrorsDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_error("[coglink:jsmn-find] Failed to parse JSON.");
     return COGLINK_JSMNF_ERROR_PARSE;
-  } else {
-    if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseTrackSuccessDebugging || lavaInfo->debugging->jsmnfSuccessDebugging) log_debug("[jsmn-find] Successfully parsed JSON.");
   }
+  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseTrackSuccessDebugging || lavaInfo->debugging->jsmnfSuccessDebugging) log_debug("[jsmn-find] Successfully parsed JSON.");
 
   jsmnf_loader loader;
   jsmnf_pair pairs[1024];
@@ -140,9 +137,8 @@ int coglink_parseDecodeTracks(const struct lavaInfo *lavaInfo, struct httpReques
   if (r < 0) {
     if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseTrackErrorsDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_error("[coglink:jsmn-find] Failed to load jsmn-find.");
     return COGLINK_JSMNF_ERROR_LOAD;
-  } else {
-    if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseTrackSuccessDebugging || lavaInfo->debugging->jsmnfSuccessDebugging) log_debug("[coglink:jsmn-find] Successfully loaded jsmn-find.");
   }
+  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseTrackSuccessDebugging || lavaInfo->debugging->jsmnfSuccessDebugging) log_debug("[coglink:jsmn-find] Successfully loaded jsmn-find.");
 
   char *path[] = { songPos, "track", NULL };
   jsmnf_pair *track = jsmnf_find_path(pairs, req->body, path, 2);
@@ -244,9 +240,8 @@ int coglink_parseRouterPlanner(struct lavaInfo *lavaInfo, struct httpRequest *re
   if (r < 0) {
     if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseErrorsDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_error("[coglink:jsmn-find] Failed to parse JSON.");
     return COGLINK_JSMNF_ERROR_PARSE;
-  } else {
-    if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseSuccessDebugging || lavaInfo->debugging->jsmnfSuccessDebugging) log_debug("[jsmn-find] Successfully parsed JSON.");
   }
+  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseSuccessDebugging || lavaInfo->debugging->jsmnfSuccessDebugging) log_debug("[jsmn-find] Successfully parsed JSON.");
 
   jsmnf_loader loader;
   jsmnf_pair pairs[1024];
@@ -257,9 +252,8 @@ int coglink_parseRouterPlanner(struct lavaInfo *lavaInfo, struct httpRequest *re
   if (r < 0) {
     if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseErrorsDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_error("[coglink:jsmn-find] Failed to load jsmn-find.");
     return COGLINK_JSMNF_ERROR_LOAD;
-  } else {
-    if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseSuccessDebugging || lavaInfo->debugging->jsmnfSuccessDebugging) log_debug("[coglink:jsmn-find] Successfully loaded jsmn-find.");
   }
+  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseSuccessDebugging || lavaInfo->debugging->jsmnfSuccessDebugging) log_debug("[coglink:jsmn-find] Successfully loaded jsmn-find.");
 
   jsmnf_pair *class = jsmnf_find(pairs, res->body, "class", 5);
   if (__coglink_checkParse(lavaInfo, class, "class") != COGLINK_PROCEED) return COGLINK_JSMNF_ERROR_FIND;
