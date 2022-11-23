@@ -20,13 +20,13 @@ struct lavaMusic music;
   O terceiro parâmetro, songPos, deve ser a posição da música que você quer dar parse, se você quiser a primeira, então coloque 0.
   O último parâmetro, a livraria vai preencher com as informações da música solicitada.
 */
-int parseRes = coglink_parseTrack(&lavaInfo, res, "0", &song);
+int parseRes = coglink_parseTrack(&lavaInfo, &res, "0", &song);
 
 if (parseRes != 0) {
   log_fatal("Erro dando parse: %d", parseRes);
 }
 
-log_info("Nome da música: %s", song.name);
+log_info("Nome da música: %s", song->name);
 ```
 
 Pronto, agora a estrutura `lavaSong` vai estar com as informações da música.
@@ -42,13 +42,13 @@ for (int i = 0; i < 10; i++) {
   char iString[16];
   snprintf(isString, sizeof(isString), "%d", i); 
 
-  int parseRes = coglink_parseTrack(&lavaInfo, res, isString, &song);
+  int parseRes = coglink_parseTrack(&lavaInfo, &res, isString, &song);
 
   if (parseRes != 0) {
     log_fatal("Erro dando parse na música: %d", parseRes);
   }
 
-  log_info("Nome da música: %s", song.name);
+  log_info("Nome da música: %s", song->name);
 }
 ```
 

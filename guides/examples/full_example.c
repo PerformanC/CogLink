@@ -93,14 +93,6 @@ struct lavaInfo lavaInfo = {
       }
 };
 
-void on_cycle(struct discord *client) {
-  coglink_wsLoop(&lavaInfo);
-}
-
-enum discord_event_scheduler scheduler(struct discord *client, const char data[], size_t size, enum discord_gateway_events event) {
-  return coglink_handleScheduler(&lavaInfo, client, data, size, event);
-}
-
 void on_message(struct discord *client, const struct discord_message *message) {
   if (message->author->bot) return;
   if (0 == strncmp(".play ", message->content, 6)) {
@@ -138,12 +130,12 @@ void on_message(struct discord *client, const struct discord_message *message) {
 
     int loadType;
 
-    coglink_parseLoadtype(&lavaInfo, res, &loadType);
+    coglink_parseLoadtype(&lavaInfo, &res, &loadType);
 
     switch(loadType) {
       case COGLINK_LOADTYPE_SEARCH_RESULT: {
         struct lavaParsedTrack *song;
-        coglink_parseTrack(&lavaInfo, res, "0", &song);
+        coglink_parseTrack(&lavaInfo, &res, "0", &song);
         coglink_playSong(&lavaInfo, song->track, message->guild_id);
 
         char Message[256];
@@ -264,6 +256,16 @@ void on_message(struct discord *client, const struct discord_message *message) {
   if (0 == strcmp(".closeNode", message->content)) {
     coglink_disconnectNode(&lavaInfo);
   }
+  if (0 == strcmp(".getplugins", message->content)) {
+    struct httpRequest res;
+
+    coglink_getPlugins(&lavaInfo, &res);
+  }
+  if (0 == strcmp(".getrouter", message->content)) {
+    struct httpRequest res;
+
+    coglink_getRouterPlanner(&lavaInfo, &res);
+  }
 }
 
 int main(void) {
@@ -278,14 +280,12 @@ int main(void) {
     .ssl = 0
   };
 
-  coglink_connectNode(&lavaInfo, &params);
+  coglink_connectNode(&lavaInfo, client, &params);
 
   /* Or to set events, you can also use */
   // coglink_setEvents(&lavaInfo, &lavaInfo->events);
 
   discord_set_on_ready(client, &on_ready);
-  discord_set_on_cycle(client, &on_cycle);
-  discord_set_event_scheduler(client, &scheduler);
   discord_set_on_message_create(client, &on_message);
 
   discord_add_intents(client, DISCORD_GATEWAY_GUILD_VOICE_STATES);
