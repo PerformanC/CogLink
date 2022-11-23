@@ -10,4 +10,6 @@ void __coglink_sendPayload(const struct lavaInfo *lavaInfo, char payload[], int 
 
 int __coglink_checkParse(struct lavaInfo *lavaInfo, jsmnf_pair *field, char *fieldName);
 
+int __coglink_IOPoller(struct io_poller *io, CURLM *multi, void *user_data);
+
 #endif

@@ -148,6 +148,8 @@ void coglink_freeNodeInfo(struct lavaInfo *lavaInfo);
 
 void coglink_disconnectNode(struct lavaInfo *lavaInfo);
 
+void coglink_setEvents(struct lavaInfo *lavaInfo, struct lavaEvents *lavaEvents);
+
 void coglink_connectNodeCleanup(struct lavaInfo *lavaInfo);
 
 int coglink_connectNode(struct lavaInfo *lavaInfo, struct discord *client, struct lavaNode *node);

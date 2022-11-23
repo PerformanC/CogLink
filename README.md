@@ -10,9 +10,9 @@ The performance of Coglink isn't a thing you should be worried about, it provide
 
 ## Status
 
-In Ubuntu, Arch Linux, Termux, if properly compiled, it is considered as stable, at least the common functions. Other OSes are not considered stable and needs testing. 
+**STABLE**
 
-If any bug, please make an issue at GitHub and I'll try to fix ASAP.
+The fix releases (minor changes) are considered stable, as it has been better tested and worked, big changes may cause instability, please avoid always getting the source of big changes. But currently there is no known bug.
 
 ## Credits
 

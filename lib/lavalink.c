@@ -338,22 +338,6 @@ void onTextEvent(void *data, struct websockets *ws, struct ws_info *info, const 
   }
 }
 
-/*
-  EVENTS
-*/
-
-void coglink_joinVoiceChannel(struct lavaInfo *lavaInfo, struct discord *client, u64snowflake voiceChannelId, u64snowflake guildId) {
-  char joinVCPayload[512];
-  snprintf(joinVCPayload, sizeof(joinVCPayload), "{\"op\":4,\"d\":{\"guild_id\":%"PRIu64",\"channel_id\":\"%"PRIu64"\",\"self_mute\":false,\"self_deaf\":true}}", guildId, voiceChannelId);
-
-  if (!ws_send_text(client->gw.ws, NULL, joinVCPayload, strnlen(joinVCPayload, 512))) {
-    if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->sendPayloadErrorsDebugging) log_fatal("[coglink:libcurl] Something went wrong while sending a payload with op 4 to Discord.");
-    return;
-  } else {
-    if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->sendPayloadSuccessDebugging) log_debug("[coglink:libcurl] Successfully sent the payload with op 4 to Discord.");
-  }
-}
-
 enum discord_event_scheduler __coglink_handleScheduler(struct discord *client, const char data[], size_t size, enum discord_gateway_events event) {
   struct lavaInfo *lavaInfo = discord_get_data(client);
   switch(event) {
@@ -480,12 +464,32 @@ enum discord_event_scheduler __coglink_handleScheduler(struct discord *client, c
   }
 }
 
+/*
+  EVENTS
+*/
+
+void coglink_joinVoiceChannel(struct lavaInfo *lavaInfo, struct discord *client, u64snowflake voiceChannelId, u64snowflake guildId) {
+  char joinVCPayload[512];
+  snprintf(joinVCPayload, sizeof(joinVCPayload), "{\"op\":4,\"d\":{\"guild_id\":%"PRIu64",\"channel_id\":\"%"PRIu64"\",\"self_mute\":false,\"self_deaf\":true}}", guildId, voiceChannelId);
+
+  if (!ws_send_text(client->gw.ws, NULL, joinVCPayload, strnlen(joinVCPayload, 512))) {
+    if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->sendPayloadErrorsDebugging) log_fatal("[coglink:libcurl] Something went wrong while sending a payload with op 4 to Discord.");
+    return;
+  } else {
+    if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->sendPayloadSuccessDebugging) log_debug("[coglink:libcurl] Successfully sent the payload with op 4 to Discord.");
+  }
+}
+
 void coglink_freeNodeInfo(struct lavaInfo *lavaInfo) {
   if (lavaInfo) lavaInfo = NULL;
 }
 
 void coglink_disconnectNode(struct lavaInfo *lavaInfo) {
   ws_close(lavaInfo->ws, 1000, "Requested to be closed", sizeof("Requested to be closed"));
+}
+
+void coglink_setEvents(struct lavaInfo *lavaInfo, struct lavaEvents *lavaEvents) {
+  lavaInfo->events = lavaEvents;
 }
 
 void coglink_connectNodeCleanup(struct lavaInfo *lavaInfo) {
@@ -500,41 +504,27 @@ void coglink_connectNodeCleanup(struct lavaInfo *lavaInfo) {
   coglink_freeNodeInfo(lavaInfo);
 }
 
-void coglink_setEvents(struct lavaInfo *lavaInfo, struct lavaEvents *lavaEvents) {
-  lavaInfo->events = lavaEvents;
-}
-
-int __coglink_IOPoller(struct io_poller *io, CURLM *multi, void *user_data) {
-  (void) io; (void) multi;
-  struct discord *client = user_data;
-  struct lavaInfo *lavaInfo = discord_get_data(client);
-  if (lavaInfo->lavaResumeSend) {
-    lavaInfo->lavaResumeSend = 0;
-    char resumeKey[] = { [8] = '\1' };
-    rand_str(resumeKey, sizeof(resumeKey) - 1);
-
-    char payload[57];
-    snprintf(payload, sizeof(payload), "{\"op\":\"configureResuming\",\"key\":\"%s\",\"timeout\":60}", resumeKey);
-
-    __coglink_sendPayload(lavaInfo, payload, sizeof(payload), "configureResuming");
-  }
-  ws_multi_socket_run(lavaInfo->ws, &lavaInfo->tstamp);
-
-  return !ws_multi_socket_run(client->gw.ws, &client->gw.timer->now) ? CCORD_DISCORD_CONNECTION : CCORD_OK;
-}
-
 int coglink_connectNode(struct lavaInfo *lavaInfo, struct discord *client, struct lavaNode *node) {
+  curl_global_init(CURL_GLOBAL_ALL);
+
+  discord_set_data(client, lavaInfo);
+  discord_set_event_scheduler(client, __coglink_handleScheduler);
+
+  lavaInfo->node = node;
+  lavaInfo->tstamp = (uint64_t)0;
+  lavaInfo->mhandle = curl_multi_init();
+
+  struct io_poller *io = discord_get_io_poller(client);
+  io_poller_curlm_add(io, lavaInfo->mhandle, __coglink_IOPoller, lavaInfo);
+  io_poller_curlm_enable_perform(io, lavaInfo->mhandle);
+  lavaInfo->io_poller = io;
+
   struct ws_callbacks callbacks = {
     .on_text = &onTextEvent,
     .on_connect = &onConnectEvent,
     .on_close = &onCloseEvent,
     .data = (void *)lavaInfo
   };
-
-  curl_global_init(CURL_GLOBAL_ALL);
-
-  lavaInfo->mhandle = curl_multi_init();
-
   struct websockets *ws = ws_init(&callbacks, client->gw.mhandle, NULL);
 
   char hostname[strnlen(node->hostname, 128) + 7];
@@ -551,18 +541,6 @@ int coglink_connectNode(struct lavaInfo *lavaInfo, struct discord *client, struc
   ws_add_header(ws, "Client-Name", "Coglink");
 
   lavaInfo->ws = ws;
-  lavaInfo->tstamp = (uint64_t)0;
-  lavaInfo->node = node;
-
-  discord_set_data(client, lavaInfo);
-
-  struct io_poller *io = discord_get_io_poller(client);
-
-  io_poller_curlm_add(io, client->gw.mhandle, __coglink_IOPoller, client);
-
-  lavaInfo->io_poller = io;
-
-  discord_set_event_scheduler(client, __coglink_handleScheduler);
 
   return COGLINK_SUCCESS;
 }

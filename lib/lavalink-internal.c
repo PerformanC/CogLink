@@ -175,3 +175,30 @@ int __coglink_checkParse(struct lavaInfo *lavaInfo, jsmnf_pair *field, char *fie
   if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->checkParseSuccessDebugging) log_debug("[coglink:jsmn-find] Successfully found %s field.", fieldName);
   return COGLINK_PROCEED;
 }
+
+void __coglink_randomString(char *dest, size_t length) {
+  char charset[] = "abcdefghijklmnopqrstuvwxyz";
+
+  while(length-- > 0) {
+    size_t pos = (double) rand() / RAND_MAX * (sizeof(charset) - 1);
+    *dest++ = charset[pos];
+  }
+  *dest = '\0';
+}
+
+int __coglink_IOPoller(struct io_poller *io, CURLM *multi, void *user_data) {
+  (void) io; (void) multi;
+  struct lavaInfo *lavaInfo = user_data;
+  if (lavaInfo->lavaResumeSend) {
+    lavaInfo->lavaResumeSend = 0;
+    char resumeKey[] = { [8] = '\1' };
+
+    __coglink_randomString(resumeKey, sizeof(resumeKey) - 1);
+
+    char payload[57];
+    snprintf(payload, sizeof(payload), "{\"op\":\"configureResuming\",\"key\":\"%s\",\"timeout\":60}", resumeKey);
+
+    __coglink_sendPayload(lavaInfo, payload, sizeof(payload), "configureResuming");
+  }
+  return !ws_multi_socket_run(lavaInfo->ws, &lavaInfo->tstamp) ? COGLINK_WAIT : COGLINK_SUCCESS;
+}
