@@ -4,7 +4,7 @@
 
 ## About
 
-Coglink is a C99 Lavalink wrapper, with semi-full coverage of all Lavalink functions and features, allowing you to easily connect to a Lavalink server and use Lavalink features.
+Coglink is a C99 Lavalink wrapper, with full coverage of all Lavalink functions and features, allowing you to easily connect to a Lavalink server and use Lavalink features.
 
 The performance of Coglink isn't a thing you should be worried about, it provides high performance with a low memory footprint.
 
@@ -66,6 +66,7 @@ To use Coglink, you will need to include it on your project, you can do it with 
 #include <coglink/definitions.h> // The definitions of defines like COGLINK_SUCCESS
 #include <coglink/rest-lavalink.h> // Functions from Coglink that uses Lavalink rest API
 #include <coglink/player.h> // The functions related to the music player
+#include <coglink/miscellaneous.h> // Other functions, like decode track, get router planner and etc
 ```
 
 And then, compile your project with the additional flag: `-lcoglink`.
