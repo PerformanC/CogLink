@@ -1,5 +1,7 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 
 #include <concord/discord.h>
 #include <concord/discord-internal.h>
@@ -26,9 +28,22 @@ struct StringHashtable *hashtable = NULL;
   EVENTS
 */
 
+void rand_str(char* dest, size_t length) {
+  char charset[] = "abcdefghijklmnopqrstuvwxyz";
+
+  while(length-- > 0) {
+    size_t pos = (double) rand() / RAND_MAX * (sizeof(charset) - 1);
+    *dest++ = charset[pos];
+  }
+  *dest = '\0';
+}
+
 void onConnectEvent(void *data, struct websockets *ws, struct ws_info *info, const char *protocols) {
   (void)ws; (void)info; (void)protocols;
   struct lavaInfo *lavaInfo = data;
+
+  if (lavaInfo->allowResuming && !lavaInfo->resumeKey) lavaInfo->lavaResumeSend = 1;
+
   if (lavaInfo->events->onConnect) lavaInfo->events->onConnect();
 }
 
@@ -214,7 +229,7 @@ void onTextEvent(void *data, struct websockets *ws, struct ws_info *info, const 
       jsmnf_pair *lavaFree = jsmnf_find_path(pairs, text, path, 2);
       if (__coglink_checkParse(lavaInfo, lavaFree, "lavaFree") != COGLINK_PROCEED) return;
 
-      snprintf(infoMemory.free, 32, "%.*s", (int)lavaFree->v.len, text + lavaFree->v.pos);
+      snprintf(infoMemory.free, 16, "%.*s", (int)lavaFree->v.len, text + lavaFree->v.pos);
 
       path[1] = "allocated";
       jsmnf_pair *allocated = jsmnf_find_path(pairs, text, path, 2);
@@ -327,10 +342,6 @@ void onTextEvent(void *data, struct websockets *ws, struct ws_info *info, const 
   EVENTS
 */
 
-void coglink_wsLoop(struct lavaInfo *lavaInfo) {
-  ws_easy_run(lavaInfo->ws, 5, &lavaInfo->tstamp);
-}
-
 void coglink_joinVoiceChannel(struct lavaInfo *lavaInfo, struct discord *client, u64snowflake voiceChannelId, u64snowflake guildId) {
   char joinVCPayload[512];
   snprintf(joinVCPayload, sizeof(joinVCPayload), "{\"op\":4,\"d\":{\"guild_id\":%"PRIu64",\"channel_id\":\"%"PRIu64"\",\"self_mute\":false,\"self_deaf\":true}}", guildId, voiceChannelId);
@@ -343,9 +354,9 @@ void coglink_joinVoiceChannel(struct lavaInfo *lavaInfo, struct discord *client,
   }
 }
 
-int coglink_handleScheduler(struct lavaInfo *lavaInfo, struct discord *client, const char data[], size_t size, enum discord_gateway_events event) {
-  (void)client;
-  switch (event) {
+enum discord_event_scheduler __coglink_handleScheduler(struct discord *client, const char data[], size_t size, enum discord_gateway_events event) {
+  struct lavaInfo *lavaInfo = discord_get_data(client);
+  switch(event) {
     case DISCORD_EV_VOICE_STATE_UPDATE: {
       jsmn_parser parser;
       jsmntok_t tokens[256];
@@ -482,6 +493,7 @@ void coglink_disconnectNode(struct lavaInfo *lavaInfo) {
 }
 
 void coglink_connectNodeCleanup(struct lavaInfo *lavaInfo) {
+  io_poller_curlm_del(lavaInfo->io_poller, lavaInfo->mhandle);
   if (hashtable) chash_free(hashtable, STRING_TABLE);
   ws_end(lavaInfo->ws);
   ws_cleanup(lavaInfo->ws);
@@ -496,7 +508,26 @@ void coglink_setEvents(struct lavaInfo *lavaInfo, struct lavaEvents *lavaEvents)
   lavaInfo->events = lavaEvents;
 }
 
-int coglink_connectNode(struct lavaInfo *lavaInfo, struct lavaNode *node) {
+int __coglink_IOPoller(struct io_poller *io, CURLM *multi, void *user_data) {
+  (void) io; (void) multi;
+  struct discord *client = user_data;
+  struct lavaInfo *lavaInfo = discord_get_data(client);
+  if (lavaInfo->lavaResumeSend) {
+    lavaInfo->lavaResumeSend = 0;
+    char resumeKey[] = { [8] = '\1' };
+    rand_str(resumeKey, sizeof(resumeKey) - 1);
+
+    char payload[57];
+    snprintf(payload, sizeof(payload), "{\"op\":\"configureResuming\",\"key\":\"%s\",\"timeout\":60}", resumeKey);
+
+    __coglink_sendPayload(lavaInfo, payload, sizeof(payload), "configureResuming");
+  }
+  ws_multi_socket_run(lavaInfo->ws, &lavaInfo->tstamp);
+
+  return !ws_multi_socket_run(client->gw.ws, &client->gw.timer->now) ? CCORD_DISCORD_CONNECTION : CCORD_OK;
+}
+
+int coglink_connectNode(struct lavaInfo *lavaInfo, struct discord *client, struct lavaNode *node) {
   struct ws_callbacks callbacks = {
     .on_text = &onTextEvent,
     .on_connect = &onConnectEvent,
@@ -506,27 +537,36 @@ int coglink_connectNode(struct lavaInfo *lavaInfo, struct lavaNode *node) {
 
   curl_global_init(CURL_GLOBAL_ALL);
 
-  CURLM *mhandle = curl_multi_init();
-  struct websockets *ws = ws_init(&callbacks, mhandle, NULL);
+  lavaInfo->mhandle = curl_multi_init();
+
+  struct websockets *ws = ws_init(&callbacks, client->gw.mhandle, NULL);
 
   char hostname[strnlen(node->hostname, 128) + 7];
   if (node->ssl) snprintf(hostname, sizeof(hostname), "wss://%s", node->hostname);
   else snprintf(hostname, sizeof(hostname), "ws://%s", node->hostname);
 
   ws_set_url(ws, hostname, NULL);
-
   ws_start(ws);
 
+  if (lavaInfo->resumeKey && lavaInfo->resumeKey[0] != '\0') ws_add_header(ws, "Resume-Key", lavaInfo->resumeKey);
   ws_add_header(ws, "Authorization", node->password);
   ws_add_header(ws, "Num-Shards", node->shards);
   ws_add_header(ws, "User-Id", node->botId);
   ws_add_header(ws, "Client-Name", "Coglink");
 
-  lavaInfo->mhandle = mhandle;
   lavaInfo->ws = ws;
-  uint64_t tstamp = 0;
-  lavaInfo->tstamp = tstamp;
+  lavaInfo->tstamp = (uint64_t)0;
   lavaInfo->node = node;
+
+  discord_set_data(client, lavaInfo);
+
+  struct io_poller *io = discord_get_io_poller(client);
+
+  io_poller_curlm_add(io, client->gw.mhandle, __coglink_IOPoller, client);
+
+  lavaInfo->io_poller = io;
+
+  discord_set_event_scheduler(client, __coglink_handleScheduler);
 
   return COGLINK_SUCCESS;
 }

@@ -12,14 +12,14 @@ struct lavaNode {
   char *password;
   char *shards;
   char *botId;
-  int ssl;
+  _Bool ssl;
 };
 
 struct lavaMemory {
-  char reservable[32];
-  char used[32];
-  char free[32];
-  char allocated[32];
+  char reservable[16];
+  char used[16];
+  char free[16];
+  char allocated[16];
 };
 
 struct lavaFStats {
@@ -35,40 +35,49 @@ struct lavaCPU {
 };
 
 struct coglinkDebugging {
-  int allDebugging;
-  int sendPayloadErrorsDebugging;
-  int sendPayloadSuccessDebugging;
-  int checkParseErrorsDebugging;
-  int checkParseSuccessDebugging;
-  int joinVoiceDebugging;
-  int jsmnfErrorsDebugging;
-  int jsmnfSuccessDebugging;
-  int handleSchedulerVoiceStateDebugging;
-  int handleSchedulerVoiceServerDebugging;
-  int chashErrorsDebugging;
-  int chashSuccessDebugging;
-  int parseTrackErrorsDebugging;
-  int parseTrackSuccessDebugging;
-  int parsePlaylistErrorsDebugging;
-  int parsePlaylistSuccessDebugging;
-  int parseErrorErrorsDebugging;
-  int parseErrorSuccessDebugging;
-  int parseLoadtypeErrorsDebugging;
-  int parseLoadtypeSuccessDebugging;
-  int searchSongErrorsDebugging;
-  int searchSongSuccessDebugging;
-  int curlErrorsDebugging;
-  int curlSuccessDebugging;
-  int memoryDebugging;
+  _Bool allDebugging;
+  _Bool sendPayloadErrorsDebugging;
+  _Bool sendPayloadSuccessDebugging;
+  _Bool checkParseErrorsDebugging;
+  _Bool checkParseSuccessDebugging;
+  _Bool joinVoiceDebugging;
+  _Bool jsmnfErrorsDebugging;
+  _Bool jsmnfSuccessDebugging;
+  _Bool handleSchedulerVoiceStateDebugging;
+  _Bool handleSchedulerVoiceServerDebugging;
+  _Bool chashErrorsDebugging;
+  _Bool chashSuccessDebugging;
+  _Bool parseTrackErrorsDebugging;
+  _Bool parseTrackSuccessDebugging;
+  _Bool parsePlaylistErrorsDebugging;
+  _Bool parsePlaylistSuccessDebugging;
+  _Bool parseErrorsDebugging;
+  _Bool parseSuccessDebugging;
+  _Bool parseLoadtypeErrorsDebugging;
+  _Bool parseLoadtypeSuccessDebugging;
+  _Bool searchSongErrorsDebugging;
+  _Bool searchSongSuccessDebugging;
+  _Bool curlErrorsDebugging;
+  _Bool curlSuccessDebugging;
+  _Bool memoryDebugging;
+};
+
+struct IOPollerVars {
+  struct discord_gateway *gw;
+  struct lavaInfo *lavaInfo;
 };
 
 struct lavaInfo {
-  struct lavaEvents *events;
-  CURLM *mhandle;
-  struct websockets *ws;
-  uint64_t tstamp;
   struct lavaNode *node;
+  struct lavaEvents *events;
+  struct io_poller *io_poller;
+  struct websockets *ws;
+  CURLM *mhandle;
+  uint64_t tstamp;
   struct coglinkDebugging *debugging;
+  _Bool allowResuming;
+  _Bool lavaResumeSend;
+  char *resumeKey;
 };
 
 struct lavaParsedTrack {
@@ -133,11 +142,7 @@ void onCloseEvent(void *data, struct websockets *ws, struct ws_info *info, enum 
 
 void onTextEvent(void *data, struct websockets *ws, struct ws_info *info, const char *text, size_t len);
 
-void coglink_wsLoop(struct lavaInfo *lavaInfo);
-
 void coglink_joinVoiceChannel(struct lavaInfo *lavaInfo, struct discord *client, u64snowflake voiceChannelId, u64snowflake guildId);
-
-int coglink_handleScheduler(struct lavaInfo *lavaInfo, struct discord *client, const char data[], size_t size, enum discord_gateway_events event);
 
 void coglink_freeNodeInfo(struct lavaInfo *lavaInfo);
 
@@ -145,6 +150,6 @@ void coglink_disconnectNode(struct lavaInfo *lavaInfo);
 
 void coglink_connectNodeCleanup(struct lavaInfo *lavaInfo);
 
-int coglink_connectNode(struct lavaInfo *lavaInfo, struct lavaNode *node);
+int coglink_connectNode(struct lavaInfo *lavaInfo, struct discord *client, struct lavaNode *node);
 
 #endif
