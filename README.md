@@ -10,7 +10,7 @@ The performance of Coglink isn't a thing you should be worried about, it provide
 
 ## Status
 
-In Ubuntu, Arch Linux, Termux, if properly compiled, it is considered as stable, at least the common functions. Other OSes are not considered stable and needs testing, it is already confirmed that Coglink doesn't work in FreeBSD, at least for now! 
+In Ubuntu, Arch Linux, Termux, if properly compiled, it is considered as stable, at least the common functions. Other OSes are not considered stable and needs testing. 
 
 If any bug, please make an issue at GitHub and I'll try to fix ASAP.
 
@@ -98,6 +98,4 @@ If you need any support, feel absolutely free to ask for help on our [Discord se
 * `jsmn` (included on Concord 2.2.0)
 * `chash` (included on Concord 2.2.0)
 
-*Tested on:* Ubuntu 22.04.1 x64, Arch Linux x64, Termux Aarch64 (Android 12), Void Linux latest x64
-
-*Bugs with:* FreeBSD 13.1 (in chash functions | may also affect other versions)
+*Tested on:* Ubuntu 22.04.1 x64, Arch Linux x64, Termux Aarch64 (Android 12), Void Linux latest x64, FreeBSD 13.1 x64

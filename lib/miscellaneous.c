@@ -111,8 +111,8 @@ int coglink_parseDecodeTrack(struct lavaInfo *lavaInfo, struct httpRequest *res,
   return COGLINK_SUCCESS;
 }
 
-int coglink_decodeTracks(struct lavaInfo *lavaInfo, char *trackArray, struct httpRequest *res) {
-  return __coglink_performRequest(lavaInfo, lavaInfo->debugging->searchSongSuccessDebugging, lavaInfo->debugging->searchSongErrorsDebugging, "/decodetracks", 14, trackArray, strlen(trackArray), res, 1, NULL);
+int coglink_decodeTracks(struct lavaInfo *lavaInfo, char *trackArray, long trackArrayLength, struct httpRequest *res) {
+  return __coglink_performRequest(lavaInfo, lavaInfo->debugging->searchSongSuccessDebugging, lavaInfo->debugging->searchSongErrorsDebugging, "/decodetracks", 14, trackArray, strnlen(trackArray, 512 * trackArrayLength), res, 1, NULL);
 }
 
 int coglink_parseDecodeTracks(const struct lavaInfo *lavaInfo, struct httpRequest *req, char *songPos, struct lavaParsedTrack **songStruct) {
@@ -456,7 +456,7 @@ int coglink_freeFailingAddress(struct lavaInfo *lavaInfo, char *ip) {
   char payload[32];
   snprintf(payload, sizeof(payload), "{\"address\":\"%s\"}", ip);
 
-  return __coglink_performRequest(lavaInfo, lavaInfo->debugging->curlSuccessDebugging, lavaInfo->debugging->curlErrorsDebugging, "/routeplanner/free/address", 27, payload, (long)strlen(payload), NULL, 0, NULL);
+  return __coglink_performRequest(lavaInfo, lavaInfo->debugging->curlSuccessDebugging, lavaInfo->debugging->curlErrorsDebugging, "/routeplanner/free/address", 27, payload, (long)strnlen(payload, 32), NULL, 0, NULL);
 }
 
 int coglink_freeFailingAllAddresses(struct lavaInfo *lavaInfo) {

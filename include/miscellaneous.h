@@ -33,7 +33,7 @@ int coglink_decodeTrack(struct lavaInfo *lavaInfo, char *track, struct httpReque
 
 int coglink_parseDecodeTrack(struct lavaInfo *lavaInfo, struct httpRequest *res, struct lavaParsedTrack **songStruct);
 
-int coglink_decodeTracks(struct lavaInfo *lavaInfo, char *trackArray, struct httpRequest *res);
+int coglink_decodeTracks(struct lavaInfo *lavaInfo, char *trackArray, long trackArrayLength, struct httpRequest *res);
 
 int coglink_parseDecodeTracks(const struct lavaInfo *lavaInfo, struct httpRequest *req, char *songPos, struct lavaParsedTrack **songStruct);
 
