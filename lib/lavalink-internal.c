@@ -44,7 +44,7 @@ int __coglink_performRequest(const struct lavaInfo *lavaInfo, int additionalDebu
     (*res).size = 0;
   }
 
-  char lavaURL[strnlen(lavaInfo->node->hostname, 128) + 8 + pathLength];
+  char lavaURL[strnlen(lavaInfo->node->hostname, 128) + 9 + pathLength];
   if (lavaInfo->node->ssl) snprintf(lavaURL, sizeof(lavaURL), "https://%s%s", lavaInfo->node->hostname, path);
   else snprintf(lavaURL, sizeof(lavaURL), "http://%s%s", lavaInfo->node->hostname, path);
 
@@ -87,7 +87,7 @@ int __coglink_performRequest(const struct lavaInfo *lavaInfo, int additionalDebu
     return COGLINK_LIBCURL_FAILED_SETOPT;
   } 
 
-  if (getResponse){
+  if (getResponse) {
     cRes = curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, __coglink_WriteMemoryCallback);
     if (cRes != CURLE_OK) {
       if (lavaInfo->debugging->allDebugging || additionalDebuggingError || lavaInfo->debugging->curlErrorsDebugging) log_fatal("[coglink:libcurl] curl_easy_setopt [3] failed: %s\n", curl_easy_strerror(cRes));

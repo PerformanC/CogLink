@@ -16,17 +16,15 @@
 int coglink_searchSong(struct lavaInfo *lavaInfo, char *song, struct httpRequest *res) {
   curl_global_init(CURL_GLOBAL_ALL);
 
-  int songLen = strnlen(song, 2000);
-
   CURL *curl = curl_easy_init();
-  char *songEncoded = curl_easy_escape(curl, song, songLen + 1);
+  char *songEncoded = curl_easy_escape(curl, song, strnlen(song, 2000) + 1);
 
-  char reqPath[songLen + 32];
-  if (lavaInfo->node->ssl) snprintf(reqPath, sizeof(reqPath), "/loadtracks?identifier=");
-  else snprintf(reqPath, sizeof(reqPath), "/loadtracks?identifier=");
+  char reqPath[strnlen(songEncoded, 2000) + 33];
+  snprintf(reqPath, sizeof(reqPath), "/loadtracks?identifier=");
 
   if (0 != strncmp(songEncoded, "https://", 8)) strlcat(reqPath, "ytsearch:", sizeof(reqPath));
   strlcat(reqPath, songEncoded, sizeof(reqPath));
+
 
   curl_free(songEncoded);
 
