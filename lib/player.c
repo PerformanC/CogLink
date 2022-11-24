@@ -45,7 +45,7 @@ void coglink_destroyPlayer(const struct lavaInfo *lavaInfo, u64snowflake guildID
 
 void coglink_setEffect(const struct lavaInfo *lavaInfo, u64snowflake guildID, int effect, char *value) {
   char payload[strnlen(value, 512) + 128];
-  char *effectStr = "VOLUME";
+  char effectStr[11] = "VOLUME";
   switch (effect) {
     case FILTER_VOLUME: {
       snprintf(effectStr, sizeof(effectStr), "volume");
