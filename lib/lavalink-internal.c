@@ -69,6 +69,10 @@ int __coglink_performRequest(const struct lavaInfo *lavaInfo, int additionalDebu
 
     if (lavaInfo->debugging->allDebugging || additionalDebuggingSuccess || lavaInfo->debugging->curlSuccessDebugging) log_debug("[coglink:libcurl] Authorization header set.");
   }
+  if (body) {
+    chunk = curl_slist_append(chunk, "Content-Type: application/json");
+    if (lavaInfo->debugging->allDebugging || additionalDebuggingSuccess || lavaInfo->debugging->curlSuccessDebugging) log_debug("[coglink:libcurl] Content-Type header set.");
+  }
   chunk = curl_slist_append(chunk, "Client-Name: Coglink");
   if (lavaInfo->debugging->allDebugging || additionalDebuggingSuccess || lavaInfo->debugging->curlSuccessDebugging) log_debug("[coglink:libcurl] Client-Name header set.");
 
@@ -85,7 +89,7 @@ int __coglink_performRequest(const struct lavaInfo *lavaInfo, int additionalDebu
     if (getResponse) free((*res).body);
 
     return COGLINK_LIBCURL_FAILED_SETOPT;
-  } 
+  }
 
   if (getResponse) {
     cRes = curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, __coglink_WriteMemoryCallback);
