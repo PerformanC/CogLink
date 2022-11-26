@@ -4,11 +4,16 @@
 struct lavaInfo;
 struct httpRequest;
 
-int __coglink_performRequest(struct lavaInfo *lavaInfo, int additionalDebuggingSuccess, int additionalDebuggingError, char *path, int pathLength, char *body, long bodySize, struct httpRequest *res, int getResponse, CURL *reUsedCurl);
+#define __COGLINK_GET_REQ 0
+#define __COGLINK_POST_REQ 1
+#define __COGLINK_DELETE_REQ 2
+#define __COGLINK_PATCH_REQ 3
 
-void __coglink_sendPayload(const struct lavaInfo *lavaInfo, char payload[], int payloadMaxSize, char *payloadOP);
+int __coglink_performRequest(struct lavaInfo *lavaInfo, int requestType, int additionalDebuggingSuccess, int additionalDebuggingError, char *path, int pathLength, char *body, long bodySize, struct httpRequest *res, int getResponse, CURL *reUsedCurl);
 
 int __coglink_checkParse(struct lavaInfo *lavaInfo, jsmnf_pair *field, char *fieldName);
+
+void __coglink_randomString(char *dest, size_t length);
 
 int __coglink_IOPoller(struct io_poller *io, CURLM *multi, void *user_data);
 

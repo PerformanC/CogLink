@@ -44,23 +44,23 @@ void onTrackStuck(char *track, int thresholdMs, u64snowflake guildId) {
   log_error("[COGLINK] Track stuck. [%s/%d/%"PRIu64"]", track, thresholdMs, guildId);
 }
 
-void onWebSocketClosed(int code, char *reason, char *byRemote, u64snowflake guildId) {
-  log_error("[COGLINK] Websocket closed. [%d/%s/%s/%"PRIu64"]", code, reason, byRemote, guildId);
+void onWebSocketClosed(int code, char *reason, int byRemote, u64snowflake guildId) {
+  log_error("[COGLINK] Websocket closed. [%d/%s/%d/%"PRIu64"]", code, reason, byRemote, guildId);
 }
 
 void onUnknownEvent(char *type, const char *text, u64snowflake guildId) {
   log_error("[COGLINK] Unknown event. [%s/%s/%"PRIu64"]", type, text, guildId);
 }
 
-void onStats(int playingPlayers, struct lavaMemory *infoMemory, int players, struct lavaFStats *infoFrameStats, struct lavaCPU *infoCPU, int uptime) {
-  printf("InfoMemory:\n  > Free: %s\n  > Used: %s\n  > Reservable: %s\n", infoMemory->free, infoMemory->used, infoMemory->reservable);
-  printf("InfoCPU:\n  > Cores: %s\n  > SystemLoad: %s\n  > LavalinkLoad: %s\n", infoCPU->cores, infoCPU->systemLoad, infoCPU->lavalinkLoad);
-  if (0 == strcmp(infoFrameStats->sent, "\0")) printf("InfoFrameStats:\n  > Sent: %s\n  > Nulled: %s\n  > Deficit: %s\n", infoFrameStats->sent, infoFrameStats->nulled, infoFrameStats->deficit);
-  printf("PlayingPlayers; %d\nPlayers: %d\nUptime: %d\n", playingPlayers, players, uptime);
+void onStats(struct lavalinkStats *stats) {
+  printf("InfoMemory:\n  > Free: %s\n  > Used: %s\n  > Reservable: %s\n", stats->memory->free, stats->memory->used, stats->memory->reservable);
+  printf("InfoCPU:\n  > Cores: %s\n  > SystemLoad: %s\n  > LavalinkLoad: %s\n", stats->cpu->cores, stats->cpu->systemLoad, stats->cpu->lavalinkLoad);
+  if (stats->frameStats) printf("InfoFrameStats:\n  > Sent: %s\n  > Nulled: %s\n  > Deficit: %s\n", stats->frameStats->sent, stats->frameStats->nulled, stats->frameStats->deficit);
+  printf("PlayingPlayers: %s\nPlayers: %s\nUptime: %s\n", stats->playingPlayers, stats->players, stats->uptime);
 }
 
-void onPlayerUpdate(int time, int position, char *connected, int ping, u64snowflake guildId) {
-  printf("TIME: %d/ POSITION: %d/ CONNECTED: %s/ PING: %d/ GUILDID: %"PRIu64"\n", time, position, connected, ping, guildId);
+void onPlayerUpdate(float time, int position, int connected, int ping, u64snowflake guildId) {
+  printf("TIME: %f/ POSITION: %d/ CONNECTED: %d/ PING: %d/ GUILDID: %"PRIu64"\n", time, position, connected, ping, guildId);
 }
 
 void onUnknownOp(char *op, const char *text) {

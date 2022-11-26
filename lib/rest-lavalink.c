@@ -28,7 +28,7 @@ int coglink_searchSong(struct lavaInfo *lavaInfo, char *song, struct httpRequest
 
   curl_free(songEncoded);
 
-  return __coglink_performRequest(lavaInfo, lavaInfo->debugging->searchSongSuccessDebugging, lavaInfo->debugging->searchSongErrorsDebugging, reqPath, sizeof(reqPath), NULL, 0, res, 1, curl);
+  return __coglink_performRequest(lavaInfo, __COGLINK_GET_REQ, lavaInfo->debugging->searchSongSuccessDebugging, lavaInfo->debugging->searchSongErrorsDebugging, reqPath, sizeof(reqPath), NULL, 0, res, 1, curl);
 }
 
 void coglink_searchCleanup(struct httpRequest req) {
@@ -117,7 +117,7 @@ int coglink_parseTrack(const struct lavaInfo *lavaInfo, struct httpRequest *req,
   }
   if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseTrackSuccessDebugging || lavaInfo->debugging->jsmnfSuccessDebugging) log_debug("[coglink:jsmn-find] Successfully loaded jsmn-find.");
 
-  char *path[] = { "tracks", songPos, "track", NULL };
+  char *path[] = { "tracks", songPos, "encoded", NULL };
   jsmnf_pair *track = jsmnf_find_path(pairs, req->body, path, 3);
 
   path[2] = "info";
@@ -149,7 +149,7 @@ int coglink_parseTrack(const struct lavaInfo *lavaInfo, struct httpRequest *req,
   jsmnf_pair *sourceName = jsmnf_find_path(pairs, req->body, path, 4);
 
   if (!track || !identifier || !isSeekable || !author || !length || !isStream || !position || !title || !uri || !sourceName) {
-    if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseTrackErrorsDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_fatal("[coglink:jsmnf-find] Error while trying to find %s field.", !track ? "track" : !identifier ? "identifier": !isSeekable ? "isSeekable" : !author ? "author" : !length ? "length" : !isStream ? "isStream" : !position ? "position" : !title ? "title" : !uri ? "uri" : !sourceName ? "sourceName" : "???");
+    if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseTrackErrorsDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_fatal("[coglink:jsmnf-find] Error while trying to find %s field.", !track ? "track" : !identifier ? "identifier": !isSeekable ? "isSeekable" : !author ? "author" : !length ? "length" : !isStream ? "isStream" : !position ? "position" : !title ? "title" : !uri ? "uri" : "sourceName");
     return COGLINK_JSMNF_ERROR_FIND;
   }
 
@@ -181,7 +181,7 @@ int coglink_parseTrack(const struct lavaInfo *lavaInfo, struct httpRequest *req,
   (*songStruct)->uri = malloc(sizeof(Uri));
   (*songStruct)->sourceName = malloc(sizeof(SourceName));
 
-  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-malloc] Allocated %d bytes for song structure.", sizeof(struct lavaParsedTrack) + sizeof(Track) + sizeof(Identifier) + sizeof(IsSeekable) + sizeof(Author) + sizeof(Length) + sizeof(IsStream) + sizeof(Position) + sizeof(Title) + sizeof(Uri) + sizeof(SourceName) + 10);
+  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-malloc] Allocated %d bytes for song structure.", sizeof(struct lavaParsedTrack) + sizeof(Track) + sizeof(Identifier) + sizeof(IsSeekable) + sizeof(Author) + sizeof(Length) + sizeof(IsStream) + sizeof(Position) + sizeof(Title) + sizeof(Uri) + sizeof(SourceName));
 
   strlcpy((*songStruct)->track, Track, TRACK_LENGTH);
   strlcpy((*songStruct)->identifier, Identifier, IDENTIFIER_LENGTH);
@@ -194,7 +194,7 @@ int coglink_parseTrack(const struct lavaInfo *lavaInfo, struct httpRequest *req,
   strlcpy((*songStruct)->uri, Uri, URL_LENGTH);
   strlcpy((*songStruct)->sourceName, SourceName, SOURCENAME_LENGTH);
 
-  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-strlcpy] Copied %d bytes to song structure.", sizeof(Track) + sizeof(Identifier) + sizeof(IsSeekable) + sizeof(Author) + sizeof(Length) + sizeof(IsStream) + sizeof(Position) + sizeof(Title) + sizeof(Uri) + sizeof(SourceName) + 10);
+  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-strlcpy] Copied %d bytes to song structure.", sizeof(Track) + sizeof(Identifier) + sizeof(IsSeekable) + sizeof(Author) + sizeof(Length) + sizeof(IsStream) + sizeof(Position) + sizeof(Title) + sizeof(Uri) + sizeof(SourceName));
 
   return COGLINK_SUCCESS;
 }
@@ -231,7 +231,7 @@ int coglink_parsePlaylist(const struct lavaInfo *lavaInfo, struct httpRequest *r
   jsmnf_pair *selectedTrack = jsmnf_find_path(pairs, req->body, path, 2);
 
   if (!name || !selectedTrack) {
-    if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parsePlaylistErrorsDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_fatal("[coglink:jsmnf-find] Error while trying to find %s field.", !name ? "name" : !selectedTrack ? "selectedTrack" : "???");
+    if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parsePlaylistErrorsDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_fatal("[coglink:jsmnf-find] Error while trying to find %s field.", !name ? "name" : "selectedTrack");
     return COGLINK_JSMNF_ERROR_FIND;
   } 
 
@@ -247,12 +247,12 @@ int coglink_parsePlaylist(const struct lavaInfo *lavaInfo, struct httpRequest *r
   (*playlistStruct)->name = malloc(sizeof(Name));
   (*playlistStruct)->selectedTrack = malloc(sizeof(SelectedTrack));
 
-  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-malloc] Allocated %d bytes for playlist structure.", sizeof(struct lavaParsedPlaylist) + sizeof(Name) + sizeof(SelectedTrack) + 2);
+  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-malloc] Allocated %d bytes for playlist structure.", sizeof(struct lavaParsedPlaylist) + sizeof(Name) + sizeof(SelectedTrack));
 
   strlcpy((*playlistStruct)->name, Name, PLAYLIST_NAME_LENGTH);
   strlcpy((*playlistStruct)->selectedTrack, SelectedTrack, 8);
 
-  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-strlcpy] Copied %d bytes to playlist structure.", sizeof(Name) + sizeof(SelectedTrack) + 2);
+  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-strlcpy] Copied %d bytes to playlist structure.", sizeof(Name) + sizeof(SelectedTrack));
 
   return COGLINK_SUCCESS;
 }
@@ -289,7 +289,7 @@ int coglink_parseError(const struct lavaInfo *lavaInfo, struct httpRequest *req,
   jsmnf_pair *severity = jsmnf_find_path(pairs, req->body, path, 2);
 
   if (!message || !severity) {
-    if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseErrorsDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_fatal("[coglink:jsmnf-find] Error while trying to find %s field.", !message ? "message" : !severity ? "severity" : "???");
+    if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseErrorsDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_fatal("[coglink:jsmnf-find] Error while trying to find %s field.", !message ? "message" : "severity");
     return COGLINK_JSMNF_ERROR_FIND;
   }
 
@@ -305,12 +305,12 @@ int coglink_parseError(const struct lavaInfo *lavaInfo, struct httpRequest *req,
   (*errorStruct)->message = malloc(sizeof(Message));
   (*errorStruct)->severity = malloc(sizeof(Severity));
 
-  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-malloc] Allocated %d bytes for error structure.", sizeof(struct lavaParsedError) + sizeof(Message) + sizeof(Severity) + 2);
+  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-malloc] Allocated %d bytes for error structure.", sizeof(struct lavaParsedError) + sizeof(Message) + sizeof(Severity));
 
   strlcpy((*errorStruct)->message, Message, 128);
   strlcpy((*errorStruct)->severity, Severity, 16);
 
-  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-strlcpy] Copied %d bytes to error structure.", sizeof(Message) + sizeof(Severity) + 2);
+  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-strlcpy] Copied %d bytes to error structure.", sizeof(Message) + sizeof(Severity));
 
   return COGLINK_SUCCESS;
 }

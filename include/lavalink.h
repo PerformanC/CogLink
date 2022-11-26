@@ -1,37 +1,49 @@
 #ifndef LAVALINK_H
 #define LAVALINK_H
 
+struct StringBucket {
+  char *key;
+  char *value;
+  int state;
+};
+
+struct StringHashtable {
+  int length;
+  int capacity;
+  struct StringBucket *buckets;
+};
+
 struct httpRequest {
   char *body;
   size_t size;
 };
 
-struct lavaNode {
-  char *name;
-  char *hostname;
-  char *password;
-  char *shards;
-  char *botId;
-  _Bool ssl;
-};
-
 struct lavaMemory {
-  char reservable[16];
-  char used[16];
-  char free[16];
-  char allocated[16];
+  char *free;
+  char *used;
+  char *allocated;
+  char *reservable;
 };
 
 struct lavaFStats {
-  char sent[16];
-  char deficit[16];
-  char nulled[16];
+  char *sent;
+  char *deficit;
+  char *nulled;
 };
 
 struct lavaCPU {
-  char cores[8];
-  char systemLoad[16];
-  char lavalinkLoad[16];
+  char *cores;
+  char *systemLoad;
+  char *lavalinkLoad;
+};
+
+struct lavalinkStats {
+  char *players;
+  char *playingPlayers;
+  char *uptime;
+  struct lavaMemory *memory;
+  struct lavaCPU *cpu;
+  struct lavaFStats *frameStats;
 };
 
 struct coglinkDebugging {
@@ -67,6 +79,15 @@ struct IOPollerVars {
   struct lavaInfo *lavaInfo;
 };
 
+struct lavaNode {
+  char *name;
+  char *hostname;
+  char *password;
+  char *shards;
+  char *botId;
+  _Bool ssl;
+};
+
 struct lavaInfo {
   struct lavaNode *node;
   struct lavaEvents *events;
@@ -76,8 +97,8 @@ struct lavaInfo {
   uint64_t tstamp;
   struct coglinkDebugging *debugging;
   _Bool allowResuming;
-  _Bool lavaResumeSend;
   char *resumeKey;
+  char *sessionId;
 };
 
 struct lavaParsedTrack {
@@ -104,34 +125,18 @@ struct lavaParsedError {
 };
 
 struct lavaEvents {
-  // BASICS
   int (*onRaw)(struct lavaInfo *lavaInfo, const char *data, size_t length);
   void (*onConnect)(void);
   void (*onClose)(enum ws_close_reason wscode, const char *reason);
-  // EVENTS
   void (*onTrackStart)(char *track, u64snowflake guildId);
   void (*onTrackEnd)(char *reason, char *track, u64snowflake guildId);
   void (*onTrackException)(char *track, char *message, char *severity, char *cause, u64snowflake guildId);
   void (*onTrackStuck)(char *track, int thresholdMs, u64snowflake guildId);
-  void (*onWebSocketClosed)(int code, char *reason, char *byRemote, u64snowflake guildId);
+  void (*onWebSocketClosed)(int code, char *reason, int byRemote, u64snowflake guildId);
   void (*onUnknownEvent)(char *type, const char *text, u64snowflake guildId);
-  // PLAYER EVENTS
-  void (*onPlayerUpdate)(int time, int position, char *connected, int ping, u64snowflake guildId);
-  // OTHER EVENTS
-  void (*onStats)(int playingPlayers, struct lavaMemory *infoMemory, int players, struct lavaFStats *infoFrameStats, struct lavaCPU *infoCPU, int uptime);
+  void (*onPlayerUpdate)(float time, int position, int connected, int ping, u64snowflake guildId);
+  void (*onStats)(struct lavalinkStats *stats);
   void (*onUnknownOp)(char *op, const char *text);
-};
-
-struct StringBucket {
-  char *key;
-  char *value;
-  int state;
-};
-
-struct StringHashtable {
-  int length;
-  int capacity;
-  struct StringBucket *buckets;
 };
 
 struct ws_info;
