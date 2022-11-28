@@ -1,7 +1,3 @@
-<h3> THIS BRANCH IS CONSIDERED UNSTABLE, AND IT IS STILL UNDER DEVELOPMENT </h3>
-
-*Branch for Lavalink v3.7 only, it's still also under development.*
-
 # Coglink
 
 [![Discord Server](https://img.shields.io/discord/1036045973039890522?color=5865F2&logo=discord&logoColor=white)](https://discord.gg/YcaK3puy49) [![Codacy Badge](https://app.codacy.com/project/badge/Grade/acbabb99b4354f5ab182e511dd35aee4)](https://www.codacy.com/gh/ThePedroo/Coglink/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=ThePedroo/Coglink&amp;utm_campaign=Badge_Grade)
@@ -14,9 +10,9 @@ The performance of Coglink isn't a thing you should be worried about, it provide
 
 ## Status
 
-**STABLE**
+**SEMI-STABLE**
 
-The fix releases (minor changes) are considered stable, as it has been better tested and worked, big changes may cause instability, please avoid always getting the source of big changes. But currently there is no known bug.
+This branch is considered **semi-stable**, since it still need more testing, but can be safely used (the basic functions) without any issue. Lavalink v3.7 API is still not finished, so modification might be still done.
 
 ## Credits
 

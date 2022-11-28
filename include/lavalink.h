@@ -1,6 +1,8 @@
 #ifndef LAVALINK_H
 #define LAVALINK_H
 
+#include <concord/websockets.h>
+
 struct StringBucket {
   char *key;
   char *value;

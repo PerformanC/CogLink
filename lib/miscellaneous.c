@@ -24,14 +24,14 @@ int coglink_getLavalinkVersion(struct lavaInfo *lavaInfo, char **version) {
 
 int coglink_decodeTrack(struct lavaInfo *lavaInfo, char *track, struct httpRequest *res) {
   char reqPath[strnlen(track, 512) + 26];
-  snprintf(reqPath, sizeof(reqPath), "/decodeTrack?encodedTrack=%s", track);
+  snprintf(reqPath, sizeof(reqPath), "/decodetrack?encodedTrack=%s", track);
 
   return __coglink_performRequest(lavaInfo, __COGLINK_GET_REQ, 0, 0, reqPath, sizeof(reqPath), NULL, 0, res, 1, NULL);
 }
 
 int coglink_parseDecodeTrack(struct lavaInfo *lavaInfo, struct httpRequest *res, struct lavaParsedTrack **songStruct) {
   jsmn_parser parser;
-  jsmntok_t tokens[512];
+  jsmntok_t tokens[32];
 
   jsmn_init(&parser);
   int r = jsmn_parse(&parser, res->body, res->size, tokens, sizeof(tokens));
@@ -43,10 +43,10 @@ int coglink_parseDecodeTrack(struct lavaInfo *lavaInfo, struct httpRequest *res,
   if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseTrackSuccessDebugging || lavaInfo->debugging->jsmnfSuccessDebugging) log_debug("[jsmn-find] Successfully parsed JSON.");
 
   jsmnf_loader loader;
-  jsmnf_pair pairs[512];
+  jsmnf_pair pairs[32];
 
   jsmnf_init(&loader);
-  r = jsmnf_load(&loader, res->body, tokens, parser.toknext, pairs, 512);
+  r = jsmnf_load(&loader, res->body, tokens, parser.toknext, pairs, sizeof(pairs) / sizeof *pairs);
 
   if (r < 0) {
     if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseTrackErrorsDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_error("[coglink:jsmn-find] Failed to load jsmn-find.");
@@ -54,32 +54,32 @@ int coglink_parseDecodeTrack(struct lavaInfo *lavaInfo, struct httpRequest *res,
   }
   if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseTrackSuccessDebugging || lavaInfo->debugging->jsmnfSuccessDebugging) log_debug("[coglink:jsmn-find] Successfully loaded jsmn-find.");
 
-  jsmnf_pair *identifier = jsmnf_find(pairs, res->body, "identifier", 10);
-  if (__coglink_checkParse(lavaInfo, identifier, "identifier") != COGLINK_PROCEED) return COGLINK_JSMNF_ERROR_FIND;
+  char *path[] = { "info", "identifier" };
+  jsmnf_pair *identifier = jsmnf_find_path(pairs, res->body, path, 2);
 
-  jsmnf_pair *isSeekable = jsmnf_find(pairs, res->body, "isSeekable", 10);
-  if (__coglink_checkParse(lavaInfo, isSeekable, "isSeekable") != COGLINK_PROCEED) return COGLINK_JSMNF_ERROR_FIND;
+  path[1] = "isSeekable";
+  jsmnf_pair *isSeekable = jsmnf_find_path(pairs, res->body, path, 2);
 
-  jsmnf_pair *author = jsmnf_find(pairs, res->body, "author", 6);
-  if (__coglink_checkParse(lavaInfo, author, "author") != COGLINK_PROCEED) return COGLINK_JSMNF_ERROR_FIND;
+  path[1] = "author";
+  jsmnf_pair *author = jsmnf_find_path(pairs, res->body, path, 2);
 
-  jsmnf_pair *length = jsmnf_find(pairs, res->body, "length", 6);
-  if (__coglink_checkParse(lavaInfo, length, "length") != COGLINK_PROCEED) return COGLINK_JSMNF_ERROR_FIND;
+  path[1] = "length";
+  jsmnf_pair *length = jsmnf_find_path(pairs, res->body, path, 2);
 
-  jsmnf_pair *isStream = jsmnf_find(pairs, res->body, "isStream", 8);
-  if (__coglink_checkParse(lavaInfo, isStream, "isStream") != COGLINK_PROCEED) return COGLINK_JSMNF_ERROR_FIND;
+  path[1] = "isStream";
+  jsmnf_pair *isStream = jsmnf_find_path(pairs, res->body, path, 2);
 
-  jsmnf_pair *position = jsmnf_find(pairs, res->body, "position", 8);
-  if (__coglink_checkParse(lavaInfo, position, "position") != COGLINK_PROCEED) return COGLINK_JSMNF_ERROR_FIND;
+  path[1] = "position";
+  jsmnf_pair *position = jsmnf_find_path(pairs, res->body, path, 2);
 
-  jsmnf_pair *title = jsmnf_find(pairs, res->body, "title", 5);
-  if (__coglink_checkParse(lavaInfo, title, "title") != COGLINK_PROCEED) return COGLINK_JSMNF_ERROR_FIND;
+  path[1] = "title";
+  jsmnf_pair *title = jsmnf_find_path(pairs, res->body, path, 2);
 
-  jsmnf_pair *uri = jsmnf_find(pairs, res->body, "uri", 3);
-  if (__coglink_checkParse(lavaInfo, uri, "uri") != COGLINK_PROCEED) return COGLINK_JSMNF_ERROR_FIND;
+  path[1] = "uri";
+  jsmnf_pair *uri = jsmnf_find_path(pairs, res->body, path, 2);
 
-  jsmnf_pair *sourceName = jsmnf_find(pairs, res->body, "sourceName", 10);
-  if (__coglink_checkParse(lavaInfo, sourceName, "sourceName") != COGLINK_PROCEED) return COGLINK_JSMNF_ERROR_FIND;
+  path[1] = "sourceName";
+  jsmnf_pair *sourceName = jsmnf_find_path(pairs, res->body, path, 2);
 
   if (!identifier || !isSeekable || !author || !length || !isStream || !position || !title || !uri || !sourceName) {
     if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseTrackErrorsDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_fatal("[coglink:jsmnf-find] Error while trying to find %s field.", !identifier ? "identifier": !isSeekable ? "isSeekable" : !author ? "author" : !length ? "length" : !isStream ? "isStream" : !position ? "position" : !title ? "title" : !uri ? "uri" : !sourceName ? "sourceName" : "???");
@@ -133,12 +133,12 @@ int coglink_decodeTracks(struct lavaInfo *lavaInfo, char *trackArray, long track
   return __coglink_performRequest(lavaInfo, __COGLINK_GET_REQ, 0, 0, "/decodetracks", 14, trackArray, strnlen(trackArray, 512 * trackArrayLength), res, 1, NULL);
 }
 
-int coglink_parseDecodeTracks(const struct lavaInfo *lavaInfo, struct httpRequest *req, char *songPos, struct lavaParsedTrack **songStruct) {
+int coglink_parseDecodeTracks(const struct lavaInfo *lavaInfo, struct httpRequest *res, char *songPos, struct lavaParsedTrack **songStruct) {
   jsmn_parser parser;
   jsmntok_t tokens[1024];
 
   jsmn_init(&parser);
-  int r = jsmn_parse(&parser, req->body, req->size, tokens, sizeof(tokens));
+  int r = jsmn_parse(&parser, res->body, res->size, tokens, sizeof(tokens));
 
   if (r < 0) {
     if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseTrackErrorsDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_error("[coglink:jsmn-find] Failed to parse JSON.");
@@ -150,7 +150,7 @@ int coglink_parseDecodeTracks(const struct lavaInfo *lavaInfo, struct httpReques
   jsmnf_pair pairs[1024];
 
   jsmnf_init(&loader);
-  r = jsmnf_load(&loader, req->body, tokens, parser.toknext, pairs, 1024);
+  r = jsmnf_load(&loader, res->body, tokens, parser.toknext, pairs, sizeof(pairs) / sizeof *pairs);
 
   if (r < 0) {
     if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseTrackErrorsDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_error("[coglink:jsmn-find] Failed to load jsmn-find.");
@@ -159,35 +159,35 @@ int coglink_parseDecodeTracks(const struct lavaInfo *lavaInfo, struct httpReques
   if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseTrackSuccessDebugging || lavaInfo->debugging->jsmnfSuccessDebugging) log_debug("[coglink:jsmn-find] Successfully loaded jsmn-find.");
 
   char *path[] = { songPos, "track", NULL };
-  jsmnf_pair *track = jsmnf_find_path(pairs, req->body, path, 2);
+  jsmnf_pair *track = jsmnf_find_path(pairs, res->body, path, 2);
 
   path[1] = "info";
   path[2] = "identifier";
-  jsmnf_pair *identifier = jsmnf_find_path(pairs, req->body, path, 3);
+  jsmnf_pair *identifier = jsmnf_find_path(pairs, res->body, path, 3);
 
   path[2] = "isSeekable";
-  jsmnf_pair *isSeekable = jsmnf_find_path(pairs, req->body, path, 3);
+  jsmnf_pair *isSeekable = jsmnf_find_path(pairs, res->body, path, 3);
 
   path[2] = "author";
-  jsmnf_pair *author = jsmnf_find_path(pairs, req->body, path, 3);
+  jsmnf_pair *author = jsmnf_find_path(pairs, res->body, path, 3);
 
   path[2] = "length";
-  jsmnf_pair *length = jsmnf_find_path(pairs, req->body, path, 3);
+  jsmnf_pair *length = jsmnf_find_path(pairs, res->body, path, 3);
 
   path[2] = "isStream";
-  jsmnf_pair *isStream = jsmnf_find_path(pairs, req->body, path, 3);
+  jsmnf_pair *isStream = jsmnf_find_path(pairs, res->body, path, 3);
 
   path[2] = "position";
-  jsmnf_pair *position = jsmnf_find_path(pairs, req->body, path, 3);
+  jsmnf_pair *position = jsmnf_find_path(pairs, res->body, path, 3);
 
   path[2] = "title";
-  jsmnf_pair *title = jsmnf_find_path(pairs, req->body, path, 3);
+  jsmnf_pair *title = jsmnf_find_path(pairs, res->body, path, 3);
 
   path[2] = "uri";
-  jsmnf_pair *uri = jsmnf_find_path(pairs, req->body, path, 3);
+  jsmnf_pair *uri = jsmnf_find_path(pairs, res->body, path, 3);
 
   path[2] = "sourceName";
-  jsmnf_pair *sourceName = jsmnf_find_path(pairs, req->body, path, 3);
+  jsmnf_pair *sourceName = jsmnf_find_path(pairs, res->body, path, 3);
 
   if (!track || !identifier || !isSeekable || !author || !length || !isStream || !position || !title || !uri || !sourceName) {
     if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseTrackErrorsDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_fatal("[coglink:jsmnf-find] Error while trying to find %s field.", !track ? "track" : !identifier ? "identifier": !isSeekable ? "isSeekable" : !author ? "author" : !length ? "length" : !isStream ? "isStream" : !position ? "position" : !title ? "title" : !uri ? "uri" : !sourceName ? "sourceName" : "???");
@@ -196,16 +196,16 @@ int coglink_parseDecodeTracks(const struct lavaInfo *lavaInfo, struct httpReques
 
   char Track[TRACK_LENGTH], Identifier[IDENTIFIER_LENGTH], IsSeekable[TRUE_FALSE_LENGTH], Author[AUTHOR_NAME_LENGTH], Length[VIDEO_LENGTH], IsStream[TRUE_FALSE_LENGTH], Position[VIDEO_LENGTH], Title[TRACK_TITLE_LENGTH], Uri[URL_LENGTH], SourceName[SOURCENAME_LENGTH];
 
-  snprintf(Track, sizeof(Track), "%.*s", (int)track->v.len, req->body + track->v.pos);
-  snprintf(Identifier, sizeof(Identifier), "%.*s", (int)identifier->v.len, req->body + identifier->v.pos);
-  snprintf(IsSeekable, sizeof(IsSeekable), "%.*s", (int)isSeekable->v.len, req->body + isSeekable->v.pos);
-  snprintf(Author, sizeof(Author), "%.*s", (int)author->v.len, req->body + author->v.pos);
-  snprintf(Length, sizeof(Length), "%.*s", (int)length->v.len, req->body + length->v.pos);
-  snprintf(IsStream, sizeof(IsStream), "%.*s", (int)isStream->v.len, req->body + isStream->v.pos);
-  snprintf(Position, sizeof(Position), "%.*s", (int)position->v.len, req->body + position->v.pos);
-  snprintf(Title, sizeof(Title), "%.*s", (int)title->v.len, req->body + title->v.pos);
-  snprintf(Uri, sizeof(Uri), "%.*s", (int)uri->v.len, req->body + uri->v.pos);
-  snprintf(SourceName, sizeof(SourceName), "%.*s", (int)sourceName->v.len, req->body + sourceName->v.pos);
+  snprintf(Track, sizeof(Track), "%.*s", (int)track->v.len, res->body + track->v.pos);
+  snprintf(Identifier, sizeof(Identifier), "%.*s", (int)identifier->v.len, res->body + identifier->v.pos);
+  snprintf(IsSeekable, sizeof(IsSeekable), "%.*s", (int)isSeekable->v.len, res->body + isSeekable->v.pos);
+  snprintf(Author, sizeof(Author), "%.*s", (int)author->v.len, res->body + author->v.pos);
+  snprintf(Length, sizeof(Length), "%.*s", (int)length->v.len, res->body + length->v.pos);
+  snprintf(IsStream, sizeof(IsStream), "%.*s", (int)isStream->v.len, res->body + isStream->v.pos);
+  snprintf(Position, sizeof(Position), "%.*s", (int)position->v.len, res->body + position->v.pos);
+  snprintf(Title, sizeof(Title), "%.*s", (int)title->v.len, res->body + title->v.pos);
+  snprintf(Uri, sizeof(Uri), "%.*s", (int)uri->v.len, res->body + uri->v.pos);
+  snprintf(SourceName, sizeof(SourceName), "%.*s", (int)sourceName->v.len, res->body + sourceName->v.pos);
 
   if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseTrackSuccessDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_debug("[coglink:jsmn-find] Parsed song search json, results:\n> track: %s\n> identifier: %s\n> isSeekable: %s\n> author: %s\n> length: %s\n> isStream: %s\n> position: %s\n> title: %s\n> uri: %s\n> sourceName: %s", Track, Identifier, IsSeekable, Author, Length, IsStream, Position, Title, Uri, SourceName);
 
@@ -246,7 +246,7 @@ int coglink_getLavalinkInfo(struct lavaInfo *lavaInfo, struct httpRequest *res) 
 
 int coglink_parseLavalinkInfo(struct lavaInfo *lavaInfo, struct httpRequest *res, struct lavalinkInfo **lavalinkInfoStruct) {
   jsmn_parser parser;
-  jsmntok_t tokens[1024];
+  jsmntok_t tokens[64];
 
   jsmn_init(&parser);
   int r = jsmn_parse(&parser, res->body, res->size, tokens, sizeof(tokens));
@@ -258,10 +258,10 @@ int coglink_parseLavalinkInfo(struct lavaInfo *lavaInfo, struct httpRequest *res
   if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseSuccessDebugging || lavaInfo->debugging->jsmnfSuccessDebugging) log_debug("[jsmn-find] Successfully parsed JSON.");
 
   jsmnf_loader loader;
-  jsmnf_pair pairs[1024];
+  jsmnf_pair pairs[64];
 
   jsmnf_init(&loader);
-  r = jsmnf_load(&loader, res->body, tokens, parser.toknext, pairs, 1024);
+  r = jsmnf_load(&loader, res->body, tokens, parser.toknext, pairs, sizeof(pairs) / sizeof *pairs);
 
   if (r < 0) {
     if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseErrorsDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_error("[coglink:jsmn-find] Failed to load jsmn-find.");
@@ -391,7 +391,7 @@ int coglink_getLavalinkStats(struct lavaInfo *lavaInfo, struct httpRequest *res)
 
 int coglink_parseLavalinkStats(struct lavaInfo *lavaInfo, struct httpRequest *res, struct lavalinkStats **lavalinkStatsStruct) {
   jsmn_parser parser;
-  jsmntok_t tokens[1024];
+  jsmntok_t tokens[32];
 
   jsmn_init(&parser);
   int r = jsmn_parse(&parser, res->body, res->size, tokens, sizeof(tokens));
@@ -403,10 +403,10 @@ int coglink_parseLavalinkStats(struct lavaInfo *lavaInfo, struct httpRequest *re
   if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseSuccessDebugging || lavaInfo->debugging->jsmnfSuccessDebugging) log_debug("[jsmn-find] Successfully parsed JSON.");
 
   jsmnf_loader loader;
-  jsmnf_pair pairs[1024];
+  jsmnf_pair pairs[32];
 
   jsmnf_init(&loader);
-  r = jsmnf_load(&loader, res->body, tokens, parser.toknext, pairs, 1024);
+  r = jsmnf_load(&loader, res->body, tokens, parser.toknext, pairs, sizeof(pairs) / sizeof *pairs);
 
   if (r < 0) {
     if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseErrorsDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_error("[coglink:jsmn-find] Failed to load jsmn-find.");
@@ -510,7 +510,7 @@ int coglink_getRouterPlanner(struct lavaInfo *lavaInfo, struct httpRequest *res)
 
 int coglink_parseRouterPlanner(struct lavaInfo *lavaInfo, struct httpRequest *res, char *ipPosition, struct lavaRouter **lavaRouterStruct) {
   jsmn_parser parser;
-  jsmntok_t tokens[1024];
+  jsmntok_t tokens[128];
 
   jsmn_init(&parser);
   int r = jsmn_parse(&parser, res->body, res->size, tokens, sizeof(tokens));
@@ -522,10 +522,10 @@ int coglink_parseRouterPlanner(struct lavaInfo *lavaInfo, struct httpRequest *re
   if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseSuccessDebugging || lavaInfo->debugging->jsmnfSuccessDebugging) log_debug("[jsmn-find] Successfully parsed JSON.");
 
   jsmnf_loader loader;
-  jsmnf_pair pairs[1024];
+  jsmnf_pair pairs[128];
 
   jsmnf_init(&loader);
-  r = jsmnf_load(&loader, res->body, tokens, parser.toknext, pairs, 1024);
+  r = jsmnf_load(&loader, res->body, tokens, parser.toknext, pairs, sizeof(pairs) / sizeof *pairs);
 
   if (r < 0) {
     if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseErrorsDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_error("[coglink:jsmn-find] Failed to load jsmn-find.");
@@ -808,15 +808,16 @@ void coglink_parseLavalinkStatsCleanup(const struct lavaInfo *lavaInfo, struct l
 }
 
 void coglink_parseRouterPlannerCleanup(const struct lavaInfo *lavaInfo, struct lavaRouter *lavaRouterStruct) {
+  if (lavaRouterStruct->class) free(lavaRouterStruct->class);
+  if (lavaRouterStruct->details->ipBlock->type) free(lavaRouterStruct->details->ipBlock->type);
+  if (lavaRouterStruct->details->ipBlock->size) free(lavaRouterStruct->details->ipBlock->size);
+  if (lavaRouterStruct->details->ipBlock) free(lavaRouterStruct->details->ipBlock);
+  if (lavaRouterStruct->details->failingAddress->address) free(lavaRouterStruct->details->failingAddress->address);
+  if (lavaRouterStruct->details->failingAddress->failingTimestamp) free(lavaRouterStruct->details->failingAddress->failingTimestamp);
+  if (lavaRouterStruct->details->failingAddress->failingTime) free(lavaRouterStruct->details->failingAddress->failingTime);
+  if (lavaRouterStruct->details->failingAddress) free(lavaRouterStruct->details->failingAddress);
+
   if (0 == strcmp("RotatingIpRoutePlanner", lavaRouterStruct->class)) {
-    if (lavaRouterStruct->class) free(lavaRouterStruct->class);
-    if (lavaRouterStruct->details->ipBlock->type) free(lavaRouterStruct->details->ipBlock->type);
-    if (lavaRouterStruct->details->ipBlock->size) free(lavaRouterStruct->details->ipBlock->size);
-    if (lavaRouterStruct->details->ipBlock) free(lavaRouterStruct->details->ipBlock);
-    if (lavaRouterStruct->details->failingAddress->address) free(lavaRouterStruct->details->failingAddress->address);
-    if (lavaRouterStruct->details->failingAddress->failingTimestamp) free(lavaRouterStruct->details->failingAddress->failingTimestamp);
-    if (lavaRouterStruct->details->failingAddress->failingTime) free(lavaRouterStruct->details->failingAddress->failingTime);
-    if (lavaRouterStruct->details->failingAddress) free(lavaRouterStruct->details->failingAddress);
     if (lavaRouterStruct->details->rotateIndex) free(lavaRouterStruct->details->rotateIndex);
     if (lavaRouterStruct->details->ipIndex) free(lavaRouterStruct->details->ipIndex);
     if (lavaRouterStruct->details->currentAddress) free(lavaRouterStruct->details->currentAddress);
@@ -825,14 +826,6 @@ void coglink_parseRouterPlannerCleanup(const struct lavaInfo *lavaInfo, struct l
 
     if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:jsmn-find] Freed %d bytes from router structure.", sizeof(lavaRouterStruct->class) + sizeof(lavaRouterStruct->details->ipBlock->type) + sizeof(lavaRouterStruct->details->ipBlock->size) + sizeof(lavaRouterStruct->details->ipBlock) + sizeof(lavaRouterStruct->details->failingAddress->address) + sizeof(lavaRouterStruct->details->failingAddress->failingTimestamp) + sizeof(lavaRouterStruct->details->failingAddress->failingTime) + sizeof(lavaRouterStruct->details->failingAddress) + sizeof(lavaRouterStruct->details->rotateIndex) + sizeof(lavaRouterStruct->details->ipIndex) + sizeof(lavaRouterStruct->details->currentAddress) + sizeof(lavaRouterStruct->details) + sizeof(lavaRouterStruct));
   } else if (0 == strcmp("NanoIpRoutePlanner", lavaRouterStruct->class)) {
-    if (lavaRouterStruct->class) free(lavaRouterStruct->class);
-    if (lavaRouterStruct->details->ipBlock->type) free(lavaRouterStruct->details->ipBlock->type);
-    if (lavaRouterStruct->details->ipBlock->size) free(lavaRouterStruct->details->ipBlock->size);
-    if (lavaRouterStruct->details->ipBlock) free(lavaRouterStruct->details->ipBlock);
-    if (lavaRouterStruct->details->failingAddress->address) free(lavaRouterStruct->details->failingAddress->address);
-    if (lavaRouterStruct->details->failingAddress->failingTimestamp) free(lavaRouterStruct->details->failingAddress->failingTimestamp);
-    if (lavaRouterStruct->details->failingAddress->failingTime) free(lavaRouterStruct->details->failingAddress->failingTime);
-    if (lavaRouterStruct->details->failingAddress) free(lavaRouterStruct->details->failingAddress);
     if (lavaRouterStruct->details->blockIndex) free(lavaRouterStruct->details->blockIndex);
     if (lavaRouterStruct->details->currentAddressIndex) free(lavaRouterStruct->details->currentAddressIndex);
     if (lavaRouterStruct->details) free(lavaRouterStruct->details);
@@ -840,14 +833,6 @@ void coglink_parseRouterPlannerCleanup(const struct lavaInfo *lavaInfo, struct l
 
     if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:jsmn-find] Freed %d bytes from router structure.", sizeof(lavaRouterStruct->class) + sizeof(lavaRouterStruct->details->ipBlock->type) + sizeof(lavaRouterStruct->details->ipBlock->size) + sizeof(lavaRouterStruct->details->ipBlock) + sizeof(lavaRouterStruct->details->failingAddress->address) + sizeof(lavaRouterStruct->details->failingAddress->failingTimestamp) + sizeof(lavaRouterStruct->details->failingAddress->failingTime) + sizeof(lavaRouterStruct->details->failingAddress) + sizeof(lavaRouterStruct->details->blockIndex) + sizeof(lavaRouterStruct->details->currentAddressIndex) + sizeof(lavaRouterStruct->details) + sizeof(lavaRouterStruct));
   } else {
-    if (lavaRouterStruct->class) free(lavaRouterStruct->class);
-    if (lavaRouterStruct->details->ipBlock->type) free(lavaRouterStruct->details->ipBlock->type);
-    if (lavaRouterStruct->details->ipBlock->size) free(lavaRouterStruct->details->ipBlock->size);
-    if (lavaRouterStruct->details->ipBlock) free(lavaRouterStruct->details->ipBlock);
-    if (lavaRouterStruct->details->failingAddress->address) free(lavaRouterStruct->details->failingAddress->address);
-    if (lavaRouterStruct->details->failingAddress->failingTimestamp) free(lavaRouterStruct->details->failingAddress->failingTimestamp);
-    if (lavaRouterStruct->details->failingAddress->failingTime) free(lavaRouterStruct->details->failingAddress->failingTime);
-    if (lavaRouterStruct->details->failingAddress) free(lavaRouterStruct->details->failingAddress);
     if (lavaRouterStruct->details->blockIndex) free(lavaRouterStruct->details->blockIndex);
     if (lavaRouterStruct->details->currentAddressIndex) free(lavaRouterStruct->details->currentAddressIndex);
     if (lavaRouterStruct->details) free(lavaRouterStruct->details);

@@ -53,13 +53,8 @@ int __coglink_performRequest(struct lavaInfo *lavaInfo, int requestType, int add
     return COGLINK_LIBCURL_FAILED_INITIALIZE;
   }
 
-  if (getResponse) {
-    (*res).body = malloc(1);
-    (*res).size = 0;
-  }
-
   char lavaURL[strnlen(lavaInfo->node->hostname, 128) + 12 + pathLength];
-  if (lavaInfo->node->ssl) snprintf(lavaURL, sizeof(lavaURL), "https://%s/v3%s", lavaInfo->node->hostname, path);
+  if (lavaInfo->node->ssl) snprintf(lavaURL, sizeof(lavaURL), "https://%s/v4%s", lavaInfo->node->hostname, path);
   else snprintf(lavaURL, sizeof(lavaURL), "http://%s/v3%s", lavaInfo->node->hostname, path);
 
   CURLcode cRes = curl_easy_setopt(curl, CURLOPT_URL, lavaURL);
@@ -103,10 +98,13 @@ int __coglink_performRequest(struct lavaInfo *lavaInfo, int requestType, int add
   }
 
   if (getResponse) {
+    (*res).body = malloc(1);
+    (*res).size = 0;
+
     cRes = curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, __coglink_WriteMemoryCallback);
 
     if (__coglink_checkCurlCommand(lavaInfo, curl, cRes, "4", additionalDebuggingError, getResponse, res) != COGLINK_SUCCESS) {
-     curl_slist_free_all(chunk);
+      curl_slist_free_all(chunk);
       return COGLINK_LIBCURL_FAILED_SETOPT;
     }
 

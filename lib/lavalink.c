@@ -41,7 +41,7 @@ void onTextEvent(void *data, struct websockets *ws, struct ws_info *info, const 
   if (lavaInfo->events->onRaw && lavaInfo->events->onRaw(lavaInfo, text, len) != COGLINK_PROCEED) return;
 
   jsmn_parser parser;
-  jsmntok_t tokens[1024];
+  jsmntok_t tokens[64];
 
   jsmn_init(&parser);
   int r = jsmn_parse(&parser, text, len, tokens, sizeof(tokens));
@@ -52,10 +52,10 @@ void onTextEvent(void *data, struct websockets *ws, struct ws_info *info, const 
   }
 
   jsmnf_loader loader;
-  jsmnf_pair pairs[1024];
+  jsmnf_pair pairs[64];
 
   jsmnf_init(&loader);
-  r = jsmnf_load(&loader, text, tokens, parser.toknext, pairs, 1024);
+  r = jsmnf_load(&loader, text, tokens, parser.toknext, pairs, sizeof(pairs) / sizeof *pairs);
 
   if (r < 0) {
     if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_error("[coglink:jsmn-find] Failed to load jsmn-find.");
@@ -350,6 +350,12 @@ void onTextEvent(void *data, struct websockets *ws, struct ws_info *info, const 
       free(lavalinkStatsStruct->cpu->systemLoad);
       free(lavalinkStatsStruct->cpu->lavalinkLoad);
       free(lavalinkStatsStruct->cpu);
+      if (sent) {
+        free(lavalinkStatsStruct->frameStats->sent);
+        free(lavalinkStatsStruct->frameStats->nulled);
+        free(lavalinkStatsStruct->frameStats->deficit);
+        free(lavalinkStatsStruct->frameStats);
+      }
       free(lavalinkStatsStruct);
       break;
     }
@@ -397,7 +403,7 @@ enum discord_event_scheduler __coglink_handleScheduler(struct discord *client, c
   switch(event) {
     case DISCORD_EV_VOICE_STATE_UPDATE: {
       jsmn_parser parser;
-      jsmntok_t tokens[256];
+      jsmntok_t tokens[128];
 
       jsmn_init(&parser);
       int r = jsmn_parse(&parser, data, size, tokens, sizeof(tokens));
@@ -411,7 +417,7 @@ enum discord_event_scheduler __coglink_handleScheduler(struct discord *client, c
       jsmnf_pair pairs[128];
 
       jsmnf_init(&loader);
-      r = jsmnf_load(&loader, data, tokens, parser.toknext, pairs, 128);
+      r = jsmnf_load(&loader, data, tokens, parser.toknext, pairs, sizeof(pairs) / sizeof *pairs);
 
       if (r < 0) {
         if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->jsmnfErrorsDebugging || lavaInfo->debugging->handleSchedulerVoiceStateDebugging) log_error("[coglink:jsmn-find] Failed to load jsmn-find.");
@@ -478,7 +484,7 @@ enum discord_event_scheduler __coglink_handleScheduler(struct discord *client, c
       jsmnf_pair pairs[128];
 
       jsmnf_init(&loader);
-      r = jsmnf_load(&loader, data, tokens, parser.toknext, pairs, 128);
+      r = jsmnf_load(&loader, data, tokens, parser.toknext, pairs, sizeof(pairs) / sizeof *pairs);
 
       if (r < 0) {
         if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->handleSchedulerVoiceServerDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_error("[coglink:jsmn-find] Failed to load jsmn-find.");

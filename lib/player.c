@@ -18,7 +18,7 @@ int coglink_getPlayers(struct lavaInfo *lavaInfo, struct httpRequest *res) {
 
 int coglink_decodeGetPlayers(struct lavaInfo *lavaInfo, struct httpRequest *res, struct playerInfo **playerInfoStruct) {
   jsmn_parser parser;
-  jsmntok_t tokens[512];
+  jsmntok_t tokens[32];
 
   jsmn_init(&parser);
   int r = jsmn_parse(&parser, res->body, res->size, tokens, sizeof(tokens));
@@ -30,10 +30,10 @@ int coglink_decodeGetPlayers(struct lavaInfo *lavaInfo, struct httpRequest *res,
   if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->jsmnfSuccessDebugging) log_debug("[jsmn-find] Successfully parsed JSON.");
 
   jsmnf_loader loader;
-  jsmnf_pair pairs[512];
+  jsmnf_pair pairs[32];
 
   jsmnf_init(&loader);
-  r = jsmnf_load(&loader, res->body, tokens, parser.toknext, pairs, 512);
+  r = jsmnf_load(&loader, res->body, tokens, parser.toknext, pairs, sizeof(pairs) / sizeof *pairs);
 
   if (r < 0) {
     if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_error("[coglink:jsmn-find] Failed to load jsmn-find.");
