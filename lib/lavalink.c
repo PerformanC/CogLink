@@ -444,7 +444,7 @@ enum discord_event_scheduler __coglink_handleScheduler(struct discord *client, c
         if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging)  log_debug("[coglink:memory] Allocated %d bytes for sessionId to be saved in the hashtable.", SESSION_ID_LENGTH);
         if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->handleSchedulerVoiceStateDebugging) log_debug("[coglink:hashtable] Parsed voice state update json, results:\n> guild_id: %s\n> user_id: %s\n> session_id: %s", guildId, userId, sessionId);
 
-        if (0 != strcmp(sessionId, "null")) {
+        if (sessionId[0] != 'n') {
           if (!hashtable) {
             hashtable = chash_init(hashtable, STRING_TABLE);
             if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->handleSchedulerVoiceStateDebugging || lavaInfo->debugging->chashSuccessDebugging) log_warn("[coglink:hashtable] Created hashtable, since it wasn't created before.");

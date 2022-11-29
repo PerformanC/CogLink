@@ -2,31 +2,55 @@
 
 [![Discord Server](https://img.shields.io/discord/1036045973039890522?color=5865F2&logo=discord&logoColor=white)](https://discord.gg/YcaK3puy49) [![Codacy Badge](https://app.codacy.com/project/badge/Grade/acbabb99b4354f5ab182e511dd35aee4)](https://www.codacy.com/gh/ThePedroo/Coglink/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=ThePedroo/Coglink&amp;utm_campaign=Badge_Grade)
 
+Coglink, the C Lavalink client, with the most performance above all Lavalink wrappers.
+
 ## About
 
-Coglink is a C99 Lavalink wrapper, with full coverage of all Lavalink functions and features, allowing you to easily connect to a Lavalink server and use Lavalink features.
+Coglink is a C99 Lavalink wrapper/client, which has full coverage of Lavalink API, allowing easy, but still low-level control of Lavalink.
 
-The performance of Coglink isn't a thing you should be worried about, it provides high performance with a low memory footprint.
+Made with performance, security and stability in mind, so you can run anywhere you want to, with an incredible minimum of 10MB usage of RAM, allowing it to run in really low-end devices with no issues.
 
-## Status
+## Why?
 
-**SEMI-STABLE**
+Using Coglink is an awesome option, it's portable, light-weight and blazing fast (:rocket:). You can easily execute any Lavalink feature, without big codes, but still with a good code.
 
-This branch is considered **semi-stable**, since it still need more testing, but can be safely used (the basic functions) without any issue. Lavalink v3.7 API is still not finished, so modification might be still done.
+Portability is one of the best characteristics of Coglink, if your protogen has enough RAM to run it, it will run! You will only require few libraries, which most of them are already installed in most systems.
 
-## Credits
+C Lavalink client? Stability? Yep, no joke! Stability is something we are not worrying about, Coglink is well-developed, and with one of its first missings to be stable, if you report a bug, it will be fixed fastly.
 
-Even thought I'm the single maintainer of Coglink, I got a lot of help, thanks [Cogmaster](https://discord.gg/YcaK3puy49)'s guild members for this. And special thanks to `müller#1001`, Concord's lead developer, without him, nothing of this would be possible, thank you! ❤️
+Coglink was made with few libraries, but all of them are secure and stable, you shouldn't be worrying about this, worry about writing good code, because security is something already found here.
 
-## Installation
+## Stability
 
-This library is not available on any package manager, so you will need to compile it yourself, but don't worry, it's deadly easy.
+This branch is marked as **semi-stable**, since it still needs some testing and even Lavalink v3.7 is not done, breaking changes may come and the current commit won't be compatible with newer versions of Lavalink, safe to use, but remember that ou will need to update when Lavalink releases its stable version.
 
-*This library was compiled and tested (with no modifications to any file to work) in Ubuntu and Arch Linux, in FreeBSD and Termux requires you to change the PREFIX or include the /usr/local/..., in Termux for you need to change PREFIX and include it. This may be required to other OSes.*
+*If marked, considered stable, if not, bugs may be found.*
 
-### Compiling
+- [x] Search (Highly stable)
+- [x] loadType/track/playlist/error parsing (loadType/track highly stable)
+- [x] Play (Highly stable)
+- [x] Join voice channel (Highly stable)
+- [x] All cleanups (Highly stable)
+- [x] DecodeTrack(s) & ParseTrack(s)
+- [x] Parse track, pause track, stop track, seek track, set volume
+- [ ] Set filter
+- [ ] Get Players & parse get Players
+- [x] Get/parse Info
+- [ ] Get/parse RouterPlanner
+- [x] Get/parse Lavalink Stats (Event included)
+- [ ] Get Lavalink Version
+- [x] Connect/disconnect Node (Highly stable)
+- [x] Set event (Highly stable)
+- [x] Websocket (**Known bugs with close event**)
+- [x] IO poller (Highly stable)
 
-First of all, you need to install the dependencies, you can do it with the following command:
+## Compiling
+
+Sadly, Coglink isn't avaible on package managers, but you can compile it yourself, it's easy, don't worry, follow the guide below.
+
+*Coglink was compiled and tested (no modifications) in Ubuntu, Arch, Termux, Void. Some OSes like FreeBSD require special changes to work. Termux requires changing PREFIX, and FreeBSD removing -Ofast flag and replacing with -g. This may also be required in other OSes.*
+
+Before starting, you will need to install the required libraries for Coglink.
 
 ```console
 // Debian based OSes:
@@ -37,29 +61,30 @@ First of all, you need to install the dependencies, you can do it with the follo
 
 // FreeBSD/Termux:
 # pkg install make clang git
+
+// Void
+# xbps-install make clang git
 ```
 
-Then, you need to clone the repository:
+After installing the libraries, you will need to [compile Concord](https://github.com/Cogmasters/concord).
+
+Then, you will need to clone the Coglink's repo, this can be done by git.
 
 ```console
 $ git clone https://github.com/ThePedroo/Coglink
 ```
 
-*Coglink was made with Concord to be used with Concord, so it's already expected to you have Concord installed.*
-
-Then, after cloning the repository, you will need to compile it:
-
-*Note that on FreeBSD systems, you will need to add to the compiler default directories /usr/local/..., since by default, it is not added into it on FreeBSD.*
+After that, you can simply use make to compile Concord.
 
 ```console
 # cd Coglink && make && make install
 ```
 
-The `make` command will compile Coglink files and the `make install` will include the library on your system, so you can use it on your projects.
+The `make` command will first move the header files to `/usr/local/include/coglink`, then it will compile the C files and "group" them into the `libcoglink.a` file, after all of this, `make install` will move `libcoglink.a` to `/usr/local/lib`, so you can use -lcoglink to use Coglink.
 
-### Using
+## Using
 
-To use Coglink, you will need to include it on your project, you can do it with the following command:
+Using Coglink is deadly easy, but before using its functions, you will need to import the header files, see which header files you will use for your bot below.
 
 ```c
 #include <coglink/lavalink.h> // Websocket related Coglink functions
@@ -69,33 +94,39 @@ To use Coglink, you will need to include it on your project, you can do it with 
 #include <coglink/miscellaneous.h> // Other functions, like decode track, get router planner and etc
 ```
 
-And then, compile your project with the additional flag: `-lcoglink`.
+After including it, you can proceed using Coglink functions, and to compile don't forget to include the flag `-lcoglink` so you can use it.
 
-## Documentation/Guides (Quickstart)
+For usage, you can see the `guides/example` folder, with a really good example of Coglink usage.
+
+## Documentation
 
 We don't have documentation, but you can take on the guides and see what is the need since there will have everything briefly explained.
 
-## Why this library? Why have I created it?
+## What is the reason of the creation of Coglink?
 
-Concord, an awesome Discord wrapper, with not have the attention it should deserve, so I saw that no Lavalink wrappers were made for it, and neither were made with C, so since I already created a Lavalink powered bot with Concord, I decided that a lot of people should meet Concord, and also see how powerful C can be, blazingly fast and with its awesome low-level control.
+Coglink was made to retribute to someone all the help he gave to me, and I'm really thankful for his help, which made me able to create this library, without him, I wouldn't be here.
 
-I'm not an expert at C, but I do what I can do, I'll help if I'm able to, and if I can make Concord deserve what it should get, I'll do it.
+Concord is also a good library, that **I** consider the best Discord library ever made, but it doesn't have really good attention, and neither support for cool things, like Lavalink, that requires "advanced" knowledge of either Lavalink, Concord WebSocket, and libcurl, that we all know some people are not able to do all this work, so here Coglink is, help them make a stable code.
 
-I also know that this library is far away from being as famous as some JS libraries like erela.js, which was archived, but being famous here it's not the point, the point here is to help.
+Coglink was inspired in Concord, its stability and performance are something that everyone would dream to have in all Discord wrappers, but most of them don't, and being realistic, none of them have, Coglink is a library with all of this in mind, to be perfect to use with Concord, an unbeatable duo.
 
-If you are currently using Coglink, please let me know, would be an honor to see people use this little project. :)
+And also, because of my country, Brazil, so it can have more recognition of so many good things it comes from here, like Lua, that most of the softwares that were created here, don't have recognition of its importance and time used to create it, and are extremely underrated.
 
 ## Support
 
-If you need any support, feel absolutely free to ask for help on our [Discord server](https://discord.gg/uPveNfTuCJ). No one starts knowing everything, and we are here to help you. ^^
+In case of any issue using it (except bugs, that should be reported on GitHub Issues), you are free to ask on Coglink's [Discord server](https://discord.gg/uPveNfTuCJ).
+
+## Credits
+
+Even though I am the single maintainer of Coglink, many people contributed to it, thanks [Cogmaster](https://discord.gg/YcaK3puy49)'s guild members for this. And special thanks to `müller#1001`, without you, I wouldn't be here. :)
 
 ## Dependencies
 
 * `libcurl` >= 7.56.1
 * `Concord (master/dev)` 2.2.0
 * `Concord's websocket` 2.2.0
-* `jsmn-find` (included on Concord 2.2.0)
-* `jsmn` (included on Concord 2.2.0)
-* `chash` (included on Concord 2.2.0)
+* `jsmn-find` latest (included on Concord 2.2.0)
+* `jsmn` latest (included on Concord 2.2.0)
+* `chash` latest (included on Concord 2.2.0)
 
 *Tested on:* Ubuntu 22.04.1 x64, Arch Linux x64, Termux Aarch64 (Android 12), Void Linux latest x64, FreeBSD 13.1 x64

@@ -16,7 +16,7 @@ int coglink_getPlayers(struct lavaInfo *lavaInfo, struct httpRequest *res) {
   return __coglink_performRequest(lavaInfo, __COGLINK_GET_REQ, 0, 0, reqPath, sizeof(reqPath), NULL, 0, res, 1, NULL);
 }
 
-int coglink_decodeGetPlayers(struct lavaInfo *lavaInfo, struct httpRequest *res, struct playerInfo **playerInfoStruct) {
+int coglink_parseGetPlayers(struct lavaInfo *lavaInfo, struct httpRequest *res, struct playerInfo **playerInfoStruct) {
   jsmn_parser parser;
   jsmntok_t tokens[32];
 

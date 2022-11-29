@@ -85,7 +85,7 @@ struct playerInfo {
 
 int coglink_getPlayers(struct lavaInfo *lavaInfo, struct httpRequest *res);
 
-int coglink_decodeGetPlayers(struct lavaInfo *lavaInfo, struct httpRequest *res, struct playerInfo **playerInfoStruct);
+int coglink_parseGetPlayers(struct lavaInfo *lavaInfo, struct httpRequest *res, struct playerInfo **playerInfoStruct);
 
 int coglink_playSong(struct lavaInfo *lavaInfo, char *track, u64snowflake guildId);
 

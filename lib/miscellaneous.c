@@ -566,7 +566,7 @@ int coglink_parseRouterPlanner(struct lavaInfo *lavaInfo, struct httpRequest *re
     return COGLINK_JSMNF_ERROR_FIND;
   }
 
-  if (0 == strcmp("RotatingIpRoutePlanner", Class)) {
+  if (Class[0] == 'R') {
     path[1] = "rotateIndex";
     jsmnf_pair *rotateIndex = jsmnf_find_path(pairs, res->body, path, 2);
 
@@ -627,7 +627,7 @@ int coglink_parseRouterPlanner(struct lavaInfo *lavaInfo, struct httpRequest *re
     strlcpy((*lavaRouterStruct)->details->currentAddress, CurrentAddress, 8);
 
     if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseSuccessDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_debug("[coglink:jsmn-find] Copied %s bytes to router structure.", sizeof(Class) + sizeof(Type) + sizeof(Size) + sizeof(Address) + sizeof(FailingTimestamp) + sizeof(FailingTime) + sizeof(RotateIndex) + sizeof(IpIndex) + sizeof(CurrentAddress));
-  } else if (0 == strcmp("NanoIpRoutePlanner", Class)) {
+  } else if (Class[0] == 'N') {
     path[1] = "currentAddressIndex";
     jsmnf_pair *currentAddressIndex = jsmnf_find_path(pairs, res->body, path, 2);
 
@@ -817,7 +817,7 @@ void coglink_parseRouterPlannerCleanup(const struct lavaInfo *lavaInfo, struct l
   if (lavaRouterStruct->details->failingAddress->failingTime) free(lavaRouterStruct->details->failingAddress->failingTime);
   if (lavaRouterStruct->details->failingAddress) free(lavaRouterStruct->details->failingAddress);
 
-  if (0 == strcmp("RotatingIpRoutePlanner", lavaRouterStruct->class)) {
+  if (lavaRouterStruct->class[0] == 'R') {
     if (lavaRouterStruct->details->rotateIndex) free(lavaRouterStruct->details->rotateIndex);
     if (lavaRouterStruct->details->ipIndex) free(lavaRouterStruct->details->ipIndex);
     if (lavaRouterStruct->details->currentAddress) free(lavaRouterStruct->details->currentAddress);
@@ -825,7 +825,7 @@ void coglink_parseRouterPlannerCleanup(const struct lavaInfo *lavaInfo, struct l
     if (lavaRouterStruct) free(lavaRouterStruct);
 
     if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:jsmn-find] Freed %d bytes from router structure.", sizeof(lavaRouterStruct->class) + sizeof(lavaRouterStruct->details->ipBlock->type) + sizeof(lavaRouterStruct->details->ipBlock->size) + sizeof(lavaRouterStruct->details->ipBlock) + sizeof(lavaRouterStruct->details->failingAddress->address) + sizeof(lavaRouterStruct->details->failingAddress->failingTimestamp) + sizeof(lavaRouterStruct->details->failingAddress->failingTime) + sizeof(lavaRouterStruct->details->failingAddress) + sizeof(lavaRouterStruct->details->rotateIndex) + sizeof(lavaRouterStruct->details->ipIndex) + sizeof(lavaRouterStruct->details->currentAddress) + sizeof(lavaRouterStruct->details) + sizeof(lavaRouterStruct));
-  } else if (0 == strcmp("NanoIpRoutePlanner", lavaRouterStruct->class)) {
+  } else if (lavaRouterStruct->class[0] == 'N') {
     if (lavaRouterStruct->details->blockIndex) free(lavaRouterStruct->details->blockIndex);
     if (lavaRouterStruct->details->currentAddressIndex) free(lavaRouterStruct->details->currentAddressIndex);
     if (lavaRouterStruct->details) free(lavaRouterStruct->details);

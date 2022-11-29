@@ -58,7 +58,7 @@ int __coglink_performRequest(struct lavaInfo *lavaInfo, int requestType, int add
     return COGLINK_LIBCURL_FAILED_INITIALIZE;
   }
 
-  char lavaURL[strnlen(lavaInfo->node->hostname, 128) + 12 + pathLength];
+  char lavaURL[strnlen(lavaInfo->node->hostname, 128) + (lavaInfo->node->ssl ? 12 : 11) + pathLength];
   if (lavaInfo->node->ssl) snprintf(lavaURL, sizeof(lavaURL), "https://%s/v4%s", lavaInfo->node->hostname, path);
   else snprintf(lavaURL, sizeof(lavaURL), "http://%s/v3%s", lavaInfo->node->hostname, path);
 
@@ -184,5 +184,5 @@ void __coglink_randomString(char *dest, size_t length) {
 int __coglink_IOPoller(struct io_poller *io, CURLM *multi, void *user_data) {
   (void) io; (void) multi;
   struct lavaInfo *lavaInfo = user_data;
-  return !ws_multi_socket_run(lavaInfo->ws, &lavaInfo->tstamp) ? COGLINK_WAIT : COGLINK_SUCCESS;
+  return !ws_multi_socket_run(lavaInfo->ws, &lavaInfo->tstamp) ? COGLINK_WAIT : COGLINK_SUCCESS;;
 }
