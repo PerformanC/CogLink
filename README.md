@@ -2,6 +2,8 @@
 
 [![Discord Server](https://img.shields.io/discord/1036045973039890522?color=5865F2&logo=discord&logoColor=white)](https://discord.gg/YcaK3puy49) [![Codacy Badge](https://app.codacy.com/project/badge/Grade/acbabb99b4354f5ab182e511dd35aee4)](https://www.codacy.com/gh/ThePedroo/Coglink/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=ThePedroo/Coglink&amp;utm_campaign=Badge_Grade)
 
+![Coglink logo](guides/images//CoglinkLogo.png "Coglink logo")
+
 Coglink, the C Lavalink client, with the most performance above all Lavalink wrappers.
 
 ## About
@@ -119,6 +121,13 @@ In case of any issue using it (except bugs, that should be reported on GitHub Is
 ## Credits
 
 Even though I am the single maintainer of Coglink, many people contributed to it, thanks [Cogmaster](https://discord.gg/YcaK3puy49)'s guild members for this. And special thanks to `müller#1001`, without you, I wouldn't be here. :)
+
+Some people that helped on Coglink related things:
+  * müller
+  * HackerSmacker
+  * Goo
+
+Thank you all for the help! ^^
 
 ## Dependencies
 
