@@ -36,8 +36,6 @@ void onTextEvent(void *data, struct websockets *ws, struct ws_info *info, const 
   (void) ws; (void) info;
   struct lavaInfo *lavaInfo = data;
 
-  printf("%s\n", text);
-
   if (lavaInfo->events->onRaw && lavaInfo->events->onRaw(lavaInfo, text, len) != COGLINK_PROCEED) return;
 
   jsmn_parser parser;
@@ -467,7 +465,6 @@ enum discord_event_scheduler __coglink_handleScheduler(struct discord *client, c
       }
     } return DISCORD_EVENT_IGNORE;
     case DISCORD_EV_VOICE_SERVER_UPDATE: {
-      printf("%s\n", data);
       jsmn_parser parser;
       jsmntok_t tokens[256];
 

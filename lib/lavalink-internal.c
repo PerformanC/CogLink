@@ -26,6 +26,11 @@ size_t __coglink_WriteMemoryCallback(void *contents, size_t size, size_t nmemb, 
   return writeSize;
 }
 
+size_t __coglink_WriteMemoryCallbackNoSave(void *contents, size_t size, size_t nmemb, void *userp) {
+  (void) contents; (void) size; (void) userp;
+  return nmemb;
+}
+
 int __coglink_checkCurlCommand(struct lavaInfo *lavaInfo, CURL *curl, CURLcode cRes, char *pos, int additionalDebugging, int getResponse, struct httpRequest *res) {
   if (cRes != CURLE_OK) {
     if (lavaInfo->debugging->allDebugging || additionalDebugging || lavaInfo->debugging->curlErrorsDebugging) log_fatal("[coglink:libcurl] curl_easy_setopt [%s] failed: %s\n", pos, curl_easy_strerror(cRes));
@@ -113,17 +118,24 @@ int __coglink_performRequest(struct lavaInfo *lavaInfo, int requestType, int add
       curl_slist_free_all(chunk);
       return COGLINK_LIBCURL_FAILED_SETOPT;
     }
+  } else {
+    cRes = curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, __coglink_WriteMemoryCallbackNoSave);
+
+    if (__coglink_checkCurlCommand(lavaInfo, curl, cRes, "6", additionalDebuggingError, getResponse, res) != COGLINK_SUCCESS) {
+      curl_slist_free_all(chunk);
+      return COGLINK_LIBCURL_FAILED_SETOPT;
+    }
   }
 
   if (body) {
     cRes = curl_easy_setopt(curl, CURLOPT_POSTFIELDS, body);
-    if (__coglink_checkCurlCommand(lavaInfo, curl, cRes, "6", additionalDebuggingError, getResponse, res) != COGLINK_SUCCESS) {
+    if (__coglink_checkCurlCommand(lavaInfo, curl, cRes, "7", additionalDebuggingError, getResponse, res) != COGLINK_SUCCESS) {
       curl_slist_free_all(chunk);
       return COGLINK_LIBCURL_FAILED_SETOPT;
     }
 
     cRes = curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, bodySize);
-    if (__coglink_checkCurlCommand(lavaInfo, curl, cRes, "7", additionalDebuggingError, getResponse, res) != COGLINK_SUCCESS) {
+    if (__coglink_checkCurlCommand(lavaInfo, curl, cRes, "8", additionalDebuggingError, getResponse, res) != COGLINK_SUCCESS) {
       curl_slist_free_all(chunk);
       return COGLINK_LIBCURL_FAILED_SETOPT;
     }
