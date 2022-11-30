@@ -764,17 +764,21 @@ void coglink_parseDecodeTrackCleanup(const struct lavaInfo *lavaInfo, struct lav
 }
 
 void coglink_parseLavalinkInfoCleanup(const struct lavaInfo *lavaInfo, struct lavalinkInfo *lavalinkInfoStruct) {
-  if (lavalinkInfoStruct->version->semver) free(lavalinkInfoStruct->version->semver);
-  if (lavalinkInfoStruct->version->major) free(lavalinkInfoStruct->version->major);
-  if (lavalinkInfoStruct->version->minor) free(lavalinkInfoStruct->version->minor);
-  if (lavalinkInfoStruct->version->patch) free(lavalinkInfoStruct->version->patch);
-  if (lavalinkInfoStruct->version->preRelease) free(lavalinkInfoStruct->version->preRelease);
-  if (lavalinkInfoStruct->version) free(lavalinkInfoStruct->version);
+  if (lavalinkInfoStruct->version) {
+    free(lavalinkInfoStruct->version->semver);
+    free(lavalinkInfoStruct->version->major);
+    free(lavalinkInfoStruct->version->minor);
+    free(lavalinkInfoStruct->version->patch);
+    free(lavalinkInfoStruct->version->preRelease);
+    free(lavalinkInfoStruct->version);
+  }
   if (lavalinkInfoStruct->buildTime) free(lavalinkInfoStruct->buildTime);
-  if (lavalinkInfoStruct->git->branch) free(lavalinkInfoStruct->git->branch);
-  if (lavalinkInfoStruct->git->commit) free(lavalinkInfoStruct->git->commit);
-  if (lavalinkInfoStruct->git->commitTime) free(lavalinkInfoStruct->git->commitTime);
-  if (lavalinkInfoStruct->git) free(lavalinkInfoStruct->git);
+  if (lavalinkInfoStruct->git) {
+    free(lavalinkInfoStruct->git->branch);
+    free(lavalinkInfoStruct->git->commit);
+    free(lavalinkInfoStruct->git->commitTime);
+    free(lavalinkInfoStruct->git);
+  }
   if (lavalinkInfoStruct->jvm) free(lavalinkInfoStruct->jvm);
   if (lavalinkInfoStruct->lavaplayer) free(lavalinkInfoStruct->lavaplayer);
   if (lavalinkInfoStruct->sourceManagers) free(lavalinkInfoStruct->sourceManagers);
@@ -789,19 +793,25 @@ void coglink_parseLavalinkStatsCleanup(const struct lavaInfo *lavaInfo, struct l
   if (lavalinkStatsStruct->players) free(lavalinkStatsStruct->players);
   if (lavalinkStatsStruct->playingPlayers) free(lavalinkStatsStruct->playingPlayers);
   if (lavalinkStatsStruct->uptime) free(lavalinkStatsStruct->uptime);
-  if (lavalinkStatsStruct->memory->used) free(lavalinkStatsStruct->memory->used);
-  if (lavalinkStatsStruct->memory->free) free(lavalinkStatsStruct->memory->free);
-  if (lavalinkStatsStruct->memory->allocated) free(lavalinkStatsStruct->memory->allocated);
-  if (lavalinkStatsStruct->memory->reservable) free(lavalinkStatsStruct->memory->reservable);
-  if (lavalinkStatsStruct->memory) free(lavalinkStatsStruct->memory);
-  if (lavalinkStatsStruct->cpu->cores) free(lavalinkStatsStruct->cpu->cores);
-  if (lavalinkStatsStruct->cpu->systemLoad) free(lavalinkStatsStruct->cpu->systemLoad);
-  if (lavalinkStatsStruct->cpu->lavalinkLoad) free(lavalinkStatsStruct->cpu->lavalinkLoad);
-  if (lavalinkStatsStruct->cpu) free(lavalinkStatsStruct->cpu);
-  if (lavalinkStatsStruct->frameStats->sent) free(lavalinkStatsStruct->frameStats->sent);
-  if (lavalinkStatsStruct->frameStats->nulled) free(lavalinkStatsStruct->frameStats->nulled);
-  if (lavalinkStatsStruct->frameStats->deficit) free(lavalinkStatsStruct->frameStats->deficit);
-  if (lavalinkStatsStruct->frameStats) free(lavalinkStatsStruct->frameStats);
+  if (lavalinkStatsStruct->memory) {
+    free(lavalinkStatsStruct->memory->used);
+    free(lavalinkStatsStruct->memory->free);
+    free(lavalinkStatsStruct->memory->allocated);
+    free(lavalinkStatsStruct->memory->reservable);
+    free(lavalinkStatsStruct->memory);
+  }
+  if (lavalinkStatsStruct->cpu) {
+    free(lavalinkStatsStruct->cpu->cores);
+    free(lavalinkStatsStruct->cpu->systemLoad);
+    free(lavalinkStatsStruct->cpu->lavalinkLoad);
+    free(lavalinkStatsStruct->cpu);
+  }
+  if (lavalinkStatsStruct->frameStats) {
+    free(lavalinkStatsStruct->frameStats->sent);
+    free(lavalinkStatsStruct->frameStats->nulled);
+    free(lavalinkStatsStruct->frameStats->deficit);
+    free(lavalinkStatsStruct->frameStats);
+  }
   if (lavalinkStatsStruct) free(lavalinkStatsStruct);
 
   if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-free] Freed %d bytes from lavalink stats structure.", sizeof(lavalinkStatsStruct->players) + sizeof(lavalinkStatsStruct->playingPlayers) + sizeof(lavalinkStatsStruct->uptime) + sizeof(lavalinkStatsStruct->memory->used) + sizeof(lavalinkStatsStruct->memory->free) + sizeof(lavalinkStatsStruct->memory->allocated) + sizeof(lavalinkStatsStruct->memory->reservable) + sizeof(lavalinkStatsStruct->memory) + sizeof(lavalinkStatsStruct->cpu->cores) + sizeof(lavalinkStatsStruct->cpu->systemLoad) + sizeof(lavalinkStatsStruct->cpu->lavalinkLoad) + sizeof(lavalinkStatsStruct->cpu) + sizeof(lavalinkStatsStruct->frameStats->sent) + sizeof(lavalinkStatsStruct->frameStats->nulled) + sizeof(lavalinkStatsStruct->frameStats->deficit) + sizeof(lavalinkStatsStruct->frameStats) + sizeof(lavalinkStatsStruct));
@@ -809,14 +819,17 @@ void coglink_parseLavalinkStatsCleanup(const struct lavaInfo *lavaInfo, struct l
 
 void coglink_parseRouterPlannerCleanup(const struct lavaInfo *lavaInfo, struct lavaRouter *lavaRouterStruct) {
   if (lavaRouterStruct->class) free(lavaRouterStruct->class);
-  if (lavaRouterStruct->details->ipBlock->type) free(lavaRouterStruct->details->ipBlock->type);
-  if (lavaRouterStruct->details->ipBlock->size) free(lavaRouterStruct->details->ipBlock->size);
-  if (lavaRouterStruct->details->ipBlock) free(lavaRouterStruct->details->ipBlock);
-  if (lavaRouterStruct->details->failingAddress->address) free(lavaRouterStruct->details->failingAddress->address);
-  if (lavaRouterStruct->details->failingAddress->failingTimestamp) free(lavaRouterStruct->details->failingAddress->failingTimestamp);
-  if (lavaRouterStruct->details->failingAddress->failingTime) free(lavaRouterStruct->details->failingAddress->failingTime);
-  if (lavaRouterStruct->details->failingAddress) free(lavaRouterStruct->details->failingAddress);
-
+  if (lavaStruct->details->ipBlock) {
+    free(lavaRouterStruct->details->ipBlock->type);
+    free(lavaRouterStruct->details->ipBlock->size);
+    free(lavaRouterStruct->details->ipBlock);
+  }
+  if (lavaRouterStruct->details->failingAddress) {
+    free(lavaRouterStruct->details->failingAddress->address);
+    free(lavaRouterStruct->details->failingAddress->failingTimestamp);
+    free(lavaRouterStruct->details->failingAddress->failingTime);
+    free(lavaRouterStruct->details->failingAddress);
+  }
   if (lavaRouterStruct->class[0] == 'R') {
     if (lavaRouterStruct->details->rotateIndex) free(lavaRouterStruct->details->rotateIndex);
     if (lavaRouterStruct->details->ipIndex) free(lavaRouterStruct->details->ipIndex);

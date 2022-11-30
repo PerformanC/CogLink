@@ -24,7 +24,7 @@ Coglink was made with few libraries, but all of them are secure and stable, you 
 
 ## Stability
 
-This branch is marked as **semi-stable**, since it still needs some testing and even Lavalink v3.7 is not done, breaking changes may come and the current commit won't be compatible with newer versions of Lavalink, safe to use, but remember that ou will need to update when Lavalink releases its stable version.
+This branch is considered **stable**, and all functions are working properly and have been tested, what so ever Lavalink v3.7 is still not complete, breaking changes on Lavalink may come, but will rapidly be fixed in newer commits of Coglink, it's safe to be used on production.
 
 *If marked, considered stable, if not, bugs may be found.*
 
