@@ -44,7 +44,7 @@ int __coglink_checkCurlCommand(struct lavaInfo *lavaInfo, CURL *curl, CURLcode c
   return COGLINK_SUCCESS;
 }
 
-int __coglink_performRequest(struct lavaInfo *lavaInfo, int requestType, int additionalDebuggingSuccess, int additionalDebuggingError, char *path, int pathLength, char *body, long bodySize, struct httpRequest *res, int getResponse, CURL *reUsedCurl) {
+int __coglink_performRequest(struct lavaInfo *lavaInfo, int requestType, int additionalDebuggingSuccess, int additionalDebuggingError, char *path, int pathLength, int useV3Path, char *body, long bodySize, struct httpRequest *res, int getResponse, CURL *reUsedCurl) {
   if (!reUsedCurl) curl_global_init(CURL_GLOBAL_ALL);
 
   CURL *curl = reUsedCurl;
@@ -58,9 +58,15 @@ int __coglink_performRequest(struct lavaInfo *lavaInfo, int requestType, int add
     return COGLINK_LIBCURL_FAILED_INITIALIZE;
   }
 
-  char lavaURL[strnlen(lavaInfo->node->hostname, 128) + (lavaInfo->node->ssl ? 12 : 11) + pathLength];
-  if (lavaInfo->node->ssl) snprintf(lavaURL, sizeof(lavaURL), "https://%s/v4%s", lavaInfo->node->hostname, path);
-  else snprintf(lavaURL, sizeof(lavaURL), "http://%s/v3%s", lavaInfo->node->hostname, path);
+  char lavaURL[strnlen(lavaInfo->node->hostname, 128) + (useV3Path ? (lavaInfo->node->ssl ? 12 : 11) : (lavaInfo->node->ssl ? 9 : 8)) + pathLength];
+
+  if (useV3Path) {
+    if (lavaInfo->node->ssl) snprintf(lavaURL, sizeof(lavaURL), "https://%s/v3%s", lavaInfo->node->hostname, path);
+    else snprintf(lavaURL, sizeof(lavaURL), "http://%s/v3%s", lavaInfo->node->hostname, path);
+  } else {
+    if (lavaInfo->node->ssl) snprintf(lavaURL, sizeof(lavaURL), "https://%s%s", lavaInfo->node->hostname, path);
+    else snprintf(lavaURL, sizeof(lavaURL), "http://%s%s", lavaInfo->node->hostname, path);
+  }
 
   CURLcode cRes = curl_easy_setopt(curl, CURLOPT_URL, lavaURL);
   if (__coglink_checkCurlCommand(lavaInfo, curl, cRes, "1", additionalDebuggingError, getResponse, res) != COGLINK_SUCCESS) return COGLINK_LIBCURL_FAILED_SETOPT;

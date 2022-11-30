@@ -27,7 +27,7 @@ int coglink_searchSong(struct lavaInfo *lavaInfo, char *song, struct httpRequest
 
   curl_free(songEncoded);
 
-  return __coglink_performRequest(lavaInfo, __COGLINK_GET_REQ, lavaInfo->debugging->searchSongSuccessDebugging, lavaInfo->debugging->searchSongErrorsDebugging, reqPath, sizeof(reqPath), NULL, 0, res, 1, curl);
+  return __coglink_performRequest(lavaInfo, __COGLINK_GET_REQ, lavaInfo->debugging->searchSongSuccessDebugging, lavaInfo->debugging->searchSongErrorsDebugging, reqPath, sizeof(reqPath), 1, NULL, 0, res, 1, curl);
 }
 
 void coglink_searchCleanup(struct httpRequest res) {

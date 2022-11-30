@@ -12,7 +12,7 @@
 int coglink_getLavalinkVersion(struct lavaInfo *lavaInfo, char **version) {
   struct httpRequest res;
 
-  int status = __coglink_performRequest(lavaInfo, __COGLINK_GET_REQ, 0, 0, "/version", 7, NULL, 0, &res, 1, NULL);
+  int status = __coglink_performRequest(lavaInfo, __COGLINK_GET_REQ, 0, 0, "/version", 8, 0, NULL, 0, &res, 1, NULL);
   if (status != COGLINK_SUCCESS) return status;
 
   *version = res.body;
@@ -26,7 +26,7 @@ int coglink_decodeTrack(struct lavaInfo *lavaInfo, char *track, struct httpReque
   char reqPath[strnlen(track, 512) + 26];
   snprintf(reqPath, sizeof(reqPath), "/decodetrack?encodedTrack=%s", track);
 
-  return __coglink_performRequest(lavaInfo, __COGLINK_GET_REQ, 0, 0, reqPath, sizeof(reqPath), NULL, 0, res, 1, NULL);
+  return __coglink_performRequest(lavaInfo, __COGLINK_GET_REQ, 0, 0, reqPath, sizeof(reqPath), 1, NULL, 0, res, 1, NULL);
 }
 
 int coglink_parseDecodeTrack(struct lavaInfo *lavaInfo, struct httpRequest *res, struct lavaParsedTrack **songStruct) {
@@ -130,7 +130,7 @@ int coglink_parseDecodeTrack(struct lavaInfo *lavaInfo, struct httpRequest *res,
 }
 
 int coglink_decodeTracks(struct lavaInfo *lavaInfo, char *trackArray, long trackArrayLength, struct httpRequest *res) {
-  return __coglink_performRequest(lavaInfo, __COGLINK_GET_REQ, 0, 0, "/decodetracks", 14, trackArray, strnlen(trackArray, 512 * trackArrayLength), res, 1, NULL);
+  return __coglink_performRequest(lavaInfo, __COGLINK_GET_REQ, 0, 0, "/decodetracks", 1, 14, trackArray, strnlen(trackArray, 512 * trackArrayLength), res, 1, NULL);
 }
 
 int coglink_parseDecodeTracks(const struct lavaInfo *lavaInfo, struct httpRequest *res, char *songPos, struct lavaParsedTrack **songStruct) {
@@ -241,7 +241,7 @@ int coglink_parseDecodeTracks(const struct lavaInfo *lavaInfo, struct httpReques
 }
 
 int coglink_getLavalinkInfo(struct lavaInfo *lavaInfo, struct httpRequest *res) {
-  return __coglink_performRequest(lavaInfo, __COGLINK_GET_REQ, 0, 0, "/info", 6, NULL, 0, res, 1, NULL);
+  return __coglink_performRequest(lavaInfo, __COGLINK_GET_REQ, 0, 0, "/info", 1, 6, NULL, 0, res, 1, NULL);
 }
 
 int coglink_parseLavalinkInfo(struct lavaInfo *lavaInfo, struct httpRequest *res, struct lavalinkInfo **lavalinkInfoStruct) {
@@ -386,7 +386,7 @@ int coglink_parseLavalinkInfo(struct lavaInfo *lavaInfo, struct httpRequest *res
 }
 
 int coglink_getLavalinkStats(struct lavaInfo *lavaInfo, struct httpRequest *res) {
-  return __coglink_performRequest(lavaInfo, __COGLINK_GET_REQ, 0, 0, "/stats", 6, NULL, 0, res, 1, NULL);
+  return __coglink_performRequest(lavaInfo, __COGLINK_GET_REQ, 0, 0, "/stats", 1, 6, NULL, 0, res, 1, NULL);
 }
 
 int coglink_parseLavalinkStats(struct lavaInfo *lavaInfo, struct httpRequest *res, struct lavalinkStats **lavalinkStatsStruct) {
@@ -505,7 +505,7 @@ int coglink_parseLavalinkStats(struct lavaInfo *lavaInfo, struct httpRequest *re
 }
 
 int coglink_getRouterPlanner(struct lavaInfo *lavaInfo, struct httpRequest *res) {
-  return __coglink_performRequest(lavaInfo, __COGLINK_GET_REQ, 0, 0, "/routeplanner/status", 21, NULL, 0, res, 1, NULL);
+  return __coglink_performRequest(lavaInfo, __COGLINK_GET_REQ, 0, 0, "/routeplanner/status", 1, 21, NULL, 0, res, 1, NULL);
 }
 
 int coglink_parseRouterPlanner(struct lavaInfo *lavaInfo, struct httpRequest *res, char *ipPosition, struct lavaRouter **lavaRouterStruct) {
@@ -740,11 +740,11 @@ int coglink_freeFailingAddress(struct lavaInfo *lavaInfo, char *ip) {
   char payload[32];
   snprintf(payload, sizeof(payload), "{\"address\":\"%s\"}", ip);
 
-  return __coglink_performRequest(lavaInfo, __COGLINK_POST_REQ, 0, 0, "/routeplanner/free/address", 27, payload, (long)strnlen(payload, 32), NULL, 0, NULL);
+  return __coglink_performRequest(lavaInfo, __COGLINK_POST_REQ, 0, 0, "/routeplanner/free/address", 1, 27, payload, (long)strnlen(payload, 32), NULL, 0, NULL);
 }
 
 int coglink_freeFailingAllAddresses(struct lavaInfo *lavaInfo) {
-  return __coglink_performRequest(lavaInfo, __COGLINK_POST_REQ, 0, 0, "/routeplanner/free/address", 27, NULL, 0, NULL, 0, NULL);
+  return __coglink_performRequest(lavaInfo, __COGLINK_POST_REQ, 0, 0, "/routeplanner/free/address", 1, 27, NULL, 0, NULL, 0, NULL);
 }
 
 void coglink_parseDecodeTrackCleanup(const struct lavaInfo *lavaInfo, struct lavaParsedTrack *songStruct) {

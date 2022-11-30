@@ -85,7 +85,7 @@ struct playerInfo {
 
 int coglink_getPlayers(struct lavaInfo *lavaInfo, struct httpRequest *res);
 
-int coglink_parseGetPlayers(struct lavaInfo *lavaInfo, struct httpRequest *res, struct playerInfo **playerInfoStruct);
+int coglink_parseGetPlayers(struct lavaInfo *lavaInfo, struct httpRequest *res, char *pos, struct playerInfo **playerInfoStruct);
 
 int coglink_playSong(struct lavaInfo *lavaInfo, char *track, u64snowflake guildId);
 
@@ -100,5 +100,7 @@ void coglink_seekTrack(struct lavaInfo *lavaInfo, u64snowflake guildId, char *po
 void coglink_setPlayerVolume(struct lavaInfo *lavaInfo, u64snowflake guildId, char *volume);
 
 void coglink_setEffect(struct lavaInfo *lavaInfo, u64snowflake guildId, int effect, char *value);
+
+void coglink_parseGetPlayersCleanup(const struct lavaInfo *lavaInfo, struct playerInfo *playerInfoStruct);
 
 #endif

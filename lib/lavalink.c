@@ -90,7 +90,7 @@ void onTextEvent(void *data, struct websockets *ws, struct ws_info *info, const 
         char payload[27];
         snprintf(payload, sizeof(payload), "{\"resumingKey\":\"%s\"}", resumeKey);
 
-        __coglink_performRequest(lavaInfo, __COGLINK_PATCH_REQ, 0, 0, reqPath, sizeof(reqPath), payload, sizeof(payload), NULL, 0, NULL);
+        __coglink_performRequest(lavaInfo, __COGLINK_PATCH_REQ, 0, 0, reqPath, sizeof(reqPath), 1, payload, sizeof(payload), NULL, 0, NULL);
       }
 
       if (lavaInfo->events->onConnect) lavaInfo->events->onConnect();
@@ -139,7 +139,7 @@ void onTextEvent(void *data, struct websockets *ws, struct ws_info *info, const 
           lavaInfo->events->onTrackEnd(Track, Reason, strtoull(guildId, NULL, 10));
           break;
         }
-        case 'e': { /* TrackExceptionEvent */
+        case 'c': { /* TrackExceptionEvent */
           if (!lavaInfo->events->onTrackException) return;
 
           jsmnf_pair *track = jsmnf_find(pairs, text, "encodedTrack", 12);
@@ -167,7 +167,7 @@ void onTextEvent(void *data, struct websockets *ws, struct ws_info *info, const 
           lavaInfo->events->onTrackException(Track, Message, Severity, Cause, strtoull(guildId, NULL, 10));
           break;
         }
-        case 'c': { /* TrackStuckEvent */
+        case 'u': { /* TrackStuckEvent */
           if (!lavaInfo->events->onTrackStuck) return;
 
           jsmnf_pair *track = jsmnf_find(pairs, text, "encodedTrack", 12);
@@ -529,7 +529,7 @@ enum discord_event_scheduler __coglink_handleScheduler(struct discord *client, c
       char payload[256];
       snprintf(payload, sizeof(payload), "{\"voice\":{\"token\":\"%s\",\"endpoint\":\"%s\",\"sessionId\":\"%s\"}}", Token, Endpoint, sessionId);
 
-      __coglink_performRequest(lavaInfo, __COGLINK_PATCH_REQ, lavaInfo->debugging->handleSchedulerVoiceServerDebugging, lavaInfo->debugging->handleSchedulerVoiceServerDebugging, reqPath, sizeof(reqPath), payload, sizeof(payload), NULL, 0, NULL);
+      __coglink_performRequest(lavaInfo, __COGLINK_PATCH_REQ, lavaInfo->debugging->handleSchedulerVoiceServerDebugging, lavaInfo->debugging->handleSchedulerVoiceServerDebugging, reqPath, sizeof(reqPath), 1, payload, sizeof(payload), NULL, 0, NULL);
     } return DISCORD_EVENT_IGNORE;
     default:
       return DISCORD_EVENT_MAIN_THREAD;

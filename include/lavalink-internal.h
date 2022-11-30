@@ -9,7 +9,7 @@ struct httpRequest;
 #define __COGLINK_DELETE_REQ 2
 #define __COGLINK_PATCH_REQ 3
 
-int __coglink_performRequest(struct lavaInfo *lavaInfo, int requestType, int additionalDebuggingSuccess, int additionalDebuggingError, char *path, int pathLength, char *body, long bodySize, struct httpRequest *res, int getResponse, CURL *reUsedCurl);
+int __coglink_performRequest(struct lavaInfo *lavaInfo, int requestType, int additionalDebuggingSuccess, int additionalDebuggingError, char *path, int pathLength, int useV3Path, char *body, long bodySize, struct httpRequest *res, int getResponse, CURL *reUsedCurl);
 
 int __coglink_checkParse(struct lavaInfo *lavaInfo, jsmnf_pair *field, char *fieldName);
 

@@ -35,12 +35,12 @@ This branch is marked as **semi-stable**, since it still needs some testing and 
 - [x] All cleanups (Highly stable)
 - [x] DecodeTrack(s) & ParseTrack(s)
 - [x] Parse track, pause track, stop track, seek track, set volume
-- [ ] Set filter
-- [ ] Get Players & parse get Players
+- [x] Set filter
+- [x] Get Players & parse get Players
 - [x] Get/parse Info
 - [ ] Get/parse RouterPlanner
 - [x] Get/parse Lavalink Stats (Event included)
-- [ ] Get Lavalink Version
+- [x] Get Lavalink Version
 - [x] Connect/disconnect Node (Highly stable)
 - [x] Set event (Highly stable)
 - [x] Websocket (**Known bugs with close event**)
