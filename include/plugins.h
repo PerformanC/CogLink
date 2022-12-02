@@ -19,7 +19,6 @@ struct pluginEvents {
   int (*onDecodeTrackParseRequest)(struct lavaInfo *lavaInfo, struct requestInformation **res, struct parsedTrack ***songStruct);
   int (*onDecodeTracksRequest)(struct lavaInfo *lavaInfo, char *trackArray, long trackArrayLength, struct requestInformation **res);
   int (*onDecodeTracksParseRequest)(struct lavaInfo *lavaInfo, struct requestInformation **res, char *songPos, struct parsedTrack ***songStruct);
-  int (*onDecodeTrackCleanup)(struct lavaInfo *lavaInfo, struct parsedTrack **songStruct);
 };
 
 struct pluginEventsInternal {
@@ -32,7 +31,6 @@ struct pluginEventsInternal {
   int (*onDecodeTrackParseRequest[8])(struct lavaInfo *lavaInfo, struct requestInformation **res, struct parsedTrack ***songStruct);
   int (*onDecodeTracksRequest[8])(struct lavaInfo *lavaInfo, char *trackArray, long trackArrayLength, struct requestInformation **res);
   int (*onDecodeTracksParseRequest[8])(struct lavaInfo *lavaInfo, struct requestInformation **res, char *songPos, struct parsedTrack ***songStruct);
-  int (*onDecodeTrackCleanup[8])(struct lavaInfo *lavaInfo, struct parsedTrack **songStruct);
 };
 
 struct pluginSecurity {

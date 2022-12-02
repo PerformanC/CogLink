@@ -78,13 +78,4 @@ int coglink_freeFailingAddress(struct lavaInfo *lavaInfo, char *ip);
 
 int coglink_freeFailingAllAddresses(struct lavaInfo *lavaInfo);
 
-void coglink_parseDecodeTrackCleanup(struct lavaInfo *lavaInfo, struct parsedTrack *songStruct);
-
-void coglink_parseLavalinkInfoCleanup(struct lavaInfo *lavaInfo, struct lavalinkInfo *lavalinkInfoStruct);
-
-void coglink_parseLavalinkStatsCleanup(struct lavaInfo *lavaInfo, struct lavalinkStats *lavalinkStatsStruct);
-
-void coglink_parseRouterPlannerCleanup(struct lavaInfo *lavaInfo, struct lavalinkRouter *lavaRouterStruct);
-
 #endif
-

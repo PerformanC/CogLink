@@ -142,31 +142,19 @@ int coglink_parseDecodeTrack(struct lavaInfo *lavaInfo, struct requestInformatio
 
   if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseTrackSuccessDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_debug("[coglink:jsmn-find] Parsed song search json, results:\n> identifier: %s\n> isSeekable: %s\n> author: %s\n> length: %s\n> isStream: %s\n> position: %s\n> title: %s\n> uri: %s\n> sourceName: %s", Identifier, IsSeekable, Author, Length, IsStream, Position, Title, Uri, SourceName);
 
-  *songStruct = malloc(sizeof(struct parsedTrack));
+  *songStruct = &(struct parsedTrack) {
+    .identifier = Identifier,
+    .isSeekable = IsSeekable,
+    .author = Author,
+    .length = Length,
+    .isStream = IsStream,
+    .position = Position,
+    .title = Title,
+    .uri = Uri,
+    .sourceName = SourceName
+  };
 
-  (*songStruct)->identifier = malloc(sizeof(Identifier));
-  (*songStruct)->isSeekable = malloc(sizeof(IsSeekable));
-  (*songStruct)->author = malloc(sizeof(Author));
-  (*songStruct)->length = malloc(sizeof(Length));
-  (*songStruct)->isStream = malloc(sizeof(IsStream));
-  (*songStruct)->position = malloc(sizeof(Position));
-  (*songStruct)->title = malloc(sizeof(Title));
-  (*songStruct)->uri = malloc(sizeof(Uri));
-  (*songStruct)->sourceName = malloc(sizeof(SourceName));
-
-  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-malloc] Allocated %d bytes for song structure.", sizeof(struct parsedTrack) + sizeof(Identifier) + sizeof(IsSeekable) + sizeof(Author) + sizeof(Length) + sizeof(IsStream) + sizeof(Position) + sizeof(Title) + sizeof(Uri) + sizeof(SourceName));
-
-  strlcpy((*songStruct)->identifier, Identifier, IDENTIFIER_LENGTH);
-  strlcpy((*songStruct)->isSeekable, IsSeekable, TRUE_FALSE_LENGTH);
-  strlcpy((*songStruct)->author, Author, AUTHOR_NAME_LENGTH);
-  strlcpy((*songStruct)->length, Length, VIDEO_LENGTH);
-  strlcpy((*songStruct)->isStream, IsStream,TRUE_FALSE_LENGTH);
-  strlcpy((*songStruct)->position, Position, VIDEO_LENGTH);
-  strlcpy((*songStruct)->title, Title, TRACK_TITLE_LENGTH);
-  strlcpy((*songStruct)->uri, Uri, URL_LENGTH);
-  strlcpy((*songStruct)->sourceName, SourceName, SOURCENAME_LENGTH);
-
-  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-strlcpy] Copied %d bytes to song structure.", sizeof(Identifier) + sizeof(IsSeekable) + sizeof(Author) + sizeof(Length) + sizeof(IsStream) + sizeof(Position) + sizeof(Title) + sizeof(Uri) + sizeof(SourceName));
+  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-strlcpy] Set the value for struct members of songStruct.");
 
   return COGLINK_SUCCESS;
 }
@@ -193,7 +181,7 @@ int coglink_decodeTracks(struct lavaInfo *lavaInfo, char *trackArray, long track
     }
   }
 
-  return __coglink_performRequest(lavaInfo, __COGLINK_GET_REQ, 0, 0, "/decodetracks", 1, 14, trackArray, strnlen(trackArray, 512 * trackArrayLength), res, 1, NULL);
+  return __coglink_performRequest(lavaInfo, __COGLINK_GET_REQ, 0, 0, "/decodetracks", 14, 1, trackArray, strnlen(trackArray, 512 * trackArrayLength), res, 1, NULL);
 }
 
 int coglink_parseDecodeTracks(struct lavaInfo *lavaInfo, struct requestInformation *res, char *songPos, struct parsedTrack **songStruct) {
@@ -293,39 +281,26 @@ int coglink_parseDecodeTracks(struct lavaInfo *lavaInfo, struct requestInformati
 
   if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseTrackSuccessDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_debug("[coglink:jsmn-find] Parsed song search json, results:\n> track: %s\n> identifier: %s\n> isSeekable: %s\n> author: %s\n> length: %s\n> isStream: %s\n> position: %s\n> title: %s\n> uri: %s\n> sourceName: %s", Track, Identifier, IsSeekable, Author, Length, IsStream, Position, Title, Uri, SourceName);
 
-  *songStruct = malloc(sizeof(struct parsedTrack));
+  *songStruct = &(struct parsedTrack) {
+    .track = Track,
+    .identifier = Identifier,
+    .isSeekable = IsSeekable,
+    .author = Author,
+    .length = Length,
+    .isStream = IsStream,
+    .position = Position,
+    .title = Title,
+    .uri = Uri,
+    .sourceName = SourceName
+  };
 
-  (*songStruct)->track = malloc(sizeof(Track));
-  (*songStruct)->identifier = malloc(sizeof(Identifier));
-  (*songStruct)->isSeekable = malloc(sizeof(IsSeekable));
-  (*songStruct)->author = malloc(sizeof(Author));
-  (*songStruct)->length = malloc(sizeof(Length));
-  (*songStruct)->isStream = malloc(sizeof(IsStream));
-  (*songStruct)->position = malloc(sizeof(Position));
-  (*songStruct)->title = malloc(sizeof(Title));
-  (*songStruct)->uri = malloc(sizeof(Uri));
-  (*songStruct)->sourceName = malloc(sizeof(SourceName));
-
-  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-malloc] Allocated %d bytes for song structure.", sizeof(struct parsedTrack) + sizeof(Track) + sizeof(Identifier) + sizeof(IsSeekable) + sizeof(Author) + sizeof(Length) + sizeof(IsStream) + sizeof(Position) + sizeof(Title) + sizeof(Uri) + sizeof(SourceName));
-
-  strlcpy((*songStruct)->track, Track, TRACK_LENGTH);
-  strlcpy((*songStruct)->identifier, Identifier, IDENTIFIER_LENGTH);
-  strlcpy((*songStruct)->isSeekable, IsSeekable, TRUE_FALSE_LENGTH);
-  strlcpy((*songStruct)->author, Author, AUTHOR_NAME_LENGTH);
-  strlcpy((*songStruct)->length, Length, VIDEO_LENGTH);
-  strlcpy((*songStruct)->isStream, IsStream,TRUE_FALSE_LENGTH);
-  strlcpy((*songStruct)->position, Position, VIDEO_LENGTH);
-  strlcpy((*songStruct)->title, Title, TRACK_TITLE_LENGTH);
-  strlcpy((*songStruct)->uri, Uri, URL_LENGTH);
-  strlcpy((*songStruct)->sourceName, SourceName, SOURCENAME_LENGTH);
-
-  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-strlcpy] Copied %d bytes to song structure.", sizeof(Track) + sizeof(Identifier) + sizeof(IsSeekable) + sizeof(Author) + sizeof(Length) + sizeof(IsStream) + sizeof(Position) + sizeof(Title) + sizeof(Uri) + sizeof(SourceName));
+  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-strlcpy] Set the value for struct members of songStruct.");
 
   return COGLINK_SUCCESS;
 }
 
 int coglink_getLavalinkInfo(struct lavaInfo *lavaInfo, struct requestInformation *res) {
-  return __coglink_performRequest(lavaInfo, __COGLINK_GET_REQ, 0, 0, "/info", 1, 6, NULL, 0, res, 1, NULL);
+  return __coglink_performRequest(lavaInfo, __COGLINK_GET_REQ, 0, 0, "/info", 6, 1, NULL, 0, res, 1, NULL);
 }
 
 int coglink_parseLavalinkInfo(struct lavaInfo *lavaInfo, struct requestInformation *res, struct lavalinkInfo **lavalinkInfoStruct) {
@@ -423,54 +398,34 @@ int coglink_parseLavalinkInfo(struct lavaInfo *lavaInfo, struct requestInformati
 
   if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseSuccessDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_debug("[coglink:jsmn-find] Parsed error search json, results:\n> semver: %s\n> major: %s\n> minor: %s\n> patch: %s\n> preRelease: %s\n> buildTime: %s\n> branch: %s\n> commit: %s\n> commitTime: %s\n> jvm: %s\n> lavaplayer: %s\n> sourceManagers: %s\n> filters: %s\n> plugins: %s", Semver, Major, Minor, Patch, PreRelease, BuildTime, Branch, Commit, CommitTime, Jvm, Lavaplayer, SourceManagers, Filters, Plugins); 
 
-  *lavalinkInfoStruct = malloc(sizeof(struct lavalinkInfo));
+  *lavalinkInfoStruct = &(struct lavalinkInfo) {
+    .version = &(struct lavalinkInfoVersion) {
+      .semver = Semver,
+      .major = Major,
+      .minor = Minor,
+      .patch = Patch,
+      .preRelease = (preRelease ? PreRelease : NULL)
+    },
+    .buildTime = BuildTime,
+    .git = &(struct lavalinkInfoGit) {
+      .branch = Branch,
+      .commit = Commit,
+      .commitTime = CommitTime
+    },
+    .jvm = Jvm,
+    .lavaplayer = Lavaplayer,
+    .sourceManagers = SourceManagers,
+    .filters = Filters,
+    .plugins = Plugins
+  };
 
-  (*lavalinkInfoStruct)->version = malloc(sizeof(struct lavalinkInfoVersion));
-
-  (*lavalinkInfoStruct)->version->semver = malloc(sizeof(Semver));
-  (*lavalinkInfoStruct)->version->major = malloc(sizeof(Major));
-  (*lavalinkInfoStruct)->version->minor = malloc(sizeof(Minor));
-  (*lavalinkInfoStruct)->version->patch = malloc(sizeof(Patch));
-  if (preRelease) (*lavalinkInfoStruct)->version->preRelease = malloc(sizeof(PreRelease));
-
-  (*lavalinkInfoStruct)->buildTime = malloc(sizeof(BuildTime));
-
-  (*lavalinkInfoStruct)->git = malloc(sizeof(struct lavalinkInfoGit));
-
-  (*lavalinkInfoStruct)->git->branch = malloc(sizeof(Branch));
-  (*lavalinkInfoStruct)->git->commit = malloc(sizeof(Commit));
-  (*lavalinkInfoStruct)->git->commitTime = malloc(sizeof(CommitTime));
-
-  (*lavalinkInfoStruct)->jvm = malloc(sizeof(Jvm));
-  (*lavalinkInfoStruct)->lavaplayer = malloc(sizeof(Lavaplayer));
-  (*lavalinkInfoStruct)->sourceManagers = malloc(sizeof(SourceManagers));
-  (*lavalinkInfoStruct)->filters = malloc(sizeof(Filters));
-  (*lavalinkInfoStruct)->plugins = malloc(sizeof(Plugins));
-
-  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseSuccessDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_debug("[coglink:jsmn-find] Allocated %d bytes for info structure.", sizeof(struct lavalinkInfo) + sizeof(Semver) + sizeof(Major) + sizeof(Minor) + sizeof(Patch) + sizeof(PreRelease) + sizeof(BuildTime) + sizeof(Branch) + sizeof(Commit) + sizeof(CommitTime) + sizeof(Jvm) + sizeof(Lavaplayer) + sizeof(SourceManagers) + sizeof(Filters) + sizeof(Plugins));
-
-  strlcpy((*lavalinkInfoStruct)->version->semver, Semver, 8);
-  strlcpy((*lavalinkInfoStruct)->version->major, Major, 4);
-  strlcpy((*lavalinkInfoStruct)->version->minor, Minor, 4);
-  strlcpy((*lavalinkInfoStruct)->version->patch, Patch, 4);
-  if (preRelease) strlcpy((*lavalinkInfoStruct)->version->preRelease, PreRelease, 8);
-  strlcpy((*lavalinkInfoStruct)->buildTime, BuildTime, 32); 
-  strlcpy((*lavalinkInfoStruct)->git->branch, Branch, 16);
-  strlcpy((*lavalinkInfoStruct)->git->commit, Commit, 32);
-  strlcpy((*lavalinkInfoStruct)->git->commitTime, CommitTime, 16);
-  strlcpy((*lavalinkInfoStruct)->jvm, Jvm, 8);
-  strlcpy((*lavalinkInfoStruct)->lavaplayer, Lavaplayer, 8);
-  strlcpy((*lavalinkInfoStruct)->sourceManagers, SourceManagers, 128);
-  strlcpy((*lavalinkInfoStruct)->filters, Filters, 128);
-  strlcpy((*lavalinkInfoStruct)->plugins, Plugins, 128);
-
-  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseSuccessDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_debug("[coglink:jsmn-find] Copied %s bytes to info structure.", sizeof(struct lavalinkInfo) + sizeof(Semver) + sizeof(Major) + sizeof(Minor) + sizeof(Patch) + sizeof(PreRelease) + sizeof(BuildTime) + sizeof(Branch) + sizeof(Commit) + sizeof(CommitTime) + sizeof(Jvm) + sizeof(Lavaplayer) + sizeof(SourceManagers) + sizeof(Filters) + sizeof(Plugins));
+  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-strlcpy] Set the value for struct members of lavalinkInfoStruct.");
 
   return COGLINK_SUCCESS;
 }
 
 int coglink_getLavalinkStats(struct lavaInfo *lavaInfo, struct requestInformation *res) {
-  return __coglink_performRequest(lavaInfo, __COGLINK_GET_REQ, 0, 0, "/stats", 1, 6, NULL, 0, res, 1, NULL);
+  return __coglink_performRequest(lavaInfo, __COGLINK_GET_REQ, 0, 0, "/stats", 6, 1, NULL, 0, res, 1, NULL);
 }
 
 int coglink_parseLavalinkStats(struct lavaInfo *lavaInfo, struct requestInformation *res, struct lavalinkStats **lavalinkStatsStruct) {
@@ -551,45 +506,30 @@ int coglink_parseLavalinkStats(struct lavaInfo *lavaInfo, struct requestInformat
 
   if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseSuccessDebugging || lavaInfo->debugging->jsmnfSuccessDebugging) log_debug("[coglink:jsmn-find] Parsed error search json, results:\n> Players: %s\n> PlayingPlayers: %s\n> Uptime: %s\n> Free: %s\n> Used: %s\n> Allocated: %s\n> Reservable: %s\n> Cores: %s\n> SystemLoad: %s\n> LavalinkLoad: %s", Players, PlayingPlayers, Uptime, Free, Used, Allocated, Reservable, Cores, SystemLoad, LavalinkLoad);
 
-  *lavalinkStatsStruct = malloc(sizeof(struct lavalinkStats));
+  *lavalinkStatsStruct = &(struct lavalinkStats) {
+    .players = Players,
+    .playingPlayers = PlayingPlayers,
+    .uptime = Uptime,
+    .memory = &(struct lavalinkStatsMemory) {
+      .free = Free,
+      .used = Used,
+      .allocated = Allocated,
+      .reservable = Reservable
+    },
+    .cpu = &(struct lavalinkStatsCPU) {
+      .cores = Cores,
+      .systemLoad = SystemLoad,
+      .lavalinkLoad = LavalinkLoad
+    }
+  };
 
-  (*lavalinkStatsStruct)->players = malloc(sizeof(Players));
-  (*lavalinkStatsStruct)->playingPlayers = malloc(sizeof(PlayingPlayers));
-  (*lavalinkStatsStruct)->uptime = malloc(sizeof(Uptime));
-
-  (*lavalinkStatsStruct)->memory = malloc(sizeof(struct lavalinkStatsMemory));
-
-  (*lavalinkStatsStruct)->memory->free = malloc(sizeof(Free));
-  (*lavalinkStatsStruct)->memory->used = malloc(sizeof(Used));
-  (*lavalinkStatsStruct)->memory->allocated = malloc(sizeof(Allocated));
-  (*lavalinkStatsStruct)->memory->reservable = malloc(sizeof(Reservable));
-
-  (*lavalinkStatsStruct)->cpu = malloc(sizeof(struct lavalinkStatsCPU));
-
-  (*lavalinkStatsStruct)->cpu->cores = malloc(sizeof(Cores));
-  (*lavalinkStatsStruct)->cpu->systemLoad = malloc(sizeof(SystemLoad));
-  (*lavalinkStatsStruct)->cpu->lavalinkLoad = malloc(sizeof(LavalinkLoad));
-
-  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseSuccessDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_debug("[coglink:jsmn-find] Allocated %d bytes for stats structure.", sizeof(struct lavalinkStats) + sizeof(struct lavalinkStatsMemory) + sizeof(struct lavalinkStatsCPU) + sizeof(Players) + sizeof(PlayingPlayers) + sizeof(Uptime) + sizeof(Free) + sizeof(Used) + sizeof(Allocated) + sizeof(Reservable) + sizeof(Cores) + sizeof(SystemLoad) + sizeof(LavalinkLoad));
-
-  strlcpy((*lavalinkStatsStruct)->players, Players, 8);
-  strlcpy((*lavalinkStatsStruct)->playingPlayers, PlayingPlayers, 8);
-  strlcpy((*lavalinkStatsStruct)->uptime, Uptime, 32);
-  strlcpy((*lavalinkStatsStruct)->memory->free, Free, 16);
-  strlcpy((*lavalinkStatsStruct)->memory->used, Used, 16);
-  strlcpy((*lavalinkStatsStruct)->memory->allocated, Allocated, 16);
-  strlcpy((*lavalinkStatsStruct)->memory->reservable, Reservable, 16);
-  strlcpy((*lavalinkStatsStruct)->cpu->cores, Cores, 8);
-  strlcpy((*lavalinkStatsStruct)->cpu->systemLoad, SystemLoad, 16);
-  strlcpy((*lavalinkStatsStruct)->cpu->lavalinkLoad, LavalinkLoad, 16);
-
-  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseSuccessDebugging || lavaInfo->debugging->jsmnfSuccessDebugging) log_debug("[coglink:jsmn-find] Copied %d bytes to stats structure.", sizeof(Players) + sizeof(PlayingPlayers) + sizeof(Uptime) + sizeof(Free) + sizeof(Used) + sizeof(Allocated) + sizeof(Reservable) + sizeof(Cores) + sizeof(SystemLoad) + sizeof(LavalinkLoad));
+  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-strlcpy] Set the value for struct members of lavalinkStatsStruct.");
 
   return COGLINK_SUCCESS;
 }
 
 int coglink_getRouterPlanner(struct lavaInfo *lavaInfo, struct requestInformation *res) {
-  return __coglink_performRequest(lavaInfo, __COGLINK_GET_REQ, 0, 0, "/routeplanner/status", 1, 21, NULL, 0, res, 1, NULL);
+  return __coglink_performRequest(lavaInfo, __COGLINK_GET_REQ, 0, 0, "/routeplanner/status", 21, 1, NULL, 0, res, 1, NULL);
 }
 
 int coglink_parseRouterPlanner(struct lavaInfo *lavaInfo, struct requestInformation *res, char *ipPosition, struct lavalinkRouter **lavaRouterStruct) {
@@ -678,39 +618,25 @@ int coglink_parseRouterPlanner(struct lavaInfo *lavaInfo, struct requestInformat
 
     if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseSuccessDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_debug("[coglink:jsmn-find] Parsed error search json, results:\n> class: %s\n> type: %s\n> size: %s\n> address: %s\n> failingTimestamp: %s\n> failingTime: %s\n> rotateIndex: %s\n> ipIndex: %s\n> currentAddress: %s\n", Class, Type, Size, Address, FailingTimestamp, FailingTime, RotateIndex, IpIndex, CurrentAddress);
 
-    *lavaRouterStruct = malloc(sizeof(struct lavalinkRouter));
+    *lavaRouterStruct = &(struct lavalinkRouter) {
+      .class = Class,
+      .details = &(struct lavalinkRouterDetails) {
+        .ipBlock = &(struct lavalinkDetailsIpBlock) {
+          .type = Type,
+          .size = Size
+        },
+        .failingAddress = &(struct lavalinkDetailsFailingAddress) {
+          .address = Address,
+          .failingTimestamp = FailingTimestamp,
+          .failingTime = FailingTime
+        },
+        .rotateIndex = RotateIndex,
+        .ipIndex = IpIndex,
+        .currentAddress = CurrentAddress
+      }
+    };
 
-    (*lavaRouterStruct)->class = malloc(sizeof(Class));
-    (*lavaRouterStruct)->details = malloc(sizeof(struct lavalinkRouterDetails));
-
-    (*lavaRouterStruct)->details->ipBlock = malloc(sizeof(struct lavalinkDetailsIpBlock));
-
-    (*lavaRouterStruct)->details->ipBlock->type = malloc(sizeof(Type));
-    (*lavaRouterStruct)->details->ipBlock->size = malloc(sizeof(Size));
-
-    (*lavaRouterStruct)->details->failingAddress = malloc(sizeof(struct lavalinkDetailsFailingAddress));
-
-    (*lavaRouterStruct)->details->failingAddress->address = malloc(sizeof(Address));
-    (*lavaRouterStruct)->details->failingAddress->failingTimestamp = malloc(sizeof(FailingTimestamp));
-    (*lavaRouterStruct)->details->failingAddress->failingTime = malloc(sizeof(FailingTime));
-
-    (*lavaRouterStruct)->details->rotateIndex = malloc(sizeof(RotateIndex));
-    (*lavaRouterStruct)->details->ipIndex = malloc(sizeof(IpIndex));
-    (*lavaRouterStruct)->details->currentAddress = malloc(sizeof(CurrentAddress));
-
-    if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseSuccessDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_debug("[coglink:jsmn-find] Allocated %d bytes for router structure.", sizeof(struct lavalinkRouter) + sizeof(Class) + sizeof(struct lavalinkRouterDetails) + sizeof(struct lavalinkDetailsIpBlock) + sizeof(struct lavalinkDetailsFailingAddress) + sizeof(Type) + sizeof(Size) + sizeof(RotateIndex) + sizeof(IpIndex) + sizeof(CurrentAddress) + sizeof(Address) + sizeof(FailingTimestamp) + sizeof(FailingTime));
-
-    strlcpy((*lavaRouterStruct)->class, Class, ROUTERPLANNER_CLASS_LENGTH);
-    strlcpy((*lavaRouterStruct)->details->ipBlock->type, Type, 16);
-    strlcpy((*lavaRouterStruct)->details->ipBlock->size, Size, 16);
-    strlcpy((*lavaRouterStruct)->details->failingAddress->address, Address, 8);
-    strlcpy((*lavaRouterStruct)->details->failingAddress->failingTimestamp, FailingTimestamp, 16);
-    strlcpy((*lavaRouterStruct)->details->failingAddress->failingTime, FailingTime, 16);
-    strlcpy((*lavaRouterStruct)->details->rotateIndex, RotateIndex, 16);
-    strlcpy((*lavaRouterStruct)->details->ipIndex, IpIndex, 16);
-    strlcpy((*lavaRouterStruct)->details->currentAddress, CurrentAddress, 8);
-
-    if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseSuccessDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_debug("[coglink:jsmn-find] Copied %s bytes to router structure.", sizeof(Class) + sizeof(Type) + sizeof(Size) + sizeof(Address) + sizeof(FailingTimestamp) + sizeof(FailingTime) + sizeof(RotateIndex) + sizeof(IpIndex) + sizeof(CurrentAddress));
+    if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-strlcpy] Set the value for struct members of lavaRouterStruct.");
   } else if (Class[0] == 'N') {
     path[1] = "currentAddressIndex";
     jsmnf_pair *currentAddressIndex = jsmnf_find_path(pairs, res->body, path, 2);
@@ -731,35 +657,23 @@ int coglink_parseRouterPlanner(struct lavaInfo *lavaInfo, struct requestInformat
 
     if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseSuccessDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_debug("[coglink:jsmn-find] Parsed error search json, results:\n> class: %s\n> type: %s\n> size: %s\n> address: %s\n> failingTimestamp: %s\n> failingTime: %s\n> currentAddressIndex: %s\n", Class, Type, Size, Address, FailingTimestamp, FailingTime, CurrentAddressIndex);
 
-    *lavaRouterStruct = malloc(sizeof(struct lavalinkRouter));
+    *lavaRouterStruct = &(struct lavalinkRouter) {
+      .class = Class,
+      .details = &(struct lavalinkRouterDetails) {
+        .ipBlock = &(struct lavalinkDetailsIpBlock) {
+          .type = Type,
+          .size = Size
+        },
+        .failingAddress = &(struct lavalinkDetailsFailingAddress) {
+          .address = Address,
+          .failingTimestamp = FailingTimestamp,
+          .failingTime = FailingTime
+        },
+        .currentAddressIndex = CurrentAddressIndex
+      }
+    };
 
-    (*lavaRouterStruct)->class = malloc(sizeof(Class));
-    (*lavaRouterStruct)->details = malloc(sizeof(struct lavalinkRouterDetails));
-
-    (*lavaRouterStruct)->details->ipBlock = malloc(sizeof(struct lavalinkDetailsIpBlock));
-
-    (*lavaRouterStruct)->details->ipBlock->type = malloc(sizeof(Type));
-    (*lavaRouterStruct)->details->ipBlock->size = malloc(sizeof(Size));
-
-    (*lavaRouterStruct)->details->failingAddress = malloc(sizeof(struct lavalinkDetailsFailingAddress));
-
-    (*lavaRouterStruct)->details->failingAddress->address = malloc(sizeof(Address));
-    (*lavaRouterStruct)->details->failingAddress->failingTimestamp = malloc(sizeof(FailingTimestamp));
-    (*lavaRouterStruct)->details->failingAddress->failingTime = malloc(sizeof(FailingTime));
-
-    (*lavaRouterStruct)->details->currentAddressIndex = malloc(sizeof(CurrentAddressIndex));
-
-    if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseSuccessDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_debug("[coglink:jsmn-find] Allocated %d bytes for router structure.", sizeof(struct lavalinkRouter) + sizeof(Class) + sizeof(struct lavalinkRouterDetails) + sizeof(struct lavalinkDetailsIpBlock) + sizeof(struct lavalinkDetailsFailingAddress) + sizeof(Type) + sizeof(Size) + sizeof(CurrentAddressIndex) + sizeof(Address) + sizeof(FailingTimestamp) + sizeof(FailingTime));
-
-    strlcpy((*lavaRouterStruct)->class, Class, ROUTERPLANNER_CLASS_LENGTH);
-    strlcpy((*lavaRouterStruct)->details->ipBlock->type, Type, 16);
-    strlcpy((*lavaRouterStruct)->details->ipBlock->size, Size, 16);
-    strlcpy((*lavaRouterStruct)->details->failingAddress->address, Address, 8);
-    strlcpy((*lavaRouterStruct)->details->failingAddress->failingTimestamp, FailingTimestamp, 16);
-    strlcpy((*lavaRouterStruct)->details->failingAddress->failingTime, FailingTime, 16);
-    strlcpy((*lavaRouterStruct)->details->currentAddressIndex, CurrentAddressIndex, 16);
-
-    if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseSuccessDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_debug("[coglink:jsmn-find] Copied %s bytes to router structure.", sizeof(Class) + sizeof(Type) + sizeof(Size) + sizeof(Address) + sizeof(FailingTimestamp) + sizeof(FailingTime) + sizeof(CurrentAddressIndex));
+    if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-strlcpy] Set the value for struct members of lavaRouterStruct.");
   } else {
     path[1] = "blockIndex";
     jsmnf_pair *blockIndex = jsmnf_find_path(pairs, res->body, path, 2);
@@ -784,37 +698,24 @@ int coglink_parseRouterPlanner(struct lavaInfo *lavaInfo, struct requestInformat
 
     if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseSuccessDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_debug("[coglink:jsmn-find] Parsed error search json, results:\n> class: %s\n> type: %s\n> size: %s\n> address: %s\n> failingTimestamp: %s\n> failingTime: %s\n> blockIndex: %s\n> currentAddressIndex: %s\n", Class, Type, Size, Address, FailingTimestamp, FailingTime, BlockIndex, CurrentAddressIndex);
 
-    *lavaRouterStruct = malloc(sizeof(struct lavalinkRouter));
+    *lavaRouterStruct = &(struct lavalinkRouter) {
+      .class = Class,
+      .details = &(struct lavalinkRouterDetails) {
+        .ipBlock = &(struct lavalinkDetailsIpBlock) {
+          .type = Type,
+          .size = Size
+        },
+        .failingAddress = &(struct lavalinkDetailsFailingAddress) {
+          .address = Address,
+          .failingTimestamp = FailingTimestamp,
+          .failingTime = FailingTime
+        },
+        .blockIndex = BlockIndex,
+        .currentAddressIndex = CurrentAddressIndex
+      }
+    };
 
-    (*lavaRouterStruct)->class = malloc(sizeof(Class));
-    (*lavaRouterStruct)->details = malloc(sizeof(struct lavalinkRouterDetails));
-
-    (*lavaRouterStruct)->details->ipBlock = malloc(sizeof(struct lavalinkDetailsIpBlock));
-
-    (*lavaRouterStruct)->details->ipBlock->type = malloc(sizeof(Type));
-    (*lavaRouterStruct)->details->ipBlock->size = malloc(sizeof(Size));
-
-    (*lavaRouterStruct)->details->failingAddress->address = malloc(sizeof(Address));
-    (*lavaRouterStruct)->details->failingAddress->failingTimestamp = malloc(sizeof(FailingTimestamp));
-    (*lavaRouterStruct)->details->failingAddress->failingTime = malloc(sizeof(FailingTime));
-      
-    (*lavaRouterStruct)->details->blockIndex = malloc(sizeof(BlockIndex));
-    (*lavaRouterStruct)->details->currentAddressIndex = malloc(sizeof(CurrentAddressIndex));
-
-    (*lavaRouterStruct)->details->failingAddress = malloc(sizeof(struct lavalinkDetailsFailingAddress));
-      
-    if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseSuccessDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_debug("[coglink:jsmn-find] Allocated %d bytes for router structure.", sizeof(struct lavalinkRouter) + sizeof(Class) + sizeof(struct lavalinkRouterDetails) + sizeof(struct lavalinkDetailsIpBlock) + sizeof(struct lavalinkDetailsFailingAddress) + sizeof(Type) + sizeof(Size) + sizeof(BlockIndex) + sizeof(CurrentAddressIndex) + sizeof(Address) + sizeof(FailingTimestamp) + sizeof(FailingTime));
-
-    strlcpy((*lavaRouterStruct)->class, Class, ROUTERPLANNER_CLASS_LENGTH);
-    strlcpy((*lavaRouterStruct)->details->ipBlock->type, Type, 16);
-    strlcpy((*lavaRouterStruct)->details->ipBlock->size, Size, 16);
-    strlcpy((*lavaRouterStruct)->details->failingAddress->address, Address, 8);
-    strlcpy((*lavaRouterStruct)->details->failingAddress->failingTimestamp, FailingTimestamp, 16);
-    strlcpy((*lavaRouterStruct)->details->failingAddress->failingTime, FailingTime, 16);
-    strlcpy((*lavaRouterStruct)->details->blockIndex, BlockIndex, 16);
-    strlcpy((*lavaRouterStruct)->details->currentAddressIndex, CurrentAddressIndex, 16);
-
-    if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseSuccessDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_debug("[coglink:jsmn-find] Copied %s bytes to router structure.", sizeof(Class) + sizeof(Type) + sizeof(Size) + sizeof(Address) + sizeof(FailingTimestamp) + sizeof(FailingTime) + sizeof(BlockIndex) + sizeof(CurrentAddressIndex));
+    if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-strlcpy] Set the value for struct members of lavaRouterStruct.");
   }
 
   return COGLINK_SUCCESS;
@@ -824,138 +725,9 @@ int coglink_freeFailingAddress(struct lavaInfo *lavaInfo, char *ip) {
   char payload[32];
   snprintf(payload, sizeof(payload), "{\"address\":\"%s\"}", ip);
 
-  return __coglink_performRequest(lavaInfo, __COGLINK_POST_REQ, 0, 0, "/routeplanner/free/address", 1, 27, payload, (long)strnlen(payload, 32), NULL, 0, NULL);
+  return __coglink_performRequest(lavaInfo, __COGLINK_POST_REQ, 0, 0, "/routeplanner/free/address", 27, 1, payload, (long)strnlen(payload, 32), NULL, 0, NULL);
 }
 
 int coglink_freeFailingAllAddresses(struct lavaInfo *lavaInfo) {
-  return __coglink_performRequest(lavaInfo, __COGLINK_POST_REQ, 0, 0, "/routeplanner/free/address", 1, 27, NULL, 0, NULL, 0, NULL);
-}
-
-void coglink_parseDecodeTrackCleanup(struct lavaInfo *lavaInfo, struct parsedTrack *songStruct) {
-  if (lavaInfo->plugins && lavaInfo->plugins->events->onDecodeTrackCleanup[0]) {
-    if (lavaInfo->plugins->security->allowReadIOPoller) {
-      for (int i = 0;i <+ lavaInfo->plugins->amount;i++) {
-        if (!lavaInfo->plugins->events->onDecodeTrackCleanup[i]) break;
-
-        int pluginResultCode = lavaInfo->plugins->events->onDecodeTrackCleanup[i](lavaInfo, &songStruct);
-        if (pluginResultCode != COGLINK_PROCEED) return;
-      }
-    } else {
-      struct lavaInfo *lavaInfoPlugin = lavaInfo;
-      lavaInfoPlugin->io_poller = NULL;
-
-      for (int i = 0;i <+ lavaInfo->plugins->amount;i++) {
-        if (!lavaInfo->plugins->events->onDecodeTrackCleanup[i]) break;
-
-        int pluginResultCode = lavaInfo->plugins->events->onDecodeTrackCleanup[i](lavaInfoPlugin, &songStruct);
-        if (pluginResultCode != COGLINK_PROCEED) return;
-      }
-    }
-  }
-
-  if (songStruct->track) free(songStruct->track);
-  if (songStruct->identifier) free(songStruct->identifier);
-  if (songStruct->isSeekable) free(songStruct->isSeekable);
-  if (songStruct->author) free(songStruct->author);
-  if (songStruct->length) free(songStruct->length);
-  if (songStruct->isStream) free(songStruct->isStream);
-  if (songStruct->position) free(songStruct->position);
-  if (songStruct->title) free(songStruct->title);
-  if (songStruct->uri) free(songStruct->uri);
-  if (songStruct->sourceName) free(songStruct->sourceName);
-  if (songStruct) free(songStruct);
-
-  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-free] Freed %d bytes from song structure.", sizeof(songStruct->track) + sizeof(songStruct->identifier) + sizeof(songStruct->isSeekable) + sizeof(songStruct->author) + sizeof(songStruct->length) + sizeof(songStruct->isStream) + sizeof(songStruct->position) + sizeof(songStruct->title) + sizeof(songStruct->uri) + sizeof(songStruct->sourceName) + sizeof(struct parsedTrack));
-}
-
-void coglink_parseLavalinkInfoCleanup(struct lavaInfo *lavaInfo, struct lavalinkInfo *lavalinkInfoStruct) {
-  if (lavalinkInfoStruct->version) {
-    free(lavalinkInfoStruct->version->semver);
-    free(lavalinkInfoStruct->version->major);
-    free(lavalinkInfoStruct->version->minor);
-    free(lavalinkInfoStruct->version->patch);
-    free(lavalinkInfoStruct->version->preRelease);
-    free(lavalinkInfoStruct->version);
-  }
-  if (lavalinkInfoStruct->buildTime) free(lavalinkInfoStruct->buildTime);
-  if (lavalinkInfoStruct->git) {
-    free(lavalinkInfoStruct->git->branch);
-    free(lavalinkInfoStruct->git->commit);
-    free(lavalinkInfoStruct->git->commitTime);
-    free(lavalinkInfoStruct->git);
-  }
-  if (lavalinkInfoStruct->jvm) free(lavalinkInfoStruct->jvm);
-  if (lavalinkInfoStruct->lavaplayer) free(lavalinkInfoStruct->lavaplayer);
-  if (lavalinkInfoStruct->sourceManagers) free(lavalinkInfoStruct->sourceManagers);
-  if (lavalinkInfoStruct->filters) free(lavalinkInfoStruct->filters);
-  if (lavalinkInfoStruct->plugins) free(lavalinkInfoStruct->plugins);
-  if (lavalinkInfoStruct) free(lavalinkInfoStruct);
-
-  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-free] Freed %d bytes from lavalink info structure.", sizeof(lavalinkInfoStruct->version->semver) + sizeof(lavalinkInfoStruct->version->major) + sizeof(lavalinkInfoStruct->version->minor) + sizeof(lavalinkInfoStruct->version->patch) + sizeof(lavalinkInfoStruct->version->preRelease) + sizeof(lavalinkInfoStruct->version) + sizeof(lavalinkInfoStruct->buildTime) + sizeof(lavalinkInfoStruct->git->branch) + sizeof(lavalinkInfoStruct->git->commit) + sizeof(lavalinkInfoStruct->git->commitTime) + sizeof(lavalinkInfoStruct->git) + sizeof(lavalinkInfoStruct->jvm) + sizeof(lavalinkInfoStruct->lavaplayer) + sizeof(lavalinkInfoStruct->sourceManagers) + sizeof(lavalinkInfoStruct->filters) + sizeof(lavalinkInfoStruct->plugins) + sizeof(lavalinkInfoStruct));
-}
-
-void coglink_parseLavalinkStatsCleanup(struct lavaInfo *lavaInfo, struct lavalinkStats *lavalinkStatsStruct) {
-  if (lavalinkStatsStruct->players) free(lavalinkStatsStruct->players);
-  if (lavalinkStatsStruct->playingPlayers) free(lavalinkStatsStruct->playingPlayers);
-  if (lavalinkStatsStruct->uptime) free(lavalinkStatsStruct->uptime);
-  if (lavalinkStatsStruct->memory) {
-    free(lavalinkStatsStruct->memory->used);
-    free(lavalinkStatsStruct->memory->free);
-    free(lavalinkStatsStruct->memory->allocated);
-    free(lavalinkStatsStruct->memory->reservable);
-    free(lavalinkStatsStruct->memory);
-  }
-  if (lavalinkStatsStruct->cpu) {
-    free(lavalinkStatsStruct->cpu->cores);
-    free(lavalinkStatsStruct->cpu->systemLoad);
-    free(lavalinkStatsStruct->cpu->lavalinkLoad);
-    free(lavalinkStatsStruct->cpu);
-  }
-  if (lavalinkStatsStruct->frameStats) {
-    free(lavalinkStatsStruct->frameStats->sent);
-    free(lavalinkStatsStruct->frameStats->nulled);
-    free(lavalinkStatsStruct->frameStats->deficit);
-    free(lavalinkStatsStruct->frameStats);
-  }
-  if (lavalinkStatsStruct) free(lavalinkStatsStruct);
-
-  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-free] Freed %d bytes from lavalink stats structure.", sizeof(lavalinkStatsStruct->players) + sizeof(lavalinkStatsStruct->playingPlayers) + sizeof(lavalinkStatsStruct->uptime) + sizeof(lavalinkStatsStruct->memory->used) + sizeof(lavalinkStatsStruct->memory->free) + sizeof(lavalinkStatsStruct->memory->allocated) + sizeof(lavalinkStatsStruct->memory->reservable) + sizeof(lavalinkStatsStruct->memory) + sizeof(lavalinkStatsStruct->cpu->cores) + sizeof(lavalinkStatsStruct->cpu->systemLoad) + sizeof(lavalinkStatsStruct->cpu->lavalinkLoad) + sizeof(lavalinkStatsStruct->cpu) + sizeof(lavalinkStatsStruct->frameStats->sent) + sizeof(lavalinkStatsStruct->frameStats->nulled) + sizeof(lavalinkStatsStruct->frameStats->deficit) + sizeof(lavalinkStatsStruct->frameStats) + sizeof(lavalinkStatsStruct));
-}
-
-void coglink_parseRouterPlannerCleanup(struct lavaInfo *lavaInfo, struct lavalinkRouter *lavaRouterStruct) {
-  if (lavaRouterStruct->class) free(lavaRouterStruct->class);
-  if (lavaRouterStruct->details->ipBlock) {
-    free(lavaRouterStruct->details->ipBlock->type);
-    free(lavaRouterStruct->details->ipBlock->size);
-    free(lavaRouterStruct->details->ipBlock);
-  }
-  if (lavaRouterStruct->details->failingAddress) {
-    free(lavaRouterStruct->details->failingAddress->address);
-    free(lavaRouterStruct->details->failingAddress->failingTimestamp);
-    free(lavaRouterStruct->details->failingAddress->failingTime);
-    free(lavaRouterStruct->details->failingAddress);
-  }
-  if (lavaRouterStruct->class[0] == 'R') {
-    if (lavaRouterStruct->details->rotateIndex) free(lavaRouterStruct->details->rotateIndex);
-    if (lavaRouterStruct->details->ipIndex) free(lavaRouterStruct->details->ipIndex);
-    if (lavaRouterStruct->details->currentAddress) free(lavaRouterStruct->details->currentAddress);
-    if (lavaRouterStruct->details) free(lavaRouterStruct->details);
-    if (lavaRouterStruct) free(lavaRouterStruct);
-
-    if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:jsmn-find] Freed %d bytes from router structure.", sizeof(lavaRouterStruct->class) + sizeof(lavaRouterStruct->details->ipBlock->type) + sizeof(lavaRouterStruct->details->ipBlock->size) + sizeof(lavaRouterStruct->details->ipBlock) + sizeof(lavaRouterStruct->details->failingAddress->address) + sizeof(lavaRouterStruct->details->failingAddress->failingTimestamp) + sizeof(lavaRouterStruct->details->failingAddress->failingTime) + sizeof(lavaRouterStruct->details->failingAddress) + sizeof(lavaRouterStruct->details->rotateIndex) + sizeof(lavaRouterStruct->details->ipIndex) + sizeof(lavaRouterStruct->details->currentAddress) + sizeof(lavaRouterStruct->details) + sizeof(lavaRouterStruct));
-  } else if (lavaRouterStruct->class[0] == 'N') {
-    if (lavaRouterStruct->details->blockIndex) free(lavaRouterStruct->details->blockIndex);
-    if (lavaRouterStruct->details->currentAddressIndex) free(lavaRouterStruct->details->currentAddressIndex);
-    if (lavaRouterStruct->details) free(lavaRouterStruct->details);
-    if (lavaRouterStruct) free(lavaRouterStruct);
-
-    if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:jsmn-find] Freed %d bytes from router structure.", sizeof(lavaRouterStruct->class) + sizeof(lavaRouterStruct->details->ipBlock->type) + sizeof(lavaRouterStruct->details->ipBlock->size) + sizeof(lavaRouterStruct->details->ipBlock) + sizeof(lavaRouterStruct->details->failingAddress->address) + sizeof(lavaRouterStruct->details->failingAddress->failingTimestamp) + sizeof(lavaRouterStruct->details->failingAddress->failingTime) + sizeof(lavaRouterStruct->details->failingAddress) + sizeof(lavaRouterStruct->details->blockIndex) + sizeof(lavaRouterStruct->details->currentAddressIndex) + sizeof(lavaRouterStruct->details) + sizeof(lavaRouterStruct));
-  } else {
-    if (lavaRouterStruct->details->blockIndex) free(lavaRouterStruct->details->blockIndex);
-    if (lavaRouterStruct->details->currentAddressIndex) free(lavaRouterStruct->details->currentAddressIndex);
-    if (lavaRouterStruct->details) free(lavaRouterStruct->details);
-    if (lavaRouterStruct) free(lavaRouterStruct);
-
-    if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:jsmn-find] Freed %d bytes from router structure.", sizeof(lavaRouterStruct->class) + sizeof(lavaRouterStruct->details->ipBlock->type) + sizeof(lavaRouterStruct->details->ipBlock->size) + sizeof(lavaRouterStruct->details->ipBlock) + sizeof(lavaRouterStruct->details->failingAddress->address) + sizeof(lavaRouterStruct->details->failingAddress->failingTimestamp) + sizeof(lavaRouterStruct->details->failingAddress->failingTime) + sizeof(lavaRouterStruct->details->failingAddress) + sizeof(lavaRouterStruct->details->blockIndex) + sizeof(lavaRouterStruct->details->currentAddressIndex) + sizeof(lavaRouterStruct->details) + sizeof(lavaRouterStruct));
-  }
+  return __coglink_performRequest(lavaInfo, __COGLINK_POST_REQ, 0, 0, "/routeplanner/free/all", 23, 1, NULL, 0, NULL, 0, NULL);
 }

@@ -188,33 +188,20 @@ int coglink_parseTrack(const struct lavaInfo *lavaInfo, struct requestInformatio
 
   if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseTrackSuccessDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_debug("[coglink:jsmn-find] Parsed song search json, results:\n> track: %s\n> identifier: %s\n> isSeekable: %s\n> author: %s\n> length: %s\n> isStream: %s\n> position: %s\n> title: %s\n> uri: %s\n> sourceName: %s", Track, Identifier, IsSeekable, Author, Length, IsStream, Position, Title, Uri, SourceName);
 
-  *songStruct = malloc(sizeof(struct parsedTrack));
+  *songStruct = &(struct parsedTrack) {
+    .track = Track,
+    .identifier = Identifier,
+    .isSeekable = IsSeekable,
+    .author = Author,
+    .length = Length,
+    .isStream = IsStream,
+    .position = Position,
+    .title = Title,
+    .uri = Uri,
+    .sourceName = SourceName
+  };
 
-  (*songStruct)->track = malloc(sizeof(Track));
-  (*songStruct)->identifier = malloc(sizeof(Identifier));
-  (*songStruct)->isSeekable = malloc(sizeof(IsSeekable));
-  (*songStruct)->author = malloc(sizeof(Author));
-  (*songStruct)->length = malloc(sizeof(Length));
-  (*songStruct)->isStream = malloc(sizeof(IsStream));
-  (*songStruct)->position = malloc(sizeof(Position));
-  (*songStruct)->title = malloc(sizeof(Title));
-  (*songStruct)->uri = malloc(sizeof(Uri));
-  (*songStruct)->sourceName = malloc(sizeof(SourceName));
-
-  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-malloc] Allocated %d bytes for song structure.", sizeof(struct parsedTrack) + sizeof(Track) + sizeof(Identifier) + sizeof(IsSeekable) + sizeof(Author) + sizeof(Length) + sizeof(IsStream) + sizeof(Position) + sizeof(Title) + sizeof(Uri) + sizeof(SourceName));
-
-  strlcpy((*songStruct)->track, Track, TRACK_LENGTH);
-  strlcpy((*songStruct)->identifier, Identifier, IDENTIFIER_LENGTH);
-  strlcpy((*songStruct)->isSeekable, IsSeekable, TRUE_FALSE_LENGTH);
-  strlcpy((*songStruct)->author, Author, AUTHOR_NAME_LENGTH);
-  strlcpy((*songStruct)->length, Length, VIDEO_LENGTH);
-  strlcpy((*songStruct)->isStream, IsStream,TRUE_FALSE_LENGTH);
-  strlcpy((*songStruct)->position, Position, VIDEO_LENGTH);
-  strlcpy((*songStruct)->title, Title, TRACK_TITLE_LENGTH);
-  strlcpy((*songStruct)->uri, Uri, URL_LENGTH);
-  strlcpy((*songStruct)->sourceName, SourceName, SOURCENAME_LENGTH);
-
-  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-strlcpy] Copied %d bytes to song structure.", sizeof(Track) + sizeof(Identifier) + sizeof(IsSeekable) + sizeof(Author) + sizeof(Length) + sizeof(IsStream) + sizeof(Position) + sizeof(Title) + sizeof(Uri) + sizeof(SourceName));
+  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-strlcpy] Set the value for struct members of songStruct.");
 
   return COGLINK_SUCCESS;
 }
@@ -262,17 +249,12 @@ int coglink_parsePlaylist(const struct lavaInfo *lavaInfo, struct requestInforma
 
   if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parsePlaylistSuccessDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_debug("[coglink:jsmn-find] Parsed playlist search json, results:\n> name: %s\n> selectedTrack: %s", Name, SelectedTrack);
 
-  *playlistStruct = malloc(sizeof(struct parsedPlaylist));
+  *playlistStruct = &(struct parsedPlaylist) {
+    .name = Name,
+    .selectedTrack = SelectedTrack
+  };
 
-  (*playlistStruct)->name = malloc(sizeof(Name));
-  (*playlistStruct)->selectedTrack = malloc(sizeof(SelectedTrack));
-
-  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-malloc] Allocated %d bytes for playlist structure.", sizeof(struct parsedPlaylist) + sizeof(Name) + sizeof(SelectedTrack));
-
-  strlcpy((*playlistStruct)->name, Name, PLAYLIST_NAME_LENGTH);
-  strlcpy((*playlistStruct)->selectedTrack, SelectedTrack, 8);
-
-  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-strlcpy] Copied %d bytes to playlist structure.", sizeof(Name) + sizeof(SelectedTrack));
+  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-strlcpy] Set the value for struct members of parsedPlaylist.");
 
   return COGLINK_SUCCESS;
 }
@@ -320,49 +302,12 @@ int coglink_parseError(const struct lavaInfo *lavaInfo, struct requestInformatio
 
   if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseSuccessDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_debug("[coglink:jsmn-find] Parsed error search json, results:\n> message: %s\n> severity: %s", Message, Severity);
 
-  *errorStruct = malloc(sizeof(struct parsedError));
+  *errorStruct = &(struct parsedError) {
+    .message = Message,
+    .severity = Severity
+  };
 
-  (*errorStruct)->message = malloc(sizeof(Message));
-  (*errorStruct)->severity = malloc(sizeof(Severity));
-
-  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-malloc] Allocated %d bytes for error structure.", sizeof(struct parsedError) + sizeof(Message) + sizeof(Severity));
-
-  strlcpy((*errorStruct)->message, Message, 128);
-  strlcpy((*errorStruct)->severity, Severity, 16);
-
-  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-strlcpy] Copied %d bytes to error structure.", sizeof(Message) + sizeof(Severity));
+  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-strlcpy] Set the value for struct members of parsedError.");
 
   return COGLINK_SUCCESS;
-}
-
-void coglink_parseTrackCleanup(const struct lavaInfo *lavaInfo, struct parsedTrack *songStruct) {
-  if (songStruct->track) free(songStruct->track);
-  if (songStruct->identifier) free(songStruct->identifier);
-  if (songStruct->isSeekable) free(songStruct->isSeekable);
-  if (songStruct->author) free(songStruct->author);
-  if (songStruct->length) free(songStruct->length);
-  if (songStruct->isStream) free(songStruct->isStream);
-  if (songStruct->position) free(songStruct->position);
-  if (songStruct->title) free(songStruct->title);
-  if (songStruct->uri) free(songStruct->uri);
-  if (songStruct->sourceName) free(songStruct->sourceName);
-  if (songStruct) free(songStruct);
-
-  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-free] Freed %d bytes from song structure.", sizeof(struct parsedTrack) + sizeof(songStruct->track) + sizeof(songStruct->identifier) + sizeof(songStruct->isSeekable) + sizeof(songStruct->author) + sizeof(songStruct->length) + sizeof(songStruct->isStream) + sizeof(songStruct->position) + sizeof(songStruct->title) + sizeof(songStruct->uri) + sizeof(songStruct->sourceName) + 10);
-}
-
-void coglink_parsePlaylistCleanup(const struct lavaInfo *lavaInfo, struct parsedPlaylist *playlistStruct) {
-  if (playlistStruct->name) free(playlistStruct->name);
-  if (playlistStruct->selectedTrack) free(playlistStruct->selectedTrack);
-  if (playlistStruct) free(playlistStruct);
-
-  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-free] Freed %d bytes from playlist structure.", sizeof(struct parsedPlaylist) + sizeof(playlistStruct->name) + sizeof(playlistStruct->selectedTrack) + 2);
-}
-
-void coglink_parseErrorCleanup(const struct lavaInfo *lavaInfo, struct parsedError *errorStruct) {
-  if (errorStruct->message) free(errorStruct->message);
-  if (errorStruct->severity) free(errorStruct->severity);
-  if (errorStruct) free(errorStruct);
-
-  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-free] Freed %d bytes from error structure.", sizeof(struct parsedError) + sizeof(errorStruct->message) + sizeof(errorStruct->severity) + 2);
 }

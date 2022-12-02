@@ -13,10 +13,4 @@ int coglink_parsePlaylist(const struct lavaInfo *lavaInfo, struct requestInforma
 
 int coglink_parseError(const struct lavaInfo *lavaInfo, struct requestInformation *req, struct parsedError **errorStruct);
 
-void coglink_parseTrackCleanup(const struct lavaInfo *lavaInfo, struct parsedTrack *songStruct);
-
-void coglink_parsePlaylistCleanup(const struct lavaInfo *lavaInfo, struct parsedPlaylist *playlistStruct);
-
-void coglink_parseErrorCleanup(const struct lavaInfo *lavaInfo, struct parsedError *errorStruct);
-
 #endif

@@ -64,4 +64,6 @@
 
 #define COGLINK_ERROR -9
 
+#define COGLINK_NO_PLAYERS -10
+
 #endif

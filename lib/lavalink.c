@@ -131,15 +131,11 @@ void onTextEvent(void *data, struct websockets *ws, struct ws_info *info, const 
 
       snprintf(SessionId, sizeof(SessionId), "%.*s", (int)sessionId->v.len, text + sessionId->v.pos);
 
-      lavaInfo->sessionId = malloc(sizeof(SessionId));
-
       strlcpy(lavaInfo->sessionId, SessionId, LAVALINK_SESSIONID_LENGTH);
 
-      if (lavaInfo->allowResuming && !lavaInfo->resumeKey) {
+      if (lavaInfo->allowResuming && lavaInfo->resumeKey[0] == '\0') {
         char resumeKey[] = { [8] = '\1' };
         __coglink_randomString(resumeKey, sizeof(resumeKey) - 1);
-
-        lavaInfo->resumeKey = malloc(sizeof(resumeKey));
 
         strlcpy(lavaInfo->resumeKey, resumeKey, 8);
 
@@ -346,74 +342,31 @@ void onTextEvent(void *data, struct websockets *ws, struct ws_info *info, const 
       if (sent) { if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseSuccessDebugging || lavaInfo->debugging->jsmnfSuccessDebugging) log_debug("[coglink:jsmn-find] Parsed error search json, results:\n> Players: %s\n> PlayingPlayers: %s\n> Uptime: %s\n> Free: %s\n> Used: %s\n> Allocated: %s\n> Reservable: %s\n> Cores: %s\n> SystemLoad: %s\n> LavalinkLoad: %s\n> Sent: %s\n> Nulled: %s\n> Deficit: %s", Players, PlayingPlayers, Uptime, Free, Used, Allocated, Reservable, Cores, SystemLoad, LavalinkLoad, Sent, Nulled, Deficit); }
       else if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseSuccessDebugging || lavaInfo->debugging->jsmnfSuccessDebugging) log_debug("[coglink:jsmn-find] Parsed error search json, results:\n> Players: %s\n> PlayingPlayers: %s\n> Uptime: %s\n> Free: %s\n> Used: %s\n> Allocated: %s\n> Reservable: %s\n> Cores: %s\n> SystemLoad: %s\n> LavalinkLoad: %s", Players, PlayingPlayers, Uptime, Free, Used, Allocated, Reservable, Cores, SystemLoad, LavalinkLoad);
 
-      struct lavalinkStats *lavalinkStatsStruct = malloc(sizeof(struct lavalinkStats));
+      struct lavalinkStats *lavalinkStatsStruct = &(struct lavalinkStats) {
+        .players = Players,
+        .playingPlayers = PlayingPlayers,
+        .uptime = Uptime,
+        .memory = &(struct lavalinkStatsMemory) {
+          .free = Free,
+          .used = Used,
+          .allocated = Allocated,
+          .reservable = Reservable
+        },
+        .cpu = &(struct lavalinkStatsCPU) {
+          .cores = Cores,
+          .systemLoad = SystemLoad,
+          .lavalinkLoad = LavalinkLoad
+        },
+        .frameStats = &(struct lavalinkStatsFrameStats) {
+          .sent = (sent ? Sent : NULL),
+          .nulled = (sent ? Nulled : NULL),
+          .deficit = (sent ? Deficit : NULL)
+        }
+      };
 
-      lavalinkStatsStruct->players = malloc(sizeof(Players));
-      lavalinkStatsStruct->playingPlayers = malloc(sizeof(PlayingPlayers));
-      lavalinkStatsStruct->uptime = malloc(sizeof(Uptime));
-
-      lavalinkStatsStruct->memory = malloc(sizeof(struct lavalinkStatsMemory));
-
-      lavalinkStatsStruct->memory->free = malloc(sizeof(Free));
-      lavalinkStatsStruct->memory->used = malloc(sizeof(Used));
-      lavalinkStatsStruct->memory->allocated = malloc(sizeof(Allocated));
-      lavalinkStatsStruct->memory->reservable = malloc(sizeof(Reservable));
-
-      lavalinkStatsStruct->cpu = malloc(sizeof(struct lavalinkStatsCPU));
-
-      lavalinkStatsStruct->cpu->cores = malloc(sizeof(Cores));
-      lavalinkStatsStruct->cpu->systemLoad = malloc(sizeof(SystemLoad));
-      lavalinkStatsStruct->cpu->lavalinkLoad = malloc(sizeof(LavalinkLoad));
-
-      if (sent) {
-        lavalinkStatsStruct->frameStats = malloc(sizeof(struct lavalinkStatsFrameStats));
-
-        lavalinkStatsStruct->frameStats->sent = malloc(sizeof(Sent));
-        lavalinkStatsStruct->frameStats->nulled = malloc(sizeof(Nulled));
-        lavalinkStatsStruct->frameStats->deficit = malloc(sizeof(Deficit));
-
-        if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseSuccessDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_debug("[coglink:jsmn-find] Allocated %d bytes for stats structure.", sizeof(struct lavalinkStats) + sizeof(struct lavalinkStatsMemory) + sizeof(struct lavalinkStatsCPU) + sizeof(struct lavalinkStatsFrameStats) + sizeof(Players) + sizeof(PlayingPlayers) + sizeof(Uptime) + sizeof(Free) + sizeof(Used) + sizeof(Allocated) + sizeof(Reservable) + sizeof(Cores) + sizeof(SystemLoad) + sizeof(LavalinkLoad) + sizeof(Sent) + sizeof(Nulled) + sizeof(Deficit));
-      } else if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseSuccessDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_debug("[coglink:jsmn-find] Allocated %d bytes for stats structure.", sizeof(struct lavalinkStats) + sizeof(struct lavalinkStatsMemory) + sizeof(struct lavalinkStatsCPU) + sizeof(Players) + sizeof(PlayingPlayers) + sizeof(Uptime) + sizeof(Free) + sizeof(Used) + sizeof(Allocated) + sizeof(Reservable) + sizeof(Cores) + sizeof(SystemLoad) + sizeof(LavalinkLoad));
-
-      strlcpy(lavalinkStatsStruct->players, Players, 8);
-      strlcpy(lavalinkStatsStruct->playingPlayers, PlayingPlayers, 8);
-      strlcpy(lavalinkStatsStruct->uptime, Uptime, 32);
-      strlcpy(lavalinkStatsStruct->memory->free, Free, 16);
-      strlcpy(lavalinkStatsStruct->memory->used, Used, 16);
-      strlcpy(lavalinkStatsStruct->memory->allocated, Allocated, 16);
-      strlcpy(lavalinkStatsStruct->memory->reservable, Reservable, 16);
-      strlcpy(lavalinkStatsStruct->cpu->cores, Cores, 8);
-      strlcpy(lavalinkStatsStruct->cpu->systemLoad, SystemLoad, 16);
-      strlcpy(lavalinkStatsStruct->cpu->lavalinkLoad, LavalinkLoad, 16);
-      if (sent) {
-        strlcpy(lavalinkStatsStruct->frameStats->sent, Sent, 16);
-        strlcpy(lavalinkStatsStruct->frameStats->nulled, Nulled, 16);
-        strlcpy(lavalinkStatsStruct->frameStats->deficit, Deficit, 16);
-
-        if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseSuccessDebugging || lavaInfo->debugging->jsmnfSuccessDebugging) log_debug("[coglink:jsmn-find] Copied %d bytes to stats structure.", sizeof(Players) + sizeof(PlayingPlayers) + sizeof(Uptime) + sizeof(Free) + sizeof(Used) + sizeof(Allocated) + sizeof(Reservable) + sizeof(Cores) + sizeof(SystemLoad) + sizeof(LavalinkLoad) + sizeof(Sent) + sizeof(Nulled) + sizeof(Deficit));
-      } else if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseSuccessDebugging || lavaInfo->debugging->jsmnfSuccessDebugging) log_debug("[coglink:jsmn-find] Copied %d bytes to stats structure.", sizeof(Players) + sizeof(PlayingPlayers) + sizeof(Uptime) + sizeof(Free) + sizeof(Used) + sizeof(Allocated) + sizeof(Reservable) + sizeof(Cores) + sizeof(SystemLoad) + sizeof(LavalinkLoad));
+      if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-strlcpy] Set the value for struct members of lavalinkStatsStruct.");
 
       lavaInfo->events->onStats(lavalinkStatsStruct);
-
-      free(lavalinkStatsStruct->players);
-      free(lavalinkStatsStruct->playingPlayers);
-      free(lavalinkStatsStruct->uptime);
-      free(lavalinkStatsStruct->memory->free);
-      free(lavalinkStatsStruct->memory->used);
-      free(lavalinkStatsStruct->memory->allocated);
-      free(lavalinkStatsStruct->memory->reservable);
-      free(lavalinkStatsStruct->memory);
-      free(lavalinkStatsStruct->cpu->cores);
-      free(lavalinkStatsStruct->cpu->systemLoad);
-      free(lavalinkStatsStruct->cpu->lavalinkLoad);
-      free(lavalinkStatsStruct->cpu);
-      if (sent) {
-        free(lavalinkStatsStruct->frameStats->sent);
-        free(lavalinkStatsStruct->frameStats->nulled);
-        free(lavalinkStatsStruct->frameStats->deficit);
-        free(lavalinkStatsStruct->frameStats);
-      }
-      free(lavalinkStatsStruct);
       break;
     }
     case 'p': { /* PlayerUpdate */
@@ -517,7 +470,7 @@ enum discord_event_scheduler __coglink_handleScheduler(struct discord *client, c
       char guildId[GUILD_ID_LENGTH], userId[USER_ID_LENGTH];
 
       snprintf(guildId, sizeof(guildId), "%.*s", (int)VGI->v.len, data + VGI->v.pos);
-      snprintf(userId, USER_ID_LENGTH, "%.*s", (int)VUI->v.len, data + VUI->v.pos);
+      snprintf(userId, sizeof(userId), "%.*s", (int)VUI->v.len, data + VUI->v.pos);
 
       if (0 == strcmp(userId, lavaInfo->node->botId)) {
         jsmnf_pair *SSI = jsmnf_find(pairs, data, "session_id", 10);
@@ -634,8 +587,6 @@ void coglink_joinVoiceChannel(struct lavaInfo *lavaInfo, struct discord *client,
 }
 
 void coglink_freeNodeInfo(struct lavaInfo *lavaInfo) {
-  if (lavaInfo->sessionId) free(lavaInfo->sessionId);
-  if (lavaInfo->resumeKey) free(lavaInfo->resumeKey);
   if (lavaInfo) lavaInfo = NULL;
 }
 
@@ -685,7 +636,7 @@ int coglink_connectNode(struct lavaInfo *lavaInfo, struct discord *client, struc
   ws_set_url(ws, hostname, NULL);
   ws_start(ws);
 
-  if (lavaInfo->resumeKey && lavaInfo->resumeKey[0] != '\0') ws_add_header(ws, "Resume-Key", lavaInfo->resumeKey);
+  if (lavaInfo->resumeKey[0] != '\0') ws_add_header(ws, "Resume-Key", lavaInfo->resumeKey);
   ws_add_header(ws, "Authorization", node->password);
   ws_add_header(ws, "Num-Shards", node->shards);
   ws_add_header(ws, "User-Id", node->botId);

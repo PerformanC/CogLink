@@ -4,6 +4,7 @@
 #include <concord/websockets.h>
 
 #include <coglink/plugins.h>
+#include <coglink/definitions.h>
 
 struct requestInformation {
   char *body;
@@ -100,8 +101,8 @@ struct lavaInfo {
   uint64_t tstamp;
   struct coglinkDebugging *debugging;
   _Bool allowResuming;
-  char *resumeKey;
-  char *sessionId;
+  char resumeKey[8];
+  char sessionId[LAVALINK_SESSIONID_LENGTH];
 };
 
 struct parsedTrack {

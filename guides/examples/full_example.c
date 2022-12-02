@@ -165,8 +165,6 @@ void on_message(struct discord *client, const struct discord_message *message) {
         };
 
         discord_create_message(client, message->channel_id, &params, NULL);
-
-        coglink_parseTrackCleanup(&lavaInfo, song);
         break;
       }
       case COGLINK_LOADTYPE_NO_MATCHES: {
