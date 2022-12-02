@@ -23,26 +23,81 @@
 #define STRING_TABLE_COMPARE(cmp_a, cmp_b) chash_string_compare(cmp_a, cmp_b)
 #define STRING_TABLE_INIT(bucket, _key, _value) chash_default_init(bucket, _key, _value)
 
+struct StringBucket {
+  char *key;
+  char *value;
+  int state;
+};
+
+struct StringHashtable {
+  int length;
+  int capacity;
+  struct StringBucket *buckets;
+};
+
 struct StringHashtable *hashtable = NULL;
 
-void onCloseEvent(void *data, struct websockets *ws, struct ws_info *info, enum ws_close_reason wscode, const char *reason, size_t len) {
-  (void) ws; (void) info; (void) len;
+void onCloseEvent(void *data, struct websockets *ws, struct ws_info *info, enum ws_close_reason wscode, const char *reason, size_t length) {
+  (void) ws; (void) info; (void) length;
 
   struct lavaInfo *lavaInfo = data;
+
+  if (lavaInfo->plugins && lavaInfo->plugins->events->onLavalinkClose[0]) {
+    if (lavaInfo->plugins->security->allowReadIOPoller) {
+      for (int i = 0;i <+ lavaInfo->plugins->amount;i++) {
+        if (!lavaInfo->plugins->events->onLavalinkClose[i]) break;
+
+        int pluginResultCode = lavaInfo->plugins->events->onLavalinkClose[i](lavaInfo, info, wscode, reason, length);
+        if (pluginResultCode != COGLINK_PROCEED) return;
+      }
+    } else {
+      struct lavaInfo *lavaInfoPlugin = lavaInfo;
+      lavaInfoPlugin->io_poller = NULL;
+
+      for (int i = 0;i <+ lavaInfo->plugins->amount;i++) {
+        if (!lavaInfo->plugins->events->onLavalinkClose[i]) break;
+
+        int pluginResultCode = lavaInfo->plugins->events->onLavalinkClose[i](lavaInfoPlugin, info, wscode, reason, length);
+        if (pluginResultCode != COGLINK_PROCEED) return;
+      }
+    }
+  }
+
   if (lavaInfo->events->onClose) lavaInfo->events->onClose(wscode, reason);
 }
 
-void onTextEvent(void *data, struct websockets *ws, struct ws_info *info, const char *text, size_t len) {
+void onTextEvent(void *data, struct websockets *ws, struct ws_info *info, const char *text, size_t length) {
   (void) ws; (void) info;
   struct lavaInfo *lavaInfo = data;
 
-  if (lavaInfo->events->onRaw && lavaInfo->events->onRaw(lavaInfo, text, len) != COGLINK_PROCEED) return;
+  if (lavaInfo->plugins && lavaInfo->plugins->events->onLavalinkPacketReceived[0]) {
+    if (lavaInfo->plugins->security->allowReadIOPoller) {
+      for (int i = 0;i <+ lavaInfo->plugins->amount;i++) {
+        if (!lavaInfo->plugins->events->onLavalinkPacketReceived[i]) break;
+
+        int pluginResultCode = lavaInfo->plugins->events->onLavalinkPacketReceived[i](lavaInfo, text, length);
+        if (pluginResultCode != COGLINK_PROCEED) return;
+      }
+    } else {
+      struct lavaInfo *lavaInfoPlugin = lavaInfo;
+      lavaInfoPlugin->io_poller = NULL;
+
+      for (int i = 0;i <+ lavaInfo->plugins->amount;i++) {
+        if (!lavaInfo->plugins->events->onLavalinkPacketReceived[i]) break;
+
+        int pluginResultCode = lavaInfo->plugins->events->onLavalinkPacketReceived[i](lavaInfoPlugin, text, length);
+        if (pluginResultCode != COGLINK_PROCEED) return;
+      }
+    }
+  }
+
+  if (lavaInfo->events->onRaw && lavaInfo->events->onRaw(lavaInfo, text, length) != COGLINK_PROCEED) return;
 
   jsmn_parser parser;
   jsmntok_t tokens[64];
 
   jsmn_init(&parser);
-  int r = jsmn_parse(&parser, text, len, tokens, sizeof(tokens));
+  int r = jsmn_parse(&parser, text, length, tokens, sizeof(tokens));
 
   if (r < 0) {
     if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_error("[coglink:jsmn-find] Failed to parse JSON.");
@@ -53,7 +108,7 @@ void onTextEvent(void *data, struct websockets *ws, struct ws_info *info, const 
   jsmnf_pair pairs[64];
 
   jsmnf_init(&loader);
-  r = jsmnf_load(&loader, text, tokens, parser.toknext, pairs, sizeof(pairs) / sizeof *pairs);
+  r = jsmnf_load(&loader, text, tokens, parser.toknext, pairs, sizeof(pairs) / sizeof(*pairs));
 
   if (r < 0) {
     if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_error("[coglink:jsmn-find] Failed to load jsmn-find.");
@@ -83,6 +138,10 @@ void onTextEvent(void *data, struct websockets *ws, struct ws_info *info, const 
       if (lavaInfo->allowResuming && !lavaInfo->resumeKey) {
         char resumeKey[] = { [8] = '\1' };
         __coglink_randomString(resumeKey, sizeof(resumeKey) - 1);
+
+        lavaInfo->resumeKey = malloc(sizeof(resumeKey));
+
+        strlcpy(lavaInfo->resumeKey, resumeKey, 8);
 
         char reqPath[27];
         snprintf(reqPath, sizeof(reqPath), "/sessions/%s", SessionId);
@@ -293,28 +352,28 @@ void onTextEvent(void *data, struct websockets *ws, struct ws_info *info, const 
       lavalinkStatsStruct->playingPlayers = malloc(sizeof(PlayingPlayers));
       lavalinkStatsStruct->uptime = malloc(sizeof(Uptime));
 
-      lavalinkStatsStruct->memory = malloc(sizeof(struct lavaMemory));
+      lavalinkStatsStruct->memory = malloc(sizeof(struct lavalinkStatsMemory));
 
       lavalinkStatsStruct->memory->free = malloc(sizeof(Free));
       lavalinkStatsStruct->memory->used = malloc(sizeof(Used));
       lavalinkStatsStruct->memory->allocated = malloc(sizeof(Allocated));
       lavalinkStatsStruct->memory->reservable = malloc(sizeof(Reservable));
 
-      lavalinkStatsStruct->cpu = malloc(sizeof(struct lavaCPU));
+      lavalinkStatsStruct->cpu = malloc(sizeof(struct lavalinkStatsCPU));
 
       lavalinkStatsStruct->cpu->cores = malloc(sizeof(Cores));
       lavalinkStatsStruct->cpu->systemLoad = malloc(sizeof(SystemLoad));
       lavalinkStatsStruct->cpu->lavalinkLoad = malloc(sizeof(LavalinkLoad));
 
       if (sent) {
-        lavalinkStatsStruct->frameStats = malloc(sizeof(struct lavaFStats));
+        lavalinkStatsStruct->frameStats = malloc(sizeof(struct lavalinkStatsFrameStats));
 
         lavalinkStatsStruct->frameStats->sent = malloc(sizeof(Sent));
         lavalinkStatsStruct->frameStats->nulled = malloc(sizeof(Nulled));
         lavalinkStatsStruct->frameStats->deficit = malloc(sizeof(Deficit));
 
-        if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseSuccessDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_debug("[coglink:jsmn-find] Allocated %d bytes for stats structure.", sizeof(struct lavalinkStats) + sizeof(struct lavaMemory) + sizeof(struct lavaCPU) + sizeof(Players) + sizeof(PlayingPlayers) + sizeof(Uptime) + sizeof(Free) + sizeof(Used) + sizeof(Allocated) + sizeof(Reservable) + sizeof(Cores) + sizeof(SystemLoad) + sizeof(LavalinkLoad) + sizeof(Sent) + sizeof(Nulled) + sizeof(Deficit));
-      } else if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseSuccessDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_debug("[coglink:jsmn-find] Allocated %d bytes for stats structure.", sizeof(struct lavalinkStats) + sizeof(struct lavaMemory) + sizeof(struct lavaCPU) + sizeof(Players) + sizeof(PlayingPlayers) + sizeof(Uptime) + sizeof(Free) + sizeof(Used) + sizeof(Allocated) + sizeof(Reservable) + sizeof(Cores) + sizeof(SystemLoad) + sizeof(LavalinkLoad));
+        if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseSuccessDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_debug("[coglink:jsmn-find] Allocated %d bytes for stats structure.", sizeof(struct lavalinkStats) + sizeof(struct lavalinkStatsMemory) + sizeof(struct lavalinkStatsCPU) + sizeof(struct lavalinkStatsFrameStats) + sizeof(Players) + sizeof(PlayingPlayers) + sizeof(Uptime) + sizeof(Free) + sizeof(Used) + sizeof(Allocated) + sizeof(Reservable) + sizeof(Cores) + sizeof(SystemLoad) + sizeof(LavalinkLoad) + sizeof(Sent) + sizeof(Nulled) + sizeof(Deficit));
+      } else if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseSuccessDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_debug("[coglink:jsmn-find] Allocated %d bytes for stats structure.", sizeof(struct lavalinkStats) + sizeof(struct lavalinkStatsMemory) + sizeof(struct lavalinkStatsCPU) + sizeof(Players) + sizeof(PlayingPlayers) + sizeof(Uptime) + sizeof(Free) + sizeof(Used) + sizeof(Allocated) + sizeof(Reservable) + sizeof(Cores) + sizeof(SystemLoad) + sizeof(LavalinkLoad));
 
       strlcpy(lavalinkStatsStruct->players, Players, 8);
       strlcpy(lavalinkStatsStruct->playingPlayers, PlayingPlayers, 8);
@@ -396,15 +455,42 @@ void onTextEvent(void *data, struct websockets *ws, struct ws_info *info, const 
   }
 }
 
-enum discord_event_scheduler __coglink_handleScheduler(struct discord *client, const char data[], size_t size, enum discord_gateway_events event) {
+enum discord_event_scheduler __coglink_handleScheduler(struct discord *client, const char data[], size_t length, enum discord_gateway_events event) {
   struct lavaInfo *lavaInfo = discord_get_data(client);
+
+  if (lavaInfo->plugins && lavaInfo->plugins->events->onCoglinkScheduler[0]) {
+    if (lavaInfo->plugins->security->allowReadBotToken) client->token = NULL;
+    if (lavaInfo->plugins->security->allowReadConcordWebsocket) client->gw = (struct discord_gateway) { 0 };
+
+    if (lavaInfo->plugins->security->allowReadIOPoller) {
+      for (int i = 0;i <+ lavaInfo->plugins->amount;i++) {
+        if (!lavaInfo->plugins->events->onCoglinkScheduler[i]) break;
+
+        int pluginResultCode = lavaInfo->plugins->events->onCoglinkScheduler[i](lavaInfo, client, data, length, event);
+        if (pluginResultCode != COGLINK_PROCEED) return pluginResultCode;
+      }
+    } else {
+      struct lavaInfo *lavaInfoPlugin = lavaInfo;
+      lavaInfoPlugin->io_poller = NULL;
+
+      client->io_poller = NULL;
+
+      for (int i = 0;i <+ lavaInfo->plugins->amount;i++) {
+        if (!lavaInfo->plugins->events->onCoglinkScheduler[i]) break;
+
+        int pluginResultCode = lavaInfo->plugins->events->onCoglinkScheduler[i](lavaInfoPlugin, client, data, length, event);
+        if (pluginResultCode != COGLINK_PROCEED) return pluginResultCode;
+      }
+    }
+  }
+
   switch(event) {
     case DISCORD_EV_VOICE_STATE_UPDATE: {
       jsmn_parser parser;
       jsmntok_t tokens[128];
 
       jsmn_init(&parser);
-      int r = jsmn_parse(&parser, data, size, tokens, sizeof(tokens));
+      int r = jsmn_parse(&parser, data, length, tokens, sizeof(tokens));
 
       if (r < 0) {
         if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->jsmnfErrorsDebugging || lavaInfo->debugging->handleSchedulerVoiceStateDebugging) log_error("[coglink:jsmn-find] Failed to parse JSON.");
@@ -415,7 +501,7 @@ enum discord_event_scheduler __coglink_handleScheduler(struct discord *client, c
       jsmnf_pair pairs[128];
 
       jsmnf_init(&loader);
-      r = jsmnf_load(&loader, data, tokens, parser.toknext, pairs, sizeof(pairs) / sizeof *pairs);
+      r = jsmnf_load(&loader, data, tokens, parser.toknext, pairs, sizeof(pairs) / sizeof(*pairs));
 
       if (r < 0) {
         if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->jsmnfErrorsDebugging || lavaInfo->debugging->handleSchedulerVoiceStateDebugging) log_error("[coglink:jsmn-find] Failed to load jsmn-find.");
@@ -469,7 +555,7 @@ enum discord_event_scheduler __coglink_handleScheduler(struct discord *client, c
       jsmntok_t tokens[256];
 
       jsmn_init(&parser);
-      int r = jsmn_parse(&parser, data, size, tokens, sizeof(tokens));
+      int r = jsmn_parse(&parser, data, length, tokens, sizeof(tokens));
 
       if (r < 0) {
         if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->handleSchedulerVoiceServerDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_error("[jsmn-find] Failed to parse JSON.");
@@ -481,7 +567,7 @@ enum discord_event_scheduler __coglink_handleScheduler(struct discord *client, c
       jsmnf_pair pairs[128];
 
       jsmnf_init(&loader);
-      r = jsmnf_load(&loader, data, tokens, parser.toknext, pairs, sizeof(pairs) / sizeof *pairs);
+      r = jsmnf_load(&loader, data, tokens, parser.toknext, pairs, sizeof(pairs) / sizeof(*pairs));
 
       if (r < 0) {
         if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->handleSchedulerVoiceServerDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_error("[coglink:jsmn-find] Failed to load jsmn-find.");
@@ -549,6 +635,7 @@ void coglink_joinVoiceChannel(struct lavaInfo *lavaInfo, struct discord *client,
 
 void coglink_freeNodeInfo(struct lavaInfo *lavaInfo) {
   if (lavaInfo->sessionId) free(lavaInfo->sessionId);
+  if (lavaInfo->resumeKey) free(lavaInfo->resumeKey);
   if (lavaInfo) lavaInfo = NULL;
 }
 
@@ -556,23 +643,21 @@ void coglink_disconnectNode(struct lavaInfo *lavaInfo) {
   ws_close(lavaInfo->ws, 1000, "Requested to be closed", sizeof("Requested to be closed"));
 }
 
-void coglink_setEvents(struct lavaInfo *lavaInfo, struct lavaEvents *lavaEvents) {
-  lavaInfo->events = lavaEvents;
+void coglink_setEvents(struct lavaInfo *lavaInfo, struct lavalinkEvents *lavalinkEvents) {
+  lavaInfo->events = lavalinkEvents;
 }
 
 void coglink_connectNodeCleanup(struct lavaInfo *lavaInfo) {
-  io_poller_curlm_del(lavaInfo->io_poller, lavaInfo->mhandle);
   if (hashtable) chash_free(hashtable, STRING_TABLE);
-  ws_end(lavaInfo->ws);
+  ws_close(lavaInfo->ws, 1000, "Normal close", 14);
+  io_poller_curlm_del(lavaInfo->io_poller, lavaInfo->mhandle);
   ws_cleanup(lavaInfo->ws);
   curl_multi_cleanup(lavaInfo->mhandle);
   curl_global_cleanup();
-  ws_end(lavaInfo->ws);
-  ws_cleanup(lavaInfo->ws);
   coglink_freeNodeInfo(lavaInfo);
 }
 
-int coglink_connectNode(struct lavaInfo *lavaInfo, struct discord *client, struct lavaNode *node) {
+int coglink_connectNode(struct lavaInfo *lavaInfo, struct discord *client, struct lavalinkNode *node) {
   curl_global_init(CURL_GLOBAL_ALL);
 
   discord_set_data(client, lavaInfo);
@@ -582,10 +667,9 @@ int coglink_connectNode(struct lavaInfo *lavaInfo, struct discord *client, struc
   lavaInfo->tstamp = (uint64_t)0;
   lavaInfo->mhandle = curl_multi_init();
 
-  struct io_poller *io = discord_get_io_poller(client);
-  io_poller_curlm_add(io, lavaInfo->mhandle, __coglink_IOPoller, lavaInfo);
-  io_poller_curlm_enable_perform(io, lavaInfo->mhandle);
-  lavaInfo->io_poller = io;
+  io_poller_curlm_add(client->io_poller, lavaInfo->mhandle, __coglink_IOPoller, lavaInfo);
+  io_poller_curlm_enable_perform(client->io_poller, lavaInfo->mhandle);
+  lavaInfo->io_poller = client->io_poller;
 
   struct ws_callbacks callbacks = {
     .on_text = &onTextEvent,

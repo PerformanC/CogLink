@@ -44,7 +44,7 @@ struct channelMixStruct {
 
 struct playerInfoTrack {
   char *encoded;
-  struct lavaParsedTrack *info;
+  struct parsedTrack *info;
 };
 
 struct playerInfoVoice {
@@ -83,9 +83,9 @@ struct playerInfo {
   struct errorStruct *error;
 };
 
-int coglink_getPlayers(struct lavaInfo *lavaInfo, struct httpRequest *res);
+int coglink_getPlayers(struct lavaInfo *lavaInfo, struct requestInformation *res);
 
-int coglink_parseGetPlayers(struct lavaInfo *lavaInfo, struct httpRequest *res, char *pos, struct playerInfo **playerInfoStruct);
+int coglink_parseGetPlayers(struct lavaInfo *lavaInfo, struct requestInformation *res, char *pos, struct playerInfo **playerInfoStruct);
 
 int coglink_playSong(struct lavaInfo *lavaInfo, char *track, u64snowflake guildId);
 

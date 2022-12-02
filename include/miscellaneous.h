@@ -1,32 +1,30 @@
 #ifndef MISCELLANEOUS_H
 #define MISCELLANEOUS_H
 
-struct lavaDetailsIpBlock {
+struct lavalinkDetailsIpBlock {
   char *type;
   char *size;
 };
 
-struct lavaDetailsFailingAddress {
+struct lavalinkDetailsFailingAddress {
   char *address;
   char *failingTimestamp;
   char *failingTime;
 };
 
-struct lavaRouterDetails {
-  struct lavaDetailsIpBlock *ipBlock;
-  struct lavaDetailsFailingAddress *failingAddress;
-  /* RotatingNanoIpRoutePlanner */
+struct lavalinkRouterDetails {
+  struct lavalinkDetailsIpBlock *ipBlock;
+  struct lavalinkDetailsFailingAddress *failingAddress;
   char *blockIndex;
   char *currentAddressIndex;
-  /* RotatingIpRoutePlanner */
   char *rotateIndex;
   char *ipIndex;
   char *currentAddress;
 };
 
-struct lavaRouter {
+struct lavalinkRouter {
   char *class;
-  struct lavaRouterDetails *details;
+  struct lavalinkRouterDetails *details;
 };
 
 struct lavalinkInfoVersion {
@@ -56,37 +54,37 @@ struct lavalinkInfo {
 
 int coglink_getLavalinkVersion(struct lavaInfo *lavaInfo, char **version);
 
-int coglink_decodeTrack(struct lavaInfo *lavaInfo, char *track, struct httpRequest *res);
+int coglink_decodeTrack(struct lavaInfo *lavaInfo, char *track, struct requestInformation *res);
 
-int coglink_parseDecodeTrack(struct lavaInfo *lavaInfo, struct httpRequest *res, struct lavaParsedTrack **songStruct);
+int coglink_parseDecodeTrack(struct lavaInfo *lavaInfo, struct requestInformation *res, struct parsedTrack **songStruct);
 
-int coglink_decodeTracks(struct lavaInfo *lavaInfo, char *trackArray, long trackArrayLength, struct httpRequest *res);
+int coglink_decodeTracks(struct lavaInfo *lavaInfo, char *trackArray, long trackArrayLength, struct requestInformation *res);
 
-int coglink_parseDecodeTracks(const struct lavaInfo *lavaInfo, struct httpRequest *req, char *songPos, struct lavaParsedTrack **songStruct);
+int coglink_parseDecodeTracks(struct lavaInfo *lavaInfo, struct requestInformation *res, char *songPos, struct parsedTrack **songStruct);
 
-int coglink_getLavalinkInfo(struct lavaInfo *lavaInfo, struct httpRequest *res);
+int coglink_getLavalinkInfo(struct lavaInfo *lavaInfo, struct requestInformation *res);
 
-int coglink_parseLavalinkInfo(struct lavaInfo *lavaInfo, struct httpRequest *res, struct lavalinkInfo **lavalinkInfoStruct);
+int coglink_parseLavalinkInfo(struct lavaInfo *lavaInfo, struct requestInformation *res, struct lavalinkInfo **lavalinkInfoStruct);
 
-int coglink_getLavalinkStats(struct lavaInfo *lavaInfo, struct httpRequest *res);
+int coglink_getLavalinkStats(struct lavaInfo *lavaInfo, struct requestInformation *res);
 
-int coglink_parseLavalinkStats(struct lavaInfo *lavaInfo, struct httpRequest *res, struct lavalinkStats **lavalinkStatsStruct);
+int coglink_parseLavalinkStats(struct lavaInfo *lavaInfo, struct requestInformation *res, struct lavalinkStats **lavalinkStatsStruct);
 
-int coglink_getRouterPlanner(struct lavaInfo *lavaInfo, struct httpRequest *res);
+int coglink_getRouterPlanner(struct lavaInfo *lavaInfo, struct requestInformation *res);
 
-int coglink_parseRouterPlanner(struct lavaInfo *lavaInfo, struct httpRequest *req, char *ipPosition, struct lavaRouter **lavaRouterStruct);
+int coglink_parseRouterPlanner(struct lavaInfo *lavaInfo, struct requestInformation *res, char *ipPosition, struct lavalinkRouter **lavaRouterStruct);
 
 int coglink_freeFailingAddress(struct lavaInfo *lavaInfo, char *ip);
 
 int coglink_freeFailingAllAddresses(struct lavaInfo *lavaInfo);
 
-void coglink_parseDecodeTrackCleanup(const struct lavaInfo *lavaInfo, struct lavaParsedTrack *songStruct);
+void coglink_parseDecodeTrackCleanup(struct lavaInfo *lavaInfo, struct parsedTrack *songStruct);
 
-void coglink_parseLavalinkInfoCleanup(const struct lavaInfo *lavaInfo, struct lavalinkInfo *lavalinkInfoStruct);
+void coglink_parseLavalinkInfoCleanup(struct lavaInfo *lavaInfo, struct lavalinkInfo *lavalinkInfoStruct);
 
-void coglink_parseLavalinkStatsCleanup(const struct lavaInfo *lavaInfo, struct lavalinkStats *lavalinkStatsStruct);
+void coglink_parseLavalinkStatsCleanup(struct lavaInfo *lavaInfo, struct lavalinkStats *lavalinkStatsStruct);
 
-void coglink_parseRouterPlannerCleanup(const struct lavaInfo *lavaInfo, struct lavaRouter *lavaRouterStruct);
+void coglink_parseRouterPlannerCleanup(struct lavaInfo *lavaInfo, struct lavalinkRouter *lavaRouterStruct);
 
 #endif
 

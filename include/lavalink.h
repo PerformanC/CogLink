@@ -3,37 +3,27 @@
 
 #include <concord/websockets.h>
 
-struct StringBucket {
-  char *key;
-  char *value;
-  int state;
-};
+#include <coglink/plugins.h>
 
-struct StringHashtable {
-  int length;
-  int capacity;
-  struct StringBucket *buckets;
-};
-
-struct httpRequest {
+struct requestInformation {
   char *body;
   size_t size;
 };
 
-struct lavaMemory {
+struct lavalinkStatsMemory {
   char *free;
   char *used;
   char *allocated;
   char *reservable;
 };
 
-struct lavaFStats {
+struct lavalinkStatsFrameStats {
   char *sent;
   char *deficit;
   char *nulled;
 };
 
-struct lavaCPU {
+struct lavalinkStatsCPU {
   char *cores;
   char *systemLoad;
   char *lavalinkLoad;
@@ -43,9 +33,9 @@ struct lavalinkStats {
   char *players;
   char *playingPlayers;
   char *uptime;
-  struct lavaMemory *memory;
-  struct lavaCPU *cpu;
-  struct lavaFStats *frameStats;
+  struct lavalinkStatsMemory *memory;
+  struct lavalinkStatsCPU *cpu;
+  struct lavalinkStatsFrameStats *frameStats;
 };
 
 struct coglinkDebugging {
@@ -76,12 +66,7 @@ struct coglinkDebugging {
   _Bool memoryDebugging;
 };
 
-struct IOPollerVars {
-  struct discord_gateway *gw;
-  struct lavaInfo *lavaInfo;
-};
-
-struct lavaNode {
+struct lavalinkNode {
   char *name;
   char *hostname;
   char *password;
@@ -90,43 +75,7 @@ struct lavaNode {
   _Bool ssl;
 };
 
-struct lavaInfo {
-  struct lavaNode *node;
-  struct lavaEvents *events;
-  struct io_poller *io_poller;
-  struct websockets *ws;
-  CURLM *mhandle;
-  uint64_t tstamp;
-  struct coglinkDebugging *debugging;
-  _Bool allowResuming;
-  char *resumeKey;
-  char *sessionId;
-};
-
-struct lavaParsedTrack {
-  char *track;
-  char *identifier;
-  char *isSeekable;
-  char *author;
-  char *length;
-  char *isStream;
-  char *position;
-  char *title;
-  char *uri;
-  char *sourceName;
-};
-
-struct lavaParsedPlaylist {
-  char *name;
-  char *selectedTrack;
-};
-
-struct lavaParsedError {
-  char *message;
-  char *severity;
-};
-
-struct lavaEvents {
+struct lavalinkEvents {
   int (*onRaw)(struct lavaInfo *lavaInfo, const char *data, size_t length);
   void (*onConnect)(void);
   void (*onClose)(enum ws_close_reason wscode, const char *reason);
@@ -141,7 +90,45 @@ struct lavaEvents {
   void (*onUnknownOp)(char *op, const char *text);
 };
 
+struct lavaInfo {
+  struct lavalinkNode *node;
+  struct lavalinkEvents *events;
+  struct io_poller *io_poller;
+  struct websockets *ws;
+  struct coglinkPlugins *plugins;
+  CURLM *mhandle;
+  uint64_t tstamp;
+  struct coglinkDebugging *debugging;
+  _Bool allowResuming;
+  char *resumeKey;
+  char *sessionId;
+};
+
+struct parsedTrack {
+  char *track;
+  char *identifier;
+  char *isSeekable;
+  char *author;
+  char *length;
+  char *isStream;
+  char *position;
+  char *title;
+  char *uri;
+  char *sourceName;
+};
+
+struct parsedPlaylist {
+  char *name;
+  char *selectedTrack;
+};
+
+struct parsedError {
+  char *message;
+  char *severity;
+};
+
 struct ws_info;
+struct discord;
 
 void onConnectEvent(void *data, struct websockets *ws, struct ws_info *info, const char *protocols);
 
@@ -155,10 +142,10 @@ void coglink_freeNodeInfo(struct lavaInfo *lavaInfo);
 
 void coglink_disconnectNode(struct lavaInfo *lavaInfo);
 
-void coglink_setEvents(struct lavaInfo *lavaInfo, struct lavaEvents *lavaEvents);
+void coglink_setEvents(struct lavaInfo *lavaInfo, struct lavalinkEvents *lavalinkEvents);
 
 void coglink_connectNodeCleanup(struct lavaInfo *lavaInfo);
 
-int coglink_connectNode(struct lavaInfo *lavaInfo, struct discord *client, struct lavaNode *node);
+int coglink_connectNode(struct lavaInfo *lavaInfo, struct discord *client, struct lavalinkNode *node);
 
 #endif

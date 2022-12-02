@@ -94,6 +94,7 @@ Using Coglink is deadly easy, but before using its functions, you will need to i
 #include <coglink/rest-lavalink.h> // Functions from Coglink that uses Lavalink rest API
 #include <coglink/player.h> // The functions related to the music player
 #include <coglink/miscellaneous.h> // Other functions, like decode track, get router planner and etc
+#include <coglink/plugins.h> // For add plugin support
 ```
 
 After including it, you can proceed using Coglink functions, and to compile don't forget to include the flag `-lcoglink` so you can use it.
@@ -104,7 +105,41 @@ For usage, you can see the `guides/example` folder, with a really good example o
 
 We don't have documentation, but you can take on the guides and see what is the need since there will have everything briefly explained.
 
-## What is the reason of the creation of Coglink?
+## Coglink plugins
+
+In Coglink, the creation of plugins to it is possible, that is allowed to change some structs members so it can add more features to Coglink, made by the community, to the community, here are some security measures we take to avoid plugins somehow be malicious:
+
+### Plugins are not allowed to change the members of the struct `lavaInfo`/`client`
+
+To avoid the plugins changing the security settings of Coglink, Coglink copies the `lavaInfo` struct instead of passing the pointer of it, making it impossible to change the settings. And this happens with the `client` struct as well, to avoid changing values that might cause problems.
+
+### Concord's client struct has hidden members (OPTIONAL)
+
+To avoid the plugin to have access to the Concord IO poller, websocket or even the bot token, Coglink removes those members in a copy of the `client` struct and then sends it to the plugin, so it won't have access to the private information, but warning, some plugins may need that information, you can easily allow plugins to access a type of `client` struct member by either changing the value of the `lavaInfo->plugins->security->...`, that in this case will be `allowReadIOPoller`, `allowReadBotToken` or `allowReadConcordWebsocket`.
+
+## Setting up a plugin
+
+Plugins can't straight ahead work in Coglink, you need to pass the functions to Coglink from the plugin, so it can execute when some coglink function is executed, see the function below that does this:
+
+```c
+#include <coglink/plugins.h>
+
+struct pluginEvents event = {
+  .onSearchRequest = &functionToBeExecuted
+}
+
+coglink_setPluginEvents(&lavaInfo, &event);
+```
+
+Done, now when the function coglink_searchSong is executed, this will be executed first before Coglink runs it.
+
+## Plugin list
+
+None, sadly, but if you made a plugin for Coglink, please send a PR adding in the line below the format: `[Plugin name](Github repo of the Library) by YourGitHubusername`
+
+If you also want to make a plugin for it, but needs either help of more features, please call me on [Cwift's/Coglink's Discord server](https://discord.gg/uPveNfTuCJ), I'll be really happy to help ya! ^^
+
+## What is the reason for the creation of Coglink?
 
 Coglink was made to retribute to someone all the help he gave to me, and I'm really thankful for his help, which made me able to create this library, without him, I wouldn't be here.
 

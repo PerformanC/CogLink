@@ -9,14 +9,14 @@
 #include <coglink/definitions.h>
 #include <coglink/player.h>
 
-int coglink_getPlayers(struct lavaInfo *lavaInfo, struct httpRequest *res) {
+int coglink_getPlayers(struct lavaInfo *lavaInfo, struct requestInformation *res) {
   char reqPath[35];
   snprintf(reqPath, sizeof(reqPath), "/sessions/%s/players", lavaInfo->sessionId);
 
   return __coglink_performRequest(lavaInfo, __COGLINK_GET_REQ, 0, 0, reqPath, sizeof(reqPath), 1, NULL, 0, res, 1, NULL);
 }
 
-int coglink_parseGetPlayers(struct lavaInfo *lavaInfo, struct httpRequest *res, char *pos, struct playerInfo **playerInfoStruct) {
+int coglink_parseGetPlayers(struct lavaInfo *lavaInfo, struct requestInformation *res, char *pos, struct playerInfo **playerInfoStruct) {
   jsmn_parser parser;
   jsmntok_t tokens[1024];
 
@@ -33,7 +33,7 @@ int coglink_parseGetPlayers(struct lavaInfo *lavaInfo, struct httpRequest *res, 
   jsmnf_pair pairs[1024];
 
   jsmnf_init(&loader);
-  r = jsmnf_load(&loader, res->body, tokens, parser.toknext, pairs, sizeof(pairs) / sizeof *pairs);
+  r = jsmnf_load(&loader, res->body, tokens, parser.toknext, pairs, sizeof(pairs) / sizeof(*pairs));
 
   if (r < 0) {
     if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_error("[coglink:jsmn-find] Failed to load jsmn-find.");
@@ -134,7 +134,7 @@ int coglink_parseGetPlayers(struct lavaInfo *lavaInfo, struct httpRequest *res, 
     
     (*playerInfoStruct)->track->encoded = malloc(sizeof(Track));
 
-    (*playerInfoStruct)->track->info = malloc(sizeof(struct lavaParsedTrack));
+    (*playerInfoStruct)->track->info = malloc(sizeof(struct parsedTrack));
 
     (*playerInfoStruct)->track->info->identifier = malloc(sizeof(Identifier));
     (*playerInfoStruct)->track->info->isSeekable = malloc(sizeof(IsSeekable));
@@ -528,6 +528,27 @@ int coglink_parseGetPlayers(struct lavaInfo *lavaInfo, struct httpRequest *res, 
 }
 
 int coglink_playSong(struct lavaInfo *lavaInfo, char *track, u64snowflake guildId) {
+  if (lavaInfo->plugins && lavaInfo->plugins->events->onPlayRequest[0]) {
+    if (lavaInfo->plugins->security->allowReadIOPoller) {
+      for (int i = 0;i <+ lavaInfo->plugins->amount;i++) {
+        if (!lavaInfo->plugins->events->onPlayRequest[i]) break;
+
+        int pluginResultCode = lavaInfo->plugins->events->onPlayRequest[i](lavaInfo, track, guildId);
+        if (pluginResultCode != COGLINK_PROCEED) return pluginResultCode;
+      }
+    } else {
+      struct lavaInfo *lavaInfoPlugin = lavaInfo;
+      lavaInfoPlugin->io_poller = NULL;
+
+      for (int i = 0;i <+ lavaInfo->plugins->amount;i++) {
+        if (!lavaInfo->plugins->events->onPlayRequest[i]) break;
+
+        int pluginResultCode = lavaInfo->plugins->events->onPlayRequest[i](lavaInfoPlugin, track, guildId);
+        if (pluginResultCode != COGLINK_PROCEED) return pluginResultCode;
+      }
+    }
+  }
+
   char reqPath[64];
   snprintf(reqPath, sizeof(reqPath), "/sessions/%s/players/%"PRIu64"", lavaInfo->sessionId, guildId);
 

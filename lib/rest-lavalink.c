@@ -12,7 +12,28 @@
 #include <coglink/lavalink-internal.h>
 #include <coglink/definitions.h>
 
-int coglink_searchSong(struct lavaInfo *lavaInfo, char *song, struct httpRequest *res) {
+int coglink_searchSong(struct lavaInfo *lavaInfo, char *song, struct requestInformation *res) {
+  if (lavaInfo->plugins && lavaInfo->plugins->events->onSearchRequest[0]) {
+    if (lavaInfo->plugins->security->allowReadIOPoller) {
+      for (int i = 0;i <+ lavaInfo->plugins->amount;i++) {
+        if (!lavaInfo->plugins->events->onSearchRequest[i]) break;
+
+        int pluginResultCode = lavaInfo->plugins->events->onSearchRequest[i](lavaInfo, song, &res);
+        if (pluginResultCode != COGLINK_PROCEED) return pluginResultCode;
+      }
+    } else {
+      struct lavaInfo *lavaInfoPlugin = lavaInfo;
+      lavaInfoPlugin->io_poller = NULL;
+
+      for (int i = 0;i <+ lavaInfo->plugins->amount;i++) {
+        if (!lavaInfo->plugins->events->onSearchRequest[i]) break;
+
+        int pluginResultCode = lavaInfo->plugins->events->onSearchRequest[i](lavaInfoPlugin, song, &res);
+        if (pluginResultCode != COGLINK_PROCEED) return pluginResultCode;
+      }
+    }
+  }
+
   curl_global_init(CURL_GLOBAL_ALL);
 
   CURL *curl = curl_easy_init();
@@ -30,11 +51,11 @@ int coglink_searchSong(struct lavaInfo *lavaInfo, char *song, struct httpRequest
   return __coglink_performRequest(lavaInfo, __COGLINK_GET_REQ, lavaInfo->debugging->searchSongSuccessDebugging, lavaInfo->debugging->searchSongErrorsDebugging, reqPath, sizeof(reqPath), 1, NULL, 0, res, 1, curl);
 }
 
-void coglink_searchCleanup(struct httpRequest res) {
+void coglink_searchCleanup(struct requestInformation res) {
   free(res.body);
 }
 
-int coglink_parseLoadtype(struct lavaInfo *lavaInfo, struct httpRequest *res, int *loadTypeValue) {
+int coglink_parseLoadtype(struct lavaInfo *lavaInfo, struct requestInformation *res, int *loadTypeValue) {
   jsmn_parser parser;
   jsmntok_t tokens[512];
 
@@ -51,7 +72,7 @@ int coglink_parseLoadtype(struct lavaInfo *lavaInfo, struct httpRequest *res, in
   jsmnf_pair pairs[1024];
 
   jsmnf_init(&loader);
-  r = jsmnf_load(&loader, res->body, tokens, parser.toknext, pairs, sizeof(pairs) / sizeof *pairs);
+  r = jsmnf_load(&loader, res->body, tokens, parser.toknext, pairs, sizeof(pairs) / sizeof(*pairs));
 
   if (r < 0) {
     if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseLoadtypeErrorsDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_error("[coglink:jsmn-find] Failed to load jsmn-find.");
@@ -91,7 +112,7 @@ int coglink_parseLoadtype(struct lavaInfo *lavaInfo, struct httpRequest *res, in
   return COGLINK_SUCCESS;
 }
 
-int coglink_parseTrack(const struct lavaInfo *lavaInfo, struct httpRequest *res, char *songPos, struct lavaParsedTrack **songStruct) {
+int coglink_parseTrack(const struct lavaInfo *lavaInfo, struct requestInformation *res, char *songPos, struct parsedTrack **songStruct) {
   jsmn_parser parser;
   jsmntok_t tokens[512];
 
@@ -108,7 +129,7 @@ int coglink_parseTrack(const struct lavaInfo *lavaInfo, struct httpRequest *res,
   jsmnf_pair pairs[1024];
 
   jsmnf_init(&loader);
-  r = jsmnf_load(&loader, res->body, tokens, parser.toknext, pairs, sizeof(pairs) / sizeof *pairs);
+  r = jsmnf_load(&loader, res->body, tokens, parser.toknext, pairs, sizeof(pairs) / sizeof(*pairs));
 
   if (r < 0) {
     if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseTrackErrorsDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_error("[coglink:jsmn-find] Failed to load jsmn-find.");
@@ -167,7 +188,7 @@ int coglink_parseTrack(const struct lavaInfo *lavaInfo, struct httpRequest *res,
 
   if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseTrackSuccessDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_debug("[coglink:jsmn-find] Parsed song search json, results:\n> track: %s\n> identifier: %s\n> isSeekable: %s\n> author: %s\n> length: %s\n> isStream: %s\n> position: %s\n> title: %s\n> uri: %s\n> sourceName: %s", Track, Identifier, IsSeekable, Author, Length, IsStream, Position, Title, Uri, SourceName);
 
-  *songStruct = malloc(sizeof(struct lavaParsedTrack));
+  *songStruct = malloc(sizeof(struct parsedTrack));
 
   (*songStruct)->track = malloc(sizeof(Track));
   (*songStruct)->identifier = malloc(sizeof(Identifier));
@@ -180,7 +201,7 @@ int coglink_parseTrack(const struct lavaInfo *lavaInfo, struct httpRequest *res,
   (*songStruct)->uri = malloc(sizeof(Uri));
   (*songStruct)->sourceName = malloc(sizeof(SourceName));
 
-  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-malloc] Allocated %d bytes for song structure.", sizeof(struct lavaParsedTrack) + sizeof(Track) + sizeof(Identifier) + sizeof(IsSeekable) + sizeof(Author) + sizeof(Length) + sizeof(IsStream) + sizeof(Position) + sizeof(Title) + sizeof(Uri) + sizeof(SourceName));
+  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-malloc] Allocated %d bytes for song structure.", sizeof(struct parsedTrack) + sizeof(Track) + sizeof(Identifier) + sizeof(IsSeekable) + sizeof(Author) + sizeof(Length) + sizeof(IsStream) + sizeof(Position) + sizeof(Title) + sizeof(Uri) + sizeof(SourceName));
 
   strlcpy((*songStruct)->track, Track, TRACK_LENGTH);
   strlcpy((*songStruct)->identifier, Identifier, IDENTIFIER_LENGTH);
@@ -198,7 +219,7 @@ int coglink_parseTrack(const struct lavaInfo *lavaInfo, struct httpRequest *res,
   return COGLINK_SUCCESS;
 }
 
-int coglink_parsePlaylist(const struct lavaInfo *lavaInfo, struct httpRequest *res, struct lavaParsedPlaylist **playlistStruct) {
+int coglink_parsePlaylist(const struct lavaInfo *lavaInfo, struct requestInformation *res, struct parsedPlaylist **playlistStruct) {
   jsmn_parser parser;
   jsmntok_t tokens[512];
 
@@ -215,7 +236,7 @@ int coglink_parsePlaylist(const struct lavaInfo *lavaInfo, struct httpRequest *r
   jsmnf_pair pairs[1024];
 
   jsmnf_init(&loader);
-  r = jsmnf_load(&loader, res->body, tokens, parser.toknext, pairs, sizeof(pairs) / sizeof *pairs);
+  r = jsmnf_load(&loader, res->body, tokens, parser.toknext, pairs, sizeof(pairs) / sizeof(*pairs));
 
   if (r < 0) {
     if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parsePlaylistErrorsDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_error("[coglink:jsmn-find] Failed to load jsmn-find.");
@@ -241,12 +262,12 @@ int coglink_parsePlaylist(const struct lavaInfo *lavaInfo, struct httpRequest *r
 
   if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parsePlaylistSuccessDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_debug("[coglink:jsmn-find] Parsed playlist search json, results:\n> name: %s\n> selectedTrack: %s", Name, SelectedTrack);
 
-  *playlistStruct = malloc(sizeof(struct lavaParsedPlaylist));
+  *playlistStruct = malloc(sizeof(struct parsedPlaylist));
 
   (*playlistStruct)->name = malloc(sizeof(Name));
   (*playlistStruct)->selectedTrack = malloc(sizeof(SelectedTrack));
 
-  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-malloc] Allocated %d bytes for playlist structure.", sizeof(struct lavaParsedPlaylist) + sizeof(Name) + sizeof(SelectedTrack));
+  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-malloc] Allocated %d bytes for playlist structure.", sizeof(struct parsedPlaylist) + sizeof(Name) + sizeof(SelectedTrack));
 
   strlcpy((*playlistStruct)->name, Name, PLAYLIST_NAME_LENGTH);
   strlcpy((*playlistStruct)->selectedTrack, SelectedTrack, 8);
@@ -256,7 +277,7 @@ int coglink_parsePlaylist(const struct lavaInfo *lavaInfo, struct httpRequest *r
   return COGLINK_SUCCESS;
 }
 
-int coglink_parseError(const struct lavaInfo *lavaInfo, struct httpRequest *res, struct lavaParsedError **errorStruct) {
+int coglink_parseError(const struct lavaInfo *lavaInfo, struct requestInformation *res, struct parsedError **errorStruct) {
   jsmn_parser parser;
   jsmntok_t tokens[512];
 
@@ -273,7 +294,7 @@ int coglink_parseError(const struct lavaInfo *lavaInfo, struct httpRequest *res,
   jsmnf_pair pairs[1024];
 
   jsmnf_init(&loader);
-  r = jsmnf_load(&loader, res->body, tokens, parser.toknext, pairs, sizeof(pairs) / sizeof *pairs);
+  r = jsmnf_load(&loader, res->body, tokens, parser.toknext, pairs, sizeof(pairs) / sizeof(*pairs));
 
   if (r < 0) {
     if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseErrorsDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_error("[coglink:jsmn-find] Failed to load jsmn-find.");
@@ -299,12 +320,12 @@ int coglink_parseError(const struct lavaInfo *lavaInfo, struct httpRequest *res,
 
   if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseSuccessDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_debug("[coglink:jsmn-find] Parsed error search json, results:\n> message: %s\n> severity: %s", Message, Severity);
 
-  *errorStruct = malloc(sizeof(struct lavaParsedError));
+  *errorStruct = malloc(sizeof(struct parsedError));
 
   (*errorStruct)->message = malloc(sizeof(Message));
   (*errorStruct)->severity = malloc(sizeof(Severity));
 
-  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-malloc] Allocated %d bytes for error structure.", sizeof(struct lavaParsedError) + sizeof(Message) + sizeof(Severity));
+  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-malloc] Allocated %d bytes for error structure.", sizeof(struct parsedError) + sizeof(Message) + sizeof(Severity));
 
   strlcpy((*errorStruct)->message, Message, 128);
   strlcpy((*errorStruct)->severity, Severity, 16);
@@ -314,7 +335,7 @@ int coglink_parseError(const struct lavaInfo *lavaInfo, struct httpRequest *res,
   return COGLINK_SUCCESS;
 }
 
-void coglink_parseTrackCleanup(const struct lavaInfo *lavaInfo, struct lavaParsedTrack *songStruct) {
+void coglink_parseTrackCleanup(const struct lavaInfo *lavaInfo, struct parsedTrack *songStruct) {
   if (songStruct->track) free(songStruct->track);
   if (songStruct->identifier) free(songStruct->identifier);
   if (songStruct->isSeekable) free(songStruct->isSeekable);
@@ -327,21 +348,21 @@ void coglink_parseTrackCleanup(const struct lavaInfo *lavaInfo, struct lavaParse
   if (songStruct->sourceName) free(songStruct->sourceName);
   if (songStruct) free(songStruct);
 
-  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-free] Freed %d bytes from song structure.", sizeof(struct lavaParsedTrack) + sizeof(songStruct->track) + sizeof(songStruct->identifier) + sizeof(songStruct->isSeekable) + sizeof(songStruct->author) + sizeof(songStruct->length) + sizeof(songStruct->isStream) + sizeof(songStruct->position) + sizeof(songStruct->title) + sizeof(songStruct->uri) + sizeof(songStruct->sourceName) + 10);
+  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-free] Freed %d bytes from song structure.", sizeof(struct parsedTrack) + sizeof(songStruct->track) + sizeof(songStruct->identifier) + sizeof(songStruct->isSeekable) + sizeof(songStruct->author) + sizeof(songStruct->length) + sizeof(songStruct->isStream) + sizeof(songStruct->position) + sizeof(songStruct->title) + sizeof(songStruct->uri) + sizeof(songStruct->sourceName) + 10);
 }
 
-void coglink_parsePlaylistCleanup(const struct lavaInfo *lavaInfo, struct lavaParsedPlaylist *playlistStruct) {
+void coglink_parsePlaylistCleanup(const struct lavaInfo *lavaInfo, struct parsedPlaylist *playlistStruct) {
   if (playlistStruct->name) free(playlistStruct->name);
   if (playlistStruct->selectedTrack) free(playlistStruct->selectedTrack);
   if (playlistStruct) free(playlistStruct);
 
-  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-free] Freed %d bytes from playlist structure.", sizeof(struct lavaParsedPlaylist) + sizeof(playlistStruct->name) + sizeof(playlistStruct->selectedTrack) + 2);
+  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-free] Freed %d bytes from playlist structure.", sizeof(struct parsedPlaylist) + sizeof(playlistStruct->name) + sizeof(playlistStruct->selectedTrack) + 2);
 }
 
-void coglink_parseErrorCleanup(const struct lavaInfo *lavaInfo, struct lavaParsedError *errorStruct) {
+void coglink_parseErrorCleanup(const struct lavaInfo *lavaInfo, struct parsedError *errorStruct) {
   if (errorStruct->message) free(errorStruct->message);
   if (errorStruct->severity) free(errorStruct->severity);
   if (errorStruct) free(errorStruct);
 
-  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-free] Freed %d bytes from error structure.", sizeof(struct lavaParsedError) + sizeof(errorStruct->message) + sizeof(errorStruct->severity) + 2);
+  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-free] Freed %d bytes from error structure.", sizeof(struct parsedError) + sizeof(errorStruct->message) + sizeof(errorStruct->severity) + 2);
 }

@@ -10,7 +10,7 @@
 
 size_t __coglink_WriteMemoryCallback(void *contents, size_t size, size_t nmemb, void *userp) {
   size_t writeSize = size * nmemb;
-  struct httpRequest *mem = (struct httpRequest *)userp;
+  struct requestInformation *mem = (struct requestInformation *)userp;
 
   char *ptr = realloc(mem->body, mem->size + writeSize + 1);
   if (!ptr) {
@@ -31,7 +31,7 @@ size_t __coglink_WriteMemoryCallbackNoSave(void *contents, size_t size, size_t n
   return nmemb;
 }
 
-int __coglink_checkCurlCommand(struct lavaInfo *lavaInfo, CURL *curl, CURLcode cRes, char *pos, int additionalDebugging, int getResponse, struct httpRequest *res) {
+int __coglink_checkCurlCommand(struct lavaInfo *lavaInfo, CURL *curl, CURLcode cRes, char *pos, int additionalDebugging, int getResponse, struct requestInformation *res) {
   if (cRes != CURLE_OK) {
     if (lavaInfo->debugging->allDebugging || additionalDebugging || lavaInfo->debugging->curlErrorsDebugging) log_fatal("[coglink:libcurl] curl_easy_setopt [%s] failed: %s\n", pos, curl_easy_strerror(cRes));
 
@@ -44,7 +44,7 @@ int __coglink_checkCurlCommand(struct lavaInfo *lavaInfo, CURL *curl, CURLcode c
   return COGLINK_SUCCESS;
 }
 
-int __coglink_performRequest(struct lavaInfo *lavaInfo, int requestType, int additionalDebuggingSuccess, int additionalDebuggingError, char *path, int pathLength, int useV3Path, char *body, long bodySize, struct httpRequest *res, int getResponse, CURL *reUsedCurl) {
+int __coglink_performRequest(struct lavaInfo *lavaInfo, int requestType, int additionalDebuggingSuccess, int additionalDebuggingError, char *path, int pathLength, int useV3Path, char *body, long bodySize, struct requestInformation *res, int getResponse, CURL *reUsedCurl) {
   if (!reUsedCurl) curl_global_init(CURL_GLOBAL_ALL);
 
   CURL *curl = reUsedCurl;
