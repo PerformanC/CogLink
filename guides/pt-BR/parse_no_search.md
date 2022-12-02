@@ -13,10 +13,10 @@ Para dar parse, você vai precisar usar a função `coglink_parseSearch`, que va
 Por exemplo, você vai provavelmente querer dar parse na primeira música, não é? Então siga o exemplo abaixo para fazer isso:
 
 ```c
-struct lavaMusic music;
+struct parsedTrack song;
 
 /*
-  O segundo parâmetro, res, deveria ser o struct httpRequest que você pegou da função coglink_searchSong.
+  O segundo parâmetro, res, deveria ser o struct requestInformation que você pegou da função coglink_searchSong.
   O terceiro parâmetro, songPos, deve ser a posição da música que você quer dar parse, se você quiser a primeira, então coloque 0.
   O último parâmetro, a livraria vai preencher com as informações da música solicitada.
 */
@@ -29,14 +29,14 @@ if (parseRes != 0) {
 log_info("Nome da música: %s", song->name);
 ```
 
-Pronto, agora a estrutura `lavaSong` vai estar com as informações da música.
+Pronto, agora a estrutura `parsedTrack` vai estar com as informações da música.
 
 ## Parsing + loop
 
 Vamos fazer algo top aqui, caso você queira dar parse nas primeiras 10 músicas achadas, você pode usar o loop for, olhe o exemplo abaixo:
 
 ```c
-struct lavaSong song;
+struct parsedTrack song;
 
 for (int i = 0; i < 10; i++) {
   char iString[16];

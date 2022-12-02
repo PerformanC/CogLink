@@ -67,10 +67,9 @@ void onUnknownOp(char *op, const char *text) {
   log_error("[COGLINK] Unknown OP. [%s/%s]", op, text);
 }
 
-
 struct lavaInfo lavaInfo = {
   .events = 
-    &(struct lavaEvents) {
+    &(struct lavalinkEvents) {
       .onRaw = &onRaw,
 
       .onConnect = &onConnect,
@@ -134,7 +133,7 @@ void on_message(struct discord *client, const struct discord_message *message) {
 
     switch(loadType) {
       case COGLINK_LOADTYPE_SEARCH_RESULT: {
-        struct lavaParsedTrack *song;
+        struct parsedTrack *song;
         coglink_parseTrack(&lavaInfo, &res, "0", &song);
         coglink_playSong(&lavaInfo, song->track, message->guild_id);
 
@@ -257,12 +256,12 @@ void on_message(struct discord *client, const struct discord_message *message) {
     coglink_disconnectNode(&lavaInfo);
   }
   if (0 == strcmp(".getplugins", message->content)) {
-    struct httpRequest res;
+    struct requestInformation res;
 
     coglink_getPlugins(&lavaInfo, &res);
   }
   if (0 == strcmp(".getrouter", message->content)) {
-    struct httpRequest res;
+    struct requestInformation res;
 
     coglink_getRouterPlanner(&lavaInfo, &res);
   }
