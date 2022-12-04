@@ -1,3 +1,7 @@
+/** \file
+ * File containing the Lavalink WebSocket related functions.
+ */
+
 #ifndef LAVALINK_H
 #define LAVALINK_H
 
@@ -137,16 +141,47 @@ void onCloseEvent(void *data, struct websockets *ws, struct ws_info *info, enum 
 
 void onTextEvent(void *data, struct websockets *ws, struct ws_info *info, const char *text, size_t len);
 
+/**
+ * Joins a voice channel.
+ * @param lavaInfo Structure with important informations of the Lavalink.
+ * @param client Concord's client stucture generated with discord_init.
+ * @param voiceChannelId ID of the voice channel that the bot will join.
+ * @param guildId ID of the guild of the voice channel that the bot will join.
+ */
 void coglink_joinVoiceChannel(struct lavaInfo *lavaInfo, struct discord *client, u64snowflake voiceChannelId, u64snowflake guildId);
 
+/**
+ * Removes all information in the lavaInfo struct
+ * @param lavaInfo Structure with important informations of the Lavalink.
+ */
 void coglink_freeNodeInfo(struct lavaInfo *lavaInfo);
 
+/**
+ * Closes the WebSocket connection with the Lavalink node.
+ * @param lavaInfo Structure with important informations of the Lavalink.
+ */
 void coglink_disconnectNode(struct lavaInfo *lavaInfo);
 
+/**
+ * Sets the Lavalink events when not including it directly into lavaInfo structure.
+ * @param lavaInfo Structure with important informations of the Lavalink.
+ * @param lavalinkEvents Lavalink event's structure with all pointers to the functions that will be executed when the event it emitted.
+ */
 void coglink_setEvents(struct lavaInfo *lavaInfo, struct lavalinkEvents *lavalinkEvents);
 
+/**
+ * Frees all mallocs used while connecting to a node and in other functions.
+ * @param lavaInfo Structure with important informations of the Lavalink.
+ */
 void coglink_connectNodeCleanup(struct lavaInfo *lavaInfo);
 
+/**
+ * Creates a WebSocket connecting with the Lavalink node.
+ * @param lavaInfo Structure with important informations of the Lavalink.
+ * @param client Concord's client stucture generated with discord_init.
+ * @param node Structure with all Lavalink node information.
+ * @returns COGLINK_SUCCESS
+ */
 int coglink_connectNode(struct lavaInfo *lavaInfo, struct discord *client, struct lavalinkNode *node);
 
 #endif

@@ -6,9 +6,11 @@
 #include <concord/discord-internal.h>
 
 #include <coglink/lavalink.h>
-#include <coglink/rest-lavalink.h>
+#include <coglink/information.h>
 #include <coglink/player.h>
 #include <coglink/definitions.h>
+#include <coglinl/plugins.h>
+#include <coglink/track.h>
 
 #define VOICE_ID 123456789012345678
 int onRaw(struct lavaInfo *lavaInfo, const char *text, size_t length) {
@@ -124,7 +126,7 @@ void on_message(struct discord *client, const struct discord_message *message) {
       return;
     }
 
-    struct httpRequest res;
+    struct requestInformation res;
     coglink_searchSong(&lavaInfo, songName, &res);
 
     int loadType;

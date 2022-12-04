@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
 
@@ -18,8 +17,8 @@
 #define STRING_TABLE_HEAP 0
 #define STRING_TABLE_BUCKET struct StringBucket
 #define STRING_TABLE_HASH(key, hash) chash_string_hash(key, hash)
-#define STRING_TABLE_FREE_KEY(key) NULL
-#define STRING_TABLE_FREE_VALUE(value) NULL
+#define STRING_TABLE_FREE_KEY(key) free(key)
+#define STRING_TABLE_FREE_VALUE(value) free(value)
 #define STRING_TABLE_COMPARE(cmp_a, cmp_b) chash_string_compare(cmp_a, cmp_b)
 #define STRING_TABLE_INIT(bucket, _key, _value) chash_default_init(bucket, _key, _value)
 
@@ -145,7 +144,14 @@ void onTextEvent(void *data, struct websockets *ws, struct ws_info *info, const 
         char payload[27];
         snprintf(payload, sizeof(payload), "{\"resumingKey\":\"%s\"}", resumeKey);
 
-        __coglink_performRequest(lavaInfo, __COGLINK_PATCH_REQ, 0, 0, reqPath, sizeof(reqPath), 1, payload, sizeof(payload), NULL, 0, NULL);
+        __coglink_performRequest(lavaInfo, NULL, &(struct __coglink_requestConfig) {
+                                              .requestType = __COGLINK_PATCH_REQ,
+                                              .path = reqPath,
+                                              .pathLength = sizeof(reqPath),
+                                              .useV3Path = true,
+                                              .body = payload,
+                                              .bodySize = sizeof(payload)
+                                            });
       }
 
       if (lavaInfo->events->onConnect) lavaInfo->events->onConnect();
@@ -364,7 +370,7 @@ void onTextEvent(void *data, struct websockets *ws, struct ws_info *info, const 
         }
       };
 
-      if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-strlcpy] Set the value for struct members of lavalinkStatsStruct.");
+      if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-management] Set the value for struct members of lavalinkStatsStruct.");
 
       lavaInfo->events->onStats(lavalinkStatsStruct);
       break;
@@ -568,7 +574,16 @@ enum discord_event_scheduler __coglink_handleScheduler(struct discord *client, c
       char payload[256];
       snprintf(payload, sizeof(payload), "{\"voice\":{\"token\":\"%s\",\"endpoint\":\"%s\",\"sessionId\":\"%s\"}}", Token, Endpoint, sessionId);
 
-      __coglink_performRequest(lavaInfo, __COGLINK_PATCH_REQ, lavaInfo->debugging->handleSchedulerVoiceServerDebugging, lavaInfo->debugging->handleSchedulerVoiceServerDebugging, reqPath, sizeof(reqPath), 1, payload, sizeof(payload), NULL, 0, NULL);
+      __coglink_performRequest(lavaInfo, NULL, &(struct __coglink_requestConfig) {
+                                            .requestType = __COGLINK_PATCH_REQ,
+                                            .additionalDebuggingSuccess = lavaInfo->debugging->handleSchedulerVoiceServerDebugging,
+                                            .additionalDebuggingError = lavaInfo->debugging->handleSchedulerVoiceServerDebugging,
+                                            .path = reqPath,
+                                            .pathLength = sizeof(reqPath),
+                                            .useV3Path = true,
+                                            .body = payload,
+                                            .bodySize = sizeof(payload)
+                                          });
     } return DISCORD_EVENT_IGNORE;
     default:
       return DISCORD_EVENT_MAIN_THREAD;

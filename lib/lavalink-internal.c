@@ -8,9 +8,9 @@
 #include <coglink/lavalink.h>
 #include <coglink/definitions.h>
 
-size_t __coglink_WriteMemoryCallback(void *contents, size_t size, size_t nmemb, void *userp) {
+size_t __coglink_WriteMemoryCallback(void *data, size_t size, size_t nmemb, void *userp) {
   size_t writeSize = size * nmemb;
-  struct requestInformation *mem = (struct requestInformation *)userp;
+  struct requestInformation *mem = userp;
 
   char *ptr = realloc(mem->body, mem->size + writeSize + 1);
   if (!ptr) {
@@ -19,36 +19,36 @@ size_t __coglink_WriteMemoryCallback(void *contents, size_t size, size_t nmemb, 
   }
 
   mem->body = ptr;
-  memcpy(&(mem->body[mem->size]), contents, writeSize);
+  memcpy(&(mem->body[mem->size]), data, writeSize);
   mem->size += writeSize;
   mem->body[mem->size] = 0;
 
   return writeSize;
 }
 
-size_t __coglink_WriteMemoryCallbackNoSave(void *contents, size_t size, size_t nmemb, void *userp) {
-  (void) contents; (void) size; (void) userp;
+size_t __coglink_WriteMemoryCallbackNoSave(void *data, size_t size, size_t nmemb, void *userp) {
+  (void) data; (void) size; (void) userp;
   return nmemb;
 }
 
-int __coglink_checkCurlCommand(struct lavaInfo *lavaInfo, CURL *curl, CURLcode cRes, char *pos, int additionalDebugging, int getResponse, struct requestInformation *res) {
+int __coglink_checkCurlCommand(struct lavaInfo *lavaInfo, CURL *curl, CURLcode cRes, char *pos, int additionalDebugging, int getResponse, struct requestInformation **res) {
   if (cRes != CURLE_OK) {
     if (lavaInfo->debugging->allDebugging || additionalDebugging || lavaInfo->debugging->curlErrorsDebugging) log_fatal("[coglink:libcurl] curl_easy_setopt [%s] failed: %s\n", pos, curl_easy_strerror(cRes));
 
     curl_easy_cleanup(curl);
     curl_global_cleanup();
-    if (getResponse) free((*res).body);
+    if (getResponse) free((*res)->body);
 
     return COGLINK_LIBCURL_FAILED_SETOPT;
   }
   return COGLINK_SUCCESS;
 }
 
-int __coglink_performRequest(struct lavaInfo *lavaInfo, int requestType, int additionalDebuggingSuccess, int additionalDebuggingError, char *path, int pathLength, int useV3Path, char *body, long bodySize, struct requestInformation *res, int getResponse, CURL *reUsedCurl) {
-  if (!reUsedCurl) curl_global_init(CURL_GLOBAL_ALL);
+int __coglink_performRequest(struct lavaInfo *lavaInfo, struct requestInformation *res, struct __coglink_requestConfig *config) {
+  if (!config->usedCURL) curl_global_init(CURL_GLOBAL_ALL);
 
-  CURL *curl = reUsedCurl;
-  if (!reUsedCurl) curl = curl_easy_init();
+  CURL *curl = config->usedCURL;
+  if (!config->usedCURL) curl = curl_easy_init();
 
   if (!curl) {
     if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->curlErrorsDebugging) log_fatal("[coglink:libcurl] Error while initializing libcurl.");
@@ -58,18 +58,18 @@ int __coglink_performRequest(struct lavaInfo *lavaInfo, int requestType, int add
     return COGLINK_LIBCURL_FAILED_INITIALIZE;
   }
 
-  char lavaURL[strnlen(lavaInfo->node->hostname, 128) + (useV3Path ? (lavaInfo->node->ssl ? 12 : 11) : (lavaInfo->node->ssl ? 9 : 8)) + pathLength];
+  char lavaURL[strnlen(lavaInfo->node->hostname, 128) + (config->useV3Path ? (lavaInfo->node->ssl ? 12 : 11) : (lavaInfo->node->ssl ? 9 : 8)) + config->pathLength];
 
-  if (useV3Path) {
-    if (lavaInfo->node->ssl) snprintf(lavaURL, sizeof(lavaURL), "https://%s/v3%s", lavaInfo->node->hostname, path);
-    else snprintf(lavaURL, sizeof(lavaURL), "http://%s/v3%s", lavaInfo->node->hostname, path);
+  if (config->useV3Path) {
+    if (lavaInfo->node->ssl) snprintf(lavaURL, sizeof(lavaURL), "https://%s/v3%s", lavaInfo->node->hostname, config->path);
+    else snprintf(lavaURL, sizeof(lavaURL), "http://%s/v3%s", lavaInfo->node->hostname, config->path);
   } else {
-    if (lavaInfo->node->ssl) snprintf(lavaURL, sizeof(lavaURL), "https://%s%s", lavaInfo->node->hostname, path);
-    else snprintf(lavaURL, sizeof(lavaURL), "http://%s%s", lavaInfo->node->hostname, path);
+    if (lavaInfo->node->ssl) snprintf(lavaURL, sizeof(lavaURL), "https://%s%s", lavaInfo->node->hostname, config->path);
+    else snprintf(lavaURL, sizeof(lavaURL), "http://%s%s", lavaInfo->node->hostname, config->path);
   }
 
   CURLcode cRes = curl_easy_setopt(curl, CURLOPT_URL, lavaURL);
-  if (__coglink_checkCurlCommand(lavaInfo, curl, cRes, "1", additionalDebuggingError, getResponse, res) != COGLINK_SUCCESS) return COGLINK_LIBCURL_FAILED_SETOPT;
+  if (__coglink_checkCurlCommand(lavaInfo, curl, cRes, "1", config->additionalDebuggingError, config->getResponse, &res) != COGLINK_SUCCESS) return COGLINK_LIBCURL_FAILED_SETOPT;
 
   struct curl_slist *chunk = NULL;
     
@@ -78,70 +78,70 @@ int __coglink_performRequest(struct lavaInfo *lavaInfo, int requestType, int add
     snprintf(AuthorizationH, sizeof(AuthorizationH), "Authorization: %s", lavaInfo->node->password);
     chunk = curl_slist_append(chunk, AuthorizationH);
 
-    if (lavaInfo->debugging->allDebugging || additionalDebuggingSuccess || lavaInfo->debugging->curlSuccessDebugging) log_debug("[coglink:libcurl] Authorization header set.");
+    if (lavaInfo->debugging->allDebugging || config->additionalDebuggingSuccess || lavaInfo->debugging->curlSuccessDebugging) log_debug("[coglink:libcurl] Authorization header set.");
   }
 
-  if (body) {
+  if (config->body) {
     chunk = curl_slist_append(chunk, "Content-Type: application/json");
-    if (lavaInfo->debugging->allDebugging || additionalDebuggingSuccess || lavaInfo->debugging->curlSuccessDebugging) log_debug("[coglink:libcurl] Content-Type header set.");
+    if (lavaInfo->debugging->allDebugging || config->additionalDebuggingSuccess || lavaInfo->debugging->curlSuccessDebugging) log_debug("[coglink:libcurl] Content-Type header set.");
   }
 
   chunk = curl_slist_append(chunk, "Client-Name: Coglink");
-  if (lavaInfo->debugging->allDebugging || additionalDebuggingSuccess || lavaInfo->debugging->curlSuccessDebugging) log_debug("[coglink:libcurl] Client-Name header set.");
+  if (lavaInfo->debugging->allDebugging || config->additionalDebuggingSuccess || lavaInfo->debugging->curlSuccessDebugging) log_debug("[coglink:libcurl] Client-Name header set.");
 
   chunk = curl_slist_append(chunk, "User-Agent: libcurl");
-  if (lavaInfo->debugging->allDebugging || additionalDebuggingSuccess || lavaInfo->debugging->curlSuccessDebugging) log_debug("[coglink:libcurl] User-Agent header set.");
+  if (lavaInfo->debugging->allDebugging || config->additionalDebuggingSuccess || lavaInfo->debugging->curlSuccessDebugging) log_debug("[coglink:libcurl] User-Agent header set.");
 
   cRes = curl_easy_setopt(curl, CURLOPT_HTTPHEADER, chunk);
-  if (__coglink_checkCurlCommand(lavaInfo, curl, cRes, "2", additionalDebuggingError, getResponse, res) != COGLINK_SUCCESS) {
+  if (__coglink_checkCurlCommand(lavaInfo, curl, cRes, "2", config->additionalDebuggingError, config->getResponse, &res) != COGLINK_SUCCESS) {
     curl_slist_free_all(chunk);
     return COGLINK_LIBCURL_FAILED_SETOPT;
   }
 
-  if (requestType == __COGLINK_DELETE_REQ || requestType == __COGLINK_PATCH_REQ) {
-    if (requestType == __COGLINK_DELETE_REQ) cRes = curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "DELETE");
-    else if (requestType == __COGLINK_PATCH_REQ) cRes = curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "PATCH");
+  if (config->requestType == __COGLINK_DELETE_REQ || config->requestType == __COGLINK_PATCH_REQ) {
+    if (config->requestType == __COGLINK_DELETE_REQ) cRes = curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "DELETE");
+    else if (config->requestType == __COGLINK_PATCH_REQ) cRes = curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "PATCH");
 
-    if (__coglink_checkCurlCommand(lavaInfo, curl, cRes, "3", additionalDebuggingError, getResponse, res) != COGLINK_SUCCESS) {
+    if (__coglink_checkCurlCommand(lavaInfo, curl, cRes, "3", config->additionalDebuggingError, config->getResponse, &res) != COGLINK_SUCCESS) {
       curl_slist_free_all(chunk);
       return COGLINK_LIBCURL_FAILED_SETOPT;
     }
   }
 
-  if (getResponse) {
+  if (config->getResponse) {
     (*res).body = malloc(1);
     (*res).size = 0;
 
     cRes = curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, __coglink_WriteMemoryCallback);
 
-    if (__coglink_checkCurlCommand(lavaInfo, curl, cRes, "4", additionalDebuggingError, getResponse, res) != COGLINK_SUCCESS) {
+    if (__coglink_checkCurlCommand(lavaInfo, curl, cRes, "4", config->additionalDebuggingError, config->getResponse, &res) != COGLINK_SUCCESS) {
       curl_slist_free_all(chunk);
       return COGLINK_LIBCURL_FAILED_SETOPT;
     }
 
     cRes = curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&(*res));
-    if (__coglink_checkCurlCommand(lavaInfo, curl, cRes, "5", additionalDebuggingError, getResponse, res) != COGLINK_SUCCESS) {
+    if (__coglink_checkCurlCommand(lavaInfo, curl, cRes, "5", config->additionalDebuggingError, config->getResponse, &res) != COGLINK_SUCCESS) {
       curl_slist_free_all(chunk);
       return COGLINK_LIBCURL_FAILED_SETOPT;
     }
   } else {
     cRes = curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, __coglink_WriteMemoryCallbackNoSave);
 
-    if (__coglink_checkCurlCommand(lavaInfo, curl, cRes, "6", additionalDebuggingError, getResponse, res) != COGLINK_SUCCESS) {
+    if (__coglink_checkCurlCommand(lavaInfo, curl, cRes, "6", config->additionalDebuggingError, config->getResponse, &res) != COGLINK_SUCCESS) {
       curl_slist_free_all(chunk);
       return COGLINK_LIBCURL_FAILED_SETOPT;
     }
   }
 
-  if (body) {
-    cRes = curl_easy_setopt(curl, CURLOPT_POSTFIELDS, body);
-    if (__coglink_checkCurlCommand(lavaInfo, curl, cRes, "7", additionalDebuggingError, getResponse, res) != COGLINK_SUCCESS) {
+  if (config->body) {
+    cRes = curl_easy_setopt(curl, CURLOPT_POSTFIELDS, config->body);
+    if (__coglink_checkCurlCommand(lavaInfo, curl, cRes, "7", config->additionalDebuggingError, config->getResponse, &res) != COGLINK_SUCCESS) {
       curl_slist_free_all(chunk);
       return COGLINK_LIBCURL_FAILED_SETOPT;
     }
 
-    cRes = curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, bodySize);
-    if (__coglink_checkCurlCommand(lavaInfo, curl, cRes, "8", additionalDebuggingError, getResponse, res) != COGLINK_SUCCESS) {
+    cRes = curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, config->bodySize);
+    if (__coglink_checkCurlCommand(lavaInfo, curl, cRes, "8", config->additionalDebuggingError, config->getResponse, &res) != COGLINK_SUCCESS) {
       curl_slist_free_all(chunk);
       return COGLINK_LIBCURL_FAILED_SETOPT;
     }
@@ -149,12 +149,12 @@ int __coglink_performRequest(struct lavaInfo *lavaInfo, int requestType, int add
 
   cRes = curl_easy_perform(curl);
   if (cRes != CURLE_OK) {
-    if (lavaInfo->debugging->allDebugging || additionalDebuggingError || lavaInfo->debugging->curlErrorsDebugging) log_fatal("[coglink:libcurl] curl_easy_perform failed: %s\n", curl_easy_strerror(cRes));
+    if (lavaInfo->debugging->allDebugging || config->additionalDebuggingError || lavaInfo->debugging->curlErrorsDebugging) log_fatal("[coglink:libcurl] curl_easy_perform failed: %s\n", curl_easy_strerror(cRes));
 
     curl_easy_cleanup(curl);
     curl_slist_free_all(chunk);
     curl_global_cleanup();
-    if (getResponse) free((*res).body);
+    if (config->getResponse) free((*res).body);
 
     return COGLINK_LIBCURL_FAILED_PERFORM;
   }
@@ -190,5 +190,5 @@ void __coglink_randomString(char *dest, size_t length) {
 int __coglink_IOPoller(struct io_poller *io, CURLM *multi, void *user_data) {
   (void) io; (void) multi;
   struct lavaInfo *lavaInfo = user_data;
-  return !ws_multi_socket_run(lavaInfo->ws, &lavaInfo->tstamp) ? COGLINK_WAIT : COGLINK_SUCCESS;;
+  return !ws_multi_socket_run(lavaInfo->ws, &lavaInfo->tstamp) ? COGLINK_WAIT : COGLINK_SUCCESS;
 }

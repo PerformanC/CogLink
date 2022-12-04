@@ -1,7 +1,6 @@
 #include <coglink/lavalink-internal.h>
 #include <coglink/lavalink.h>
-#include <coglink/definitions.h>
-#include <coglink/plugin.h>
+#include <coglink/plugins.h>
 
 void coglink_setPluginEvents(struct lavaInfo *lavaInfo, struct pluginEvents *pluginEvents) {
   if (pluginEvents->onSearchRequest) lavaInfo->plugins->events->onSearchRequest[lavaInfo->plugins->amount] = pluginEvents->onSearchRequest;
