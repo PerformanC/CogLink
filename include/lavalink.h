@@ -184,6 +184,7 @@ void coglink_setEvents(struct lavaInfo *lavaInfo, struct lavalinkEvents *lavalin
 /**
  * Frees all mallocs used while connecting to a node and in other functions.
  * @param lavaInfo Structure with important informations of the Lavalink.
+ * @param client Concord's client stucture generated with discord_init.
  */
 void coglink_connectNodeCleanup(struct lavaInfo *lavaInfo, struct discord *client);
 
