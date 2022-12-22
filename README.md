@@ -50,22 +50,10 @@ This branch is considered **stable**, and all functions are working properly and
 
 Sadly, Coglink isn't avaible on package managers, but you can compile it yourself, it's easy, don't worry, follow the guide below.
 
-*Coglink was compiled and tested (no modifications) in Ubuntu, Arch, Termux, Void. Some OSes like FreeBSD require special changes to work. Termux requires changing PREFIX, and FreeBSD removing -Ofast flag and replacing with -g. This may also be required in other OSes.*
+Before starting, you will need to install the required libraries for Coglink, this can be done by the package manager of your OS, you will need to install the mentioned libraries below:
 
-Before starting, you will need to install the required libraries for Coglink.
-
-```console
-// Debian based OSes:
-# apt install -y make clang git
-
-// Arch linux:
-# pacman -S make clang git
-
-// FreeBSD/Termux:
-# pkg install make clang git
-
-// Void
-# xbps-install make clang git
+```text
+make clang git
 ```
 
 After installing the libraries, you will need to [compile Concord](https://github.com/Cogmasters/concord).
@@ -151,7 +139,7 @@ And also, because of my country, Brazil, so it can have more recognition of so m
 
 ## Support
 
-In case of any issue using it (except bugs, that should be reported on GitHub Issues), you are free to ask on Coglink's [Discord server](https://discord.gg/uPveNfTuCJ).
+In case of any issue using it (except bugs, that should be reported on GitHub Issues), you are free to ask on PerformanC's [Discord server](https://discord.gg/uPveNfTuCJ).
 
 ## Credits
 
@@ -168,9 +156,8 @@ Thank you all for the help! ^^
 
 * `libcurl` >= 7.56.1
 * `Concord (master/dev)` 2.2.0
-* `Concord's websocket` 2.2.0
 * `jsmn-find` latest (included on Concord 2.2.0)
 * `jsmn` latest (included on Concord 2.2.0)
-* `chash` latest (included on Concord 2.2.0)
+* `tablec` v2.0.0 (built-in into Coglink)
 
-*Tested on:* Ubuntu 22.04.1 x64, Arch Linux x64, Termux Aarch64 (Android 12), Void Linux latest x64, FreeBSD 13.1 x64
+*Tested on:* Ubuntu 22.04.1 x64, Arch Linux x64, Termux Aarch64 (Android 12), Termux armv7 (Android 9), Void Linux latest x64, FreeBSD 13.1 x64, Alpine Linux v3.17 x64

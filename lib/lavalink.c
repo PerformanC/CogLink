@@ -591,7 +591,7 @@ int coglink_joinUserVoiceChannel(struct lavaInfo *lavaInfo, struct discord *clie
 
   if (!voiceId) {
     if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->joinUserVoiceChannelDebugging || lavaInfo->debugging->tablecErrorsDebugging) log_error("[coglink:tablec] The hashtable does not contain any data related to the userId.");
-    return TABLEC_NOT_FOUND;
+    return COGLINK_TABLEC_NOT_FOUND;
   }
 
   char joinVCPayload[512];
