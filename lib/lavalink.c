@@ -4,7 +4,6 @@
 
 #include <concord/discord.h>
 #include <concord/discord-internal.h>
-#include <concord/chash.h>
 
 #include <concord/jsmn.h>
 #include <concord/jsmn-find.h>
@@ -13,37 +12,18 @@
 #include <coglink/lavalink-internal.h>
 #include <coglink/definitions.h>
 #include <coglink/player.h>
+#include <coglink/tablec.h>
 
-#define STRING_TABLE_HEAP 0
-#define STRING_TABLE_BUCKET struct StringBucket
-#define STRING_TABLE_HASH(key, hash) chash_string_hash(key, hash)
-#define STRING_TABLE_FREE_KEY(key) free(key)
-#define STRING_TABLE_FREE_VALUE(value) free(value)
-#define STRING_TABLE_COMPARE(cmp_a, cmp_b) chash_string_compare(cmp_a, cmp_b)
-#define STRING_TABLE_INIT(bucket, _key, _value) chash_default_init(bucket, _key, _value)
-
-struct StringBucket {
-  char *key;
-  char *value;
-  int state;
-};
-
-struct StringHashtable {
-  int length;
-  int capacity;
-  struct StringBucket *buckets;
-};
-
-struct StringHashtable *hashtable = NULL;
+struct hashtable hashtable;
 
 void onCloseEvent(void *data, struct websockets *ws, struct ws_info *info, enum ws_close_reason wscode, const char *reason, size_t length) {
-  (void) ws; (void) info; (void) length;
+  (void) ws;
 
   struct lavaInfo *lavaInfo = data;
 
   if (lavaInfo->plugins && lavaInfo->plugins->events->onLavalinkClose[0]) {
-    if (lavaInfo->plugins->security->allowReadIOPoller) {
-      for (int i = 0;i <+ lavaInfo->plugins->amount;i++) {
+    if (lavaInfo->plugins->security->allowReadWebsocket) {
+      for (int i = 0;i <= lavaInfo->plugins->amount;i++) {
         if (!lavaInfo->plugins->events->onLavalinkClose[i]) break;
 
         int pluginResultCode = lavaInfo->plugins->events->onLavalinkClose[i](lavaInfo, info, wscode, reason, length);
@@ -51,9 +31,9 @@ void onCloseEvent(void *data, struct websockets *ws, struct ws_info *info, enum 
       }
     } else {
       struct lavaInfo *lavaInfoPlugin = lavaInfo;
-      lavaInfoPlugin->io_poller = NULL;
+      lavaInfo->ws = NULL;
 
-      for (int i = 0;i <+ lavaInfo->plugins->amount;i++) {
+      for (int i = 0;i <= lavaInfo->plugins->amount;i++) {
         if (!lavaInfo->plugins->events->onLavalinkClose[i]) break;
 
         int pluginResultCode = lavaInfo->plugins->events->onLavalinkClose[i](lavaInfoPlugin, info, wscode, reason, length);
@@ -70,8 +50,8 @@ void onTextEvent(void *data, struct websockets *ws, struct ws_info *info, const 
   struct lavaInfo *lavaInfo = data;
 
   if (lavaInfo->plugins && lavaInfo->plugins->events->onLavalinkPacketReceived[0]) {
-    if (lavaInfo->plugins->security->allowReadIOPoller) {
-      for (int i = 0;i <+ lavaInfo->plugins->amount;i++) {
+    if (lavaInfo->plugins->security->allowReadWebsocket) {
+      for (int i = 0;i <= lavaInfo->plugins->amount;i++) {
         if (!lavaInfo->plugins->events->onLavalinkPacketReceived[i]) break;
 
         int pluginResultCode = lavaInfo->plugins->events->onLavalinkPacketReceived[i](lavaInfo, text, length);
@@ -79,9 +59,9 @@ void onTextEvent(void *data, struct websockets *ws, struct ws_info *info, const 
       }
     } else {
       struct lavaInfo *lavaInfoPlugin = lavaInfo;
-      lavaInfoPlugin->io_poller = NULL;
+      lavaInfo->ws = NULL;
 
-      for (int i = 0;i <+ lavaInfo->plugins->amount;i++) {
+      for (int i = 0;i <= lavaInfo->plugins->amount;i++) {
         if (!lavaInfo->plugins->events->onLavalinkPacketReceived[i]) break;
 
         int pluginResultCode = lavaInfo->plugins->events->onLavalinkPacketReceived[i](lavaInfoPlugin, text, length);
@@ -130,13 +110,13 @@ void onTextEvent(void *data, struct websockets *ws, struct ws_info *info, const 
 
       snprintf(SessionId, sizeof(SessionId), "%.*s", (int)sessionId->v.len, text + sessionId->v.pos);
 
-      strlcpy(lavaInfo->sessionId, SessionId, LAVALINK_SESSIONID_LENGTH);
+      strlcpy(lavaInfo->node->sessionId, SessionId, LAVALINK_SESSIONID_LENGTH);
 
-      if (lavaInfo->allowResuming && lavaInfo->resumeKey[0] == '\0') {
+      if (lavaInfo->allowResuming && lavaInfo->node->resumeKey[0] == '\0') {
         char resumeKey[] = { [8] = '\1' };
         __coglink_randomString(resumeKey, sizeof(resumeKey) - 1);
 
-        strlcpy(lavaInfo->resumeKey, resumeKey, 8);
+        strlcpy(lavaInfo->node->resumeKey, resumeKey, 8);
 
         char reqPath[27];
         snprintf(reqPath, sizeof(reqPath), "/sessions/%s", SessionId);
@@ -145,13 +125,13 @@ void onTextEvent(void *data, struct websockets *ws, struct ws_info *info, const 
         snprintf(payload, sizeof(payload), "{\"resumingKey\":\"%s\"}", resumeKey);
 
         __coglink_performRequest(lavaInfo, NULL, &(struct __coglink_requestConfig) {
-                                              .requestType = __COGLINK_PATCH_REQ,
-                                              .path = reqPath,
-                                              .pathLength = sizeof(reqPath),
-                                              .useV3Path = true,
-                                              .body = payload,
-                                              .bodySize = sizeof(payload)
-                                            });
+                                                  .requestType = __COGLINK_PATCH_REQ,
+                                                  .path = reqPath,
+                                                  .pathLength = sizeof(reqPath),
+                                                  .useV3Path = true,
+                                                  .body = payload,
+                                                  .bodySize = sizeof(payload)
+                                                });
       }
 
       if (lavaInfo->events->onConnect) lavaInfo->events->onConnect();
@@ -421,8 +401,8 @@ enum discord_event_scheduler __coglink_handleScheduler(struct discord *client, c
     if (lavaInfo->plugins->security->allowReadBotToken) client->token = NULL;
     if (lavaInfo->plugins->security->allowReadConcordWebsocket) client->gw = (struct discord_gateway) { 0 };
 
-    if (lavaInfo->plugins->security->allowReadIOPoller) {
-      for (int i = 0;i <+ lavaInfo->plugins->amount;i++) {
+    if (lavaInfo->plugins->security->allowReadWebsocket) {
+      for (int i = 0;i <= lavaInfo->plugins->amount;i++) {
         if (!lavaInfo->plugins->events->onCoglinkScheduler[i]) break;
 
         int pluginResultCode = lavaInfo->plugins->events->onCoglinkScheduler[i](lavaInfo, client, data, length, event);
@@ -430,11 +410,11 @@ enum discord_event_scheduler __coglink_handleScheduler(struct discord *client, c
       }
     } else {
       struct lavaInfo *lavaInfoPlugin = lavaInfo;
-      lavaInfoPlugin->io_poller = NULL;
+      lavaInfo->ws = NULL;
 
       client->io_poller = NULL;
 
-      for (int i = 0;i <+ lavaInfo->plugins->amount;i++) {
+      for (int i = 0;i <= lavaInfo->plugins->amount;i++) {
         if (!lavaInfo->plugins->events->onCoglinkScheduler[i]) break;
 
         int pluginResultCode = lavaInfo->plugins->events->onCoglinkScheduler[i](lavaInfoPlugin, client, data, length, event);
@@ -478,34 +458,45 @@ enum discord_event_scheduler __coglink_handleScheduler(struct discord *client, c
       snprintf(guildId, sizeof(guildId), "%.*s", (int)VGI->v.len, data + VGI->v.pos);
       snprintf(userId, sizeof(userId), "%.*s", (int)VUI->v.len, data + VUI->v.pos);
 
+      printf("%s\n", data);
+
       if (0 == strcmp(userId, lavaInfo->node->botId)) {
         jsmnf_pair *SSI = jsmnf_find(pairs, data, "session_id", 10);
         if (__coglink_checkParse(lavaInfo, SSI, "session_id") != COGLINK_PROCEED) return DISCORD_EVENT_IGNORE;
 
-        char *sessionId = malloc(SESSION_ID_LENGTH);
-
+        char sessionId[SESSION_ID_LENGTH];
         snprintf(sessionId, SESSION_ID_LENGTH, "%.*s", (int)SSI->v.len, data + SSI->v.pos);
 
         if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging)  log_debug("[coglink:memory] Allocated %d bytes for sessionId to be saved in the hashtable.", SESSION_ID_LENGTH);
-        if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->handleSchedulerVoiceStateDebugging) log_debug("[coglink:hashtable] Parsed voice state update json, results:\n> guild_id: %s\n> user_id: %s\n> session_id: %s", guildId, userId, sessionId);
+        if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->handleSchedulerVoiceStateDebugging) log_debug("[coglink:tablec] Parsed voice state update json, results:\n> guild_id: %s\n> user_id: %s\n> session_id: %s", guildId, userId, sessionId);
 
         if (sessionId[0] != 'n') {
-          if (!hashtable) {
-            hashtable = chash_init(hashtable, STRING_TABLE);
-            if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->handleSchedulerVoiceStateDebugging || lavaInfo->debugging->chashSuccessDebugging) log_warn("[coglink:hashtable] Created hashtable, since it wasn't created before.");
-          }
+          tablec_set(&hashtable, guildId, 0, sessionId);
 
-          chash_assign(hashtable, guildId, sessionId, STRING_TABLE);
-
-          if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->handleSchedulerVoiceStateDebugging || lavaInfo->debugging->chashSuccessDebugging) log_debug("[coglink:hashtable] The user that got updated is the bot, saving the sessionId.");
+          if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->handleSchedulerVoiceStateDebugging || lavaInfo->debugging->tablecSuccessDebugging) log_debug("[coglink:tablec] The user that got updated is the bot, saving the sessionId.");
         } else {
-          if (!hashtable) return DISCORD_EVENT_IGNORE;
+          tablec_del(&hashtable, guildId, 0);
 
-          int exists = chash_contains(hashtable, guildId, exists, STRING_TABLE);
-          if (exists == 0) return DISCORD_EVENT_IGNORE;
+          if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->handleSchedulerVoiceStateDebugging || lavaInfo->debugging->tablecSuccessDebugging) log_debug("[coglink:tablec] The user that got updated is the bot, but the sessionId is NULL, removing the sessionId from the hashtable.");
+        }
+      } else if (lavaInfo->allowCachingVoiceChannelIds) {
+        jsmnf_pair *VCI = jsmnf_find(pairs, data, "channel_id", 10);
+        if (__coglink_checkParse(lavaInfo, VCI, "channel_id") != COGLINK_PROCEED) return DISCORD_EVENT_IGNORE;
 
-          chash_delete(hashtable, guildId, STRING_TABLE);
-          if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->handleSchedulerVoiceStateDebugging || lavaInfo->debugging->chashSuccessDebugging) log_debug("[coglink:hashtable] The user that got updated is the bot, but the sessionId is null, removing the sessionId from the hashtable.");
+        char *channelId = malloc(VOICE_ID_LENGTH);
+        snprintf(channelId, VOICE_ID_LENGTH, "%.*s", (int)VCI->v.len, data + VCI->v.pos);
+
+        if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging)  log_debug("[coglink:memory] Allocated %d bytes for voiceId to be saved in the hashtable.", VOICE_ID_LENGTH);
+        if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->handleSchedulerVoiceStateDebugging) log_debug("[coglink:tablec] Parsed voice state update json, results:\n> guild_id: %s\n> user_id: %s\n> channel_id: %s", guildId, userId, channelId);
+
+        if (channelId[0] != 'n') {
+          tablec_set(&hashtable, userId, 0, channelId);
+
+          if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->handleSchedulerVoiceStateDebugging || lavaInfo->debugging->tablecSuccessDebugging) log_debug("[coglink:tablec] Optional save members channel ID is enabled, saving the channelId.");
+        } else {
+          tablec_del(&hashtable, userId, 0);
+
+          if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->handleSchedulerVoiceStateDebugging || lavaInfo->debugging->tablecSuccessDebugging) log_debug("[coglink:tablec] Optional save members channel ID is enabled, but the channelId is NULL, removing the channelId from the hashtable.");
         }
       }
     } return DISCORD_EVENT_IGNORE;
@@ -540,20 +531,11 @@ enum discord_event_scheduler __coglink_handleScheduler(struct discord *client, c
       char guildId[GUILD_ID_LENGTH];
       snprintf(guildId, sizeof(guildId), "%.*s", (int)VGI->v.len, data + VGI->v.pos);
 
-      if (!hashtable) {
-        if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->handleSchedulerVoiceServerDebugging || lavaInfo->debugging->chashErrorsDebugging) log_error("[coglink:jsmn-find] The hashtable is not initialized.");
+      char *sessionId = tablec_get(&hashtable, guildId, 0);
+      if (sessionId[0] == '\0') {
+        if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->handleSchedulerVoiceServerDebugging || lavaInfo->debugging->tablecErrorsDebugging) log_error("[coglink:jsmn-find] The hashtable does not contain any data related to the guildId.");
         return DISCORD_EVENT_IGNORE;
       }
-      if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->handleSchedulerVoiceServerDebugging || lavaInfo->debugging->chashSuccessDebugging) log_debug("[coglink:jsmn-find] The hashtable is initialized.");
-
-      int exists = chash_contains(hashtable, guildId, exists, STRING_TABLE);
-      if (0 == exists) {
-        if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->handleSchedulerVoiceServerDebugging || lavaInfo->debugging->chashErrorsDebugging) log_error("[coglink:jsmn-find] The hashtable does not contain any data related to the guildId.");
-        return DISCORD_EVENT_IGNORE;
-      }
-      if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->handleSchedulerVoiceServerDebugging || lavaInfo->debugging->chashSuccessDebugging) log_debug("[coglink:jsmn-find] The hashtable contains the sessionId related to the guildId.");
-
-      char *sessionId = chash_lookup(hashtable, guildId, sessionId, STRING_TABLE);
 
       if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->handleSchedulerVoiceServerDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_debug("[coglink:jsmn-find] Successfully found the sessionID in the hashtable.");
   
@@ -568,22 +550,22 @@ enum discord_event_scheduler __coglink_handleScheduler(struct discord *client, c
       snprintf(Token, sizeof(Token), "%.*s", (int)token->v.len, data + token->v.pos);
       snprintf(Endpoint, sizeof(Endpoint), "%.*s", (int)endpoint->v.len, data + endpoint->v.pos);
 
-      char reqPath[64];
-      snprintf(reqPath, sizeof(reqPath), "/sessions/%s/players/%s", lavaInfo->sessionId, guildId);
+      char reqPath[128];
+      snprintf(reqPath, sizeof(reqPath), "/sessions/%s/players/%s", lavaInfo->node->sessionId, guildId);
 
       char payload[256];
       snprintf(payload, sizeof(payload), "{\"voice\":{\"token\":\"%s\",\"endpoint\":\"%s\",\"sessionId\":\"%s\"}}", Token, Endpoint, sessionId);
 
       __coglink_performRequest(lavaInfo, NULL, &(struct __coglink_requestConfig) {
-                                            .requestType = __COGLINK_PATCH_REQ,
-                                            .additionalDebuggingSuccess = lavaInfo->debugging->handleSchedulerVoiceServerDebugging,
-                                            .additionalDebuggingError = lavaInfo->debugging->handleSchedulerVoiceServerDebugging,
-                                            .path = reqPath,
-                                            .pathLength = sizeof(reqPath),
-                                            .useV3Path = true,
-                                            .body = payload,
-                                            .bodySize = sizeof(payload)
-                                          });
+                                                .requestType = __COGLINK_PATCH_REQ,
+                                                .additionalDebuggingSuccess = lavaInfo->debugging->handleSchedulerVoiceServerDebugging,
+                                                .additionalDebuggingError = lavaInfo->debugging->handleSchedulerVoiceServerDebugging,
+                                                .path = reqPath,
+                                                .pathLength = sizeof(reqPath),
+                                                .useV3Path = true,
+                                                .body = payload,
+                                                .bodySize = sizeof(payload)
+                                              });
     } return DISCORD_EVENT_IGNORE;
     default:
       return DISCORD_EVENT_MAIN_THREAD;
@@ -601,22 +583,45 @@ void coglink_joinVoiceChannel(struct lavaInfo *lavaInfo, struct discord *client,
   if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->sendPayloadSuccessDebugging) log_debug("[coglink:libcurl] Successfully sent the payload with op 4 to Discord.");
 }
 
-void coglink_freeNodeInfo(struct lavaInfo *lavaInfo) {
-  if (lavaInfo) lavaInfo = NULL;
+int coglink_joinUserVoiceChannel(struct lavaInfo *lavaInfo, struct discord *client, u64snowflake userId, u64snowflake guildId) {
+  char userIdStr[USER_ID_LENGTH];
+  snprintf(userIdStr, sizeof(userIdStr), "%"PRIu64"", userId);
+
+  void *voiceId = tablec_get(&hashtable, userIdStr, 0);
+
+  if (!voiceId) {
+    if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->joinUserVoiceChannelDebugging || lavaInfo->debugging->tablecErrorsDebugging) log_error("[coglink:tablec] The hashtable does not contain any data related to the userId.");
+    return TABLEC_NOT_FOUND;
+  }
+
+  char joinVCPayload[512];
+  snprintf(joinVCPayload, sizeof(joinVCPayload), "{\"op\":4,\"d\":{\"guild_id\":%"PRIu64",\"channel_id\":\"%s\",\"self_mute\":false,\"self_deaf\":true}}", guildId, (char *)voiceId);
+
+  if (!ws_send_text(client->gw.ws, NULL, joinVCPayload, strnlen(joinVCPayload, sizeof(joinVCPayload)))) {
+    if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->sendPayloadErrorsDebugging) log_fatal("[coglink:libcurl] Something went wrong while sending a payload with op 4 to Discord.");
+    return COGLINK_ERROR;
+  }
+  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->sendPayloadSuccessDebugging) log_debug("[coglink:libcurl] Successfully sent the payload with op 4 to Discord.");
+
+  return COGLINK_SUCCESS;
 }
 
-void coglink_disconnectNode(struct lavaInfo *lavaInfo) {
-  ws_close(lavaInfo->ws, 1000, "Requested to be closed", sizeof("Requested to be closed"));
+void coglink_freeNodeInfo(struct lavaInfo *lavaInfo) {
+  if (lavaInfo) lavaInfo = NULL;
 }
 
 void coglink_setEvents(struct lavaInfo *lavaInfo, struct lavalinkEvents *lavalinkEvents) {
   lavaInfo->events = lavalinkEvents;
 }
 
-void coglink_connectNodeCleanup(struct lavaInfo *lavaInfo) {
-  if (hashtable) chash_free(hashtable, STRING_TABLE);
-  ws_close(lavaInfo->ws, 1000, "Normal close", 14);
-  io_poller_curlm_del(lavaInfo->io_poller, lavaInfo->mhandle);
+void coglink_disconnectNode(struct lavaInfo *lavaInfo) {
+  ws_close(lavaInfo->ws, 1000, "Requested to be closed", 23);
+}
+
+void coglink_connectNodeCleanup(struct lavaInfo *lavaInfo, struct discord *client) {
+  tablec_cleanup(&hashtable);
+  ws_close(lavaInfo->ws, 1000, "Normal close", 13);
+  io_poller_curlm_del(client->io_poller, lavaInfo->mhandle);
   ws_cleanup(lavaInfo->ws);
   curl_multi_cleanup(lavaInfo->mhandle);
   curl_global_cleanup();
@@ -624,10 +629,16 @@ void coglink_connectNodeCleanup(struct lavaInfo *lavaInfo) {
 }
 
 int coglink_connectNode(struct lavaInfo *lavaInfo, struct discord *client, struct lavalinkNode *node) {
-  curl_global_init(CURL_GLOBAL_ALL);
+  tablec_init(&hashtable, 128, true);
+
+  char hostname[strnlen(node->hostname, 128) + (node->ssl ? 21 : 20)];
+  if (node->ssl) snprintf(hostname, sizeof(hostname), "wss://%s/v3/websocket", node->hostname);
+  else snprintf(hostname, sizeof(hostname), "ws://%s/v3/websocket", node->hostname);
 
   discord_set_data(client, lavaInfo);
   discord_set_event_scheduler(client, __coglink_handleScheduler);
+
+  curl_global_init(CURL_GLOBAL_ALL);
 
   lavaInfo->node = node;
   lavaInfo->tstamp = (uint64_t)0;
@@ -635,7 +646,6 @@ int coglink_connectNode(struct lavaInfo *lavaInfo, struct discord *client, struc
 
   io_poller_curlm_add(client->io_poller, lavaInfo->mhandle, __coglink_IOPoller, lavaInfo);
   io_poller_curlm_enable_perform(client->io_poller, lavaInfo->mhandle);
-  lavaInfo->io_poller = client->io_poller;
 
   struct ws_callbacks callbacks = {
     .on_text = &onTextEvent,
@@ -644,20 +654,19 @@ int coglink_connectNode(struct lavaInfo *lavaInfo, struct discord *client, struc
   };
   struct websockets *ws = ws_init(&callbacks, client->gw.mhandle, NULL);
 
-  char hostname[strnlen(node->hostname, 128) + (node->ssl ? 21 : 20)];
-  if (node->ssl) snprintf(hostname, sizeof(hostname), "wss://%s/v3/websocket", node->hostname);
-  else snprintf(hostname, sizeof(hostname), "ws://%s/v3/websocket", node->hostname);
-
   ws_set_url(ws, hostname, NULL);
   ws_start(ws);
 
-  if (lavaInfo->resumeKey[0] != '\0') ws_add_header(ws, "Resume-Key", lavaInfo->resumeKey);
+  if (lavaInfo->node->resumeKey[0] != '\0') ws_add_header(ws, "Resume-Key", lavaInfo->node->resumeKey);
   ws_add_header(ws, "Authorization", node->password);
   ws_add_header(ws, "Num-Shards", node->shards);
   ws_add_header(ws, "User-Id", node->botId);
   ws_add_header(ws, "Client-Name", "Coglink");
 
   lavaInfo->ws = ws;
+
+  io_poller_curlm_add(client->io_poller, lavaInfo->mhandle, __coglink_IOPoller, lavaInfo);
+  io_poller_curlm_enable_perform(client->io_poller, lavaInfo->mhandle);
 
   return COGLINK_SUCCESS;
 }

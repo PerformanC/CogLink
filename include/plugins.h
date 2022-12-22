@@ -39,6 +39,7 @@ struct pluginEventsInternal {
 
 struct pluginSecurity {
   _Bool allowReadIOPoller;
+  _Bool allowReadWebsocket;
   _Bool allowReadBotToken;
   _Bool allowReadConcordWebsocket;
 };

@@ -217,20 +217,20 @@ int coglink_freeFailingAddress(struct lavaInfo *lavaInfo, char *ip) {
   snprintf(payload, sizeof(payload), "{\"address\":\"%s\"}", ip);
 
   return __coglink_performRequest(lavaInfo, NULL, &(struct __coglink_requestConfig) {
-                                              .requestType = __COGLINK_POST_REQ,
-                                              .path = "/routeplanner/free/address",
-                                              .pathLength = 27,
-                                              .useV3Path = true,
-                                              .body = payload,
-                                              .bodySize = sizeof(payload)
-                                            });
+                                                    .requestType = __COGLINK_POST_REQ,
+                                                    .path = "/routeplanner/free/address",
+                                                    .pathLength = 27,
+                                                    .useV3Path = true,
+                                                    .body = payload,
+                                                    .bodySize = sizeof(payload)
+                                                  });
 }
 
 int coglink_freeFailingAllAddresses(struct lavaInfo *lavaInfo) {
   return __coglink_performRequest(lavaInfo,  NULL, &(struct __coglink_requestConfig) {
-                                              .requestType = __COGLINK_POST_REQ,
-                                              .path = "/routeplanner/free/all",
-                                              .pathLength = 23,
-                                              .useV3Path = true
-                                            });
+                                                    .requestType = __COGLINK_POST_REQ,
+                                                    .path = "/routeplanner/free/all",
+                                                    .pathLength = 23,
+                                                    .useV3Path = true
+                                                  });
 }

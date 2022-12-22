@@ -54,8 +54,9 @@ struct coglinkDebugging {
   _Bool jsmnfSuccessDebugging;
   _Bool handleSchedulerVoiceStateDebugging;
   _Bool handleSchedulerVoiceServerDebugging;
-  _Bool chashErrorsDebugging;
-  _Bool chashSuccessDebugging;
+  _Bool joinUserVoiceChannelDebugging;
+  _Bool tablecErrorsDebugging;
+  _Bool tablecSuccessDebugging;
   _Bool parseTrackErrorsDebugging;
   _Bool parseTrackSuccessDebugging;
   _Bool parsePlaylistErrorsDebugging;
@@ -78,6 +79,8 @@ struct lavalinkNode {
   char *shards;
   char *botId;
   _Bool ssl;
+  char resumeKey[8];
+  char sessionId[LAVALINK_SESSIONID_LENGTH];
 };
 
 struct lavalinkEvents {
@@ -101,12 +104,12 @@ struct lavaInfo {
   struct io_poller *io_poller;
   struct websockets *ws;
   struct coglinkPlugins *plugins;
+  struct coglinkDebugging *debugging;
+  struct hashtable *hashtable;
   CURLM *mhandle;
   uint64_t tstamp;
-  struct coglinkDebugging *debugging;
   _Bool allowResuming;
-  char resumeKey[8];
-  char sessionId[LAVALINK_SESSIONID_LENGTH];
+  _Bool allowCachingVoiceChannelIds;
 };
 
 struct parsedTrack {
@@ -151,6 +154,15 @@ void onTextEvent(void *data, struct websockets *ws, struct ws_info *info, const 
 void coglink_joinVoiceChannel(struct lavaInfo *lavaInfo, struct discord *client, u64snowflake voiceChannelId, u64snowflake guildId);
 
 /**
+ * Joins a voice channel that a user is in, must have the optional settings enabled for it.
+ * @param lavaInfo Structure with important informations of the Lavalink.
+ * @param client Concord's client stucture generated with discord_init.
+ * @param userId ID of the user that the bot will join in its voice channel.
+ * @param guildId ID of the guild of the voice channel that the bot will join.
+ */
+int coglink_joinUserVoiceChannel(struct lavaInfo *lavaInfo, struct discord *client, u64snowflake userId, u64snowflake guildId);
+
+/**
  * Removes all information in the lavaInfo struct
  * @param lavaInfo Structure with important informations of the Lavalink.
  */
@@ -173,7 +185,7 @@ void coglink_setEvents(struct lavaInfo *lavaInfo, struct lavalinkEvents *lavalin
  * Frees all mallocs used while connecting to a node and in other functions.
  * @param lavaInfo Structure with important informations of the Lavalink.
  */
-void coglink_connectNodeCleanup(struct lavaInfo *lavaInfo);
+void coglink_connectNodeCleanup(struct lavaInfo *lavaInfo, struct discord *client);
 
 /**
  * Creates a WebSocket connecting with the Lavalink node.

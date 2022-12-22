@@ -11,7 +11,7 @@
 
 int coglink_getPlayers(struct lavaInfo *lavaInfo, struct requestInformation *res) {
   char reqPath[35];
-  snprintf(reqPath, sizeof(reqPath), "/sessions/%s/players", lavaInfo->sessionId);
+  snprintf(reqPath, sizeof(reqPath), "/sessions/%s/players", lavaInfo->node->sessionId);
 
   return __coglink_performRequest(lavaInfo, res, &(struct __coglink_requestConfig) {
                                                     .requestType = __COGLINK_GET_REQ,
@@ -487,7 +487,7 @@ int coglink_playSong(struct lavaInfo *lavaInfo, char *track, u64snowflake guildI
   }
 
   char reqPath[64];
-  snprintf(reqPath, sizeof(reqPath), "/sessions/%s/players/%"PRIu64"", lavaInfo->sessionId, guildId);
+  snprintf(reqPath, sizeof(reqPath), "/sessions/%s/players/%"PRIu64"", lavaInfo->node->sessionId, guildId);
 
   char payload[1024];
   snprintf(payload, sizeof(payload), "{\"encodedTrack\":\"%s\",\"noReplace\":false,\"pause\":false}", track);
@@ -504,7 +504,7 @@ int coglink_playSong(struct lavaInfo *lavaInfo, char *track, u64snowflake guildI
 
 void coglink_destroyPlayer(struct lavaInfo *lavaInfo, u64snowflake guildId) {
   char reqPath[64];
-  snprintf(reqPath, sizeof(reqPath), "/sessions/%s/players/%"PRIu64"", lavaInfo->sessionId, guildId);
+  snprintf(reqPath, sizeof(reqPath), "/sessions/%s/players/%"PRIu64"", lavaInfo->node->sessionId, guildId);
 
   __coglink_performRequest(lavaInfo, NULL, &(struct __coglink_requestConfig) {
                                               .requestType = __COGLINK_DELETE_REQ,
@@ -516,7 +516,7 @@ void coglink_destroyPlayer(struct lavaInfo *lavaInfo, u64snowflake guildId) {
 
 void coglink_stopPlayer(struct lavaInfo *lavaInfo, u64snowflake guildId) {
   char reqPath[64];
-  snprintf(reqPath, sizeof(reqPath), "/sessions/%s/players/%"PRIu64"", lavaInfo->sessionId, guildId);
+  snprintf(reqPath, sizeof(reqPath), "/sessions/%s/players/%"PRIu64"", lavaInfo->node->sessionId, guildId);
 
   __coglink_performRequest(lavaInfo, NULL, &(struct __coglink_requestConfig) {
                                               .requestType = __COGLINK_PATCH_REQ,
@@ -530,7 +530,7 @@ void coglink_stopPlayer(struct lavaInfo *lavaInfo, u64snowflake guildId) {
 
 void coglink_pausePlayer(struct lavaInfo *lavaInfo, u64snowflake guildId, char *pause) {
   char reqPath[64];
-  snprintf(reqPath, sizeof(reqPath), "/sessions/%s/players/%"PRIu64"", lavaInfo->sessionId, guildId);
+  snprintf(reqPath, sizeof(reqPath), "/sessions/%s/players/%"PRIu64"", lavaInfo->node->sessionId, guildId);
 
   char payload[32];
   snprintf(payload, sizeof(payload), "{\"pause\":%s}", pause);
@@ -547,7 +547,7 @@ void coglink_pausePlayer(struct lavaInfo *lavaInfo, u64snowflake guildId, char *
 
 void coglink_seekTrack(struct lavaInfo *lavaInfo, u64snowflake guildId, char *position) {
   char reqPath[64];
-  snprintf(reqPath, sizeof(reqPath), "/sessions/%s/players/%"PRIu64"", lavaInfo->sessionId, guildId);
+  snprintf(reqPath, sizeof(reqPath), "/sessions/%s/players/%"PRIu64"", lavaInfo->node->sessionId, guildId);
 
   char payload[32];
   snprintf(payload, sizeof(payload), "{\"position\":%s}", position);
@@ -564,7 +564,7 @@ void coglink_seekTrack(struct lavaInfo *lavaInfo, u64snowflake guildId, char *po
 
 void coglink_setPlayerVolume(struct lavaInfo *lavaInfo, u64snowflake guildId, char *volume) {
   char reqPath[64];
-  snprintf(reqPath, sizeof(reqPath), "/sessions/%s/players/%"PRIu64"", lavaInfo->sessionId, guildId);
+  snprintf(reqPath, sizeof(reqPath), "/sessions/%s/players/%"PRIu64"", lavaInfo->node->sessionId, guildId);
 
   char payload[32];
   snprintf(payload, sizeof(payload), "{\"volume\":%s}", volume);
@@ -625,7 +625,7 @@ void coglink_setEffect(struct lavaInfo *lavaInfo, u64snowflake guildId, int effe
   }
 
   char reqPath[64];
-  snprintf(reqPath, sizeof(reqPath), "/sessions/%s/players/%"PRIu64"", lavaInfo->sessionId, guildId);
+  snprintf(reqPath, sizeof(reqPath), "/sessions/%s/players/%"PRIu64"", lavaInfo->node->sessionId, guildId);
 
   if (effect != FILTER_REMOVE) snprintf(payload, sizeof(payload), "{\"filters\":{\"%s\":%s}}", effectStr, value);
   else snprintf(payload, sizeof(payload), "{\"filters\":{}}");
