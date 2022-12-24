@@ -119,7 +119,6 @@ int coglink_parseDecodeTrack(struct lavaInfo *lavaInfo, struct requestInformatio
     if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseTrackErrorsDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_fatal("[coglink:jsmnf-find] Error while trying to find %s field.", !identifier ? "identifier": !isSeekable ? "isSeekable" : !author ? "author" : !length ? "length" : !isStream ? "isStream" : !position ? "position" : !title ? "title" : !uri ? "uri" : !sourceName ? "sourceName" : "???");
     return COGLINK_JSMNF_ERROR_FIND;
   }
-
   char Identifier[IDENTIFIER_LENGTH], IsSeekable[TRUE_FALSE_LENGTH], Author[AUTHOR_NAME_LENGTH], Length[VIDEO_LENGTH], IsStream[TRUE_FALSE_LENGTH], Position[VIDEO_LENGTH], Title[TRACK_TITLE_LENGTH], Uri[URL_LENGTH], SourceName[SOURCENAME_LENGTH];
 
   snprintf(Identifier, sizeof(Identifier), "%.*s", (int)identifier->v.len, res->body + identifier->v.pos);
@@ -134,17 +133,15 @@ int coglink_parseDecodeTrack(struct lavaInfo *lavaInfo, struct requestInformatio
 
   if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseTrackSuccessDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_debug("[coglink:jsmn-find] Parsed song search json, results:\n> identifier: %s\n> isSeekable: %s\n> author: %s\n> length: %s\n> isStream: %s\n> position: %s\n> title: %s\n> uri: %s\n> sourceName: %s", Identifier, IsSeekable, Author, Length, IsStream, Position, Title, Uri, SourceName);
 
-  *parsedTrackStruct = &(struct parsedTrack) {
-    .identifier = Identifier,
-    .isSeekable = IsSeekable,
-    .author = Author,
-    .length = Length,
-    .isStream = IsStream,
-    .position = Position,
-    .title = Title,
-    .uri = Uri,
-    .sourceName = SourceName
-  };
+  (*parsedTrackStruct)->identifier = Identifier;
+  (*parsedTrackStruct)->isSeekable = IsSeekable;
+  (*parsedTrackStruct)->author = Author;
+  (*parsedTrackStruct)->length = Length;
+  (*parsedTrackStruct)->isStream = IsStream;
+  (*parsedTrackStruct)->position = Position;
+  (*parsedTrackStruct)->title = Title;
+  (*parsedTrackStruct)->uri = Uri;
+  (*parsedTrackStruct)->sourceName = SourceName;
 
   if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-management] Set the value for struct members of parsedTrackStruct.");
 
@@ -285,18 +282,16 @@ int coglink_parseDecodeTracks(struct lavaInfo *lavaInfo, struct requestInformati
 
   if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseTrackSuccessDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_debug("[coglink:jsmn-find] Parsed song search json, results:\n> track: %s\n> identifier: %s\n> isSeekable: %s\n> author: %s\n> length: %s\n> isStream: %s\n> position: %s\n> title: %s\n> uri: %s\n> sourceName: %s", Track, Identifier, IsSeekable, Author, Length, IsStream, Position, Title, Uri, SourceName);
 
-  *parsedTrackStruct = &(struct parsedTrack) {
-    .track = Track,
-    .identifier = Identifier,
-    .isSeekable = IsSeekable,
-    .author = Author,
-    .length = Length,
-    .isStream = IsStream,
-    .position = Position,
-    .title = Title,
-    .uri = Uri,
-    .sourceName = SourceName
-  };
+  (*parsedTrackStruct)->track = Track;
+  (*parsedTrackStruct)->identifier = Identifier;
+  (*parsedTrackStruct)->isSeekable = IsSeekable;
+  (*parsedTrackStruct)->author = Author;
+  (*parsedTrackStruct)->length = Length;
+  (*parsedTrackStruct)->isStream = IsStream;
+  (*parsedTrackStruct)->position = Position;
+  (*parsedTrackStruct)->title = Title;
+  (*parsedTrackStruct)->uri = Uri;
+  (*parsedTrackStruct)->sourceName = SourceName;
 
   if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-management] Set the value for struct members of parsedTrackStruct.");
 
@@ -333,8 +328,10 @@ int coglink_searchSong(struct lavaInfo *lavaInfo, char *song, struct requestInfo
   char reqPath[strnlen(songEncoded, 2000) + 33];
   snprintf(reqPath, sizeof(reqPath), "/loadtracks?identifier=");
 
-  if (0 != strncmp(songEncoded, "https://", 8)) strlcat(reqPath, "ytsearch:", sizeof(reqPath));
-  strlcat(reqPath, songEncoded, sizeof(reqPath));
+  size_t reqPathLength = strlen(reqPath);
+
+  if (0 != strncmp(songEncoded, "https://", 8)) strncat(reqPath, "ytsearch:", sizeof(reqPath) - reqPathLength - 1);
+  strncat(reqPath, songEncoded, sizeof(reqPath) - reqPathLength - 1);
 
   curl_free(songEncoded);
 
@@ -487,20 +484,18 @@ int coglink_parseTrack(const struct lavaInfo *lavaInfo, struct requestInformatio
 
   if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseTrackSuccessDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_debug("[coglink:jsmn-find] Parsed song search json, results:\n> track: %s\n> identifier: %s\n> isSeekable: %s\n> author: %s\n> length: %s\n> isStream: %s\n> position: %s\n> title: %s\n> uri: %s\n> sourceName: %s", Track, Identifier, IsSeekable, Author, Length, IsStream, Position, Title, Uri, SourceName);
 
-  *parsedTrackStruct = &(struct parsedTrack) {
-    .track = Track,
-    .identifier = Identifier,
-    .isSeekable = IsSeekable,
-    .author = Author,
-    .length = Length,
-    .isStream = IsStream,
-    .position = Position,
-    .title = Title,
-    .uri = Uri,
-    .sourceName = SourceName
-  };
+  (*parsedTrackStruct)->track = Track;
+  (*parsedTrackStruct)->identifier = Identifier;
+  (*parsedTrackStruct)->isSeekable = IsSeekable;
+  (*parsedTrackStruct)->author = Author;
+  (*parsedTrackStruct)->length = Length;
+  (*parsedTrackStruct)->isStream = IsStream;
+  (*parsedTrackStruct)->position = Position;
+  (*parsedTrackStruct)->title = Title;
+  (*parsedTrackStruct)->uri = Uri;
+  (*parsedTrackStruct)->sourceName = SourceName;
 
-  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-strlcpy] Set the value for struct members of parsedTrackStruct.");
+  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-management] Set the value for struct members of parsedTrackStruct.");
 
   return COGLINK_SUCCESS;
 }
@@ -548,10 +543,8 @@ int coglink_parsePlaylist(const struct lavaInfo *lavaInfo, struct requestInforma
 
   if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parsePlaylistSuccessDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_debug("[coglink:jsmn-find] Parsed playlist search json, results:\n> name: %s\n> selectedTrack: %s", Name, SelectedTrack);
 
-  *parsedPlaylistStruct = &(struct parsedPlaylist) {
-    .name = Name,
-    .selectedTrack = SelectedTrack
-  };
+  (*parsedPlaylistStruct)->name = Name;
+  (*parsedPlaylistStruct)->selectedTrack = SelectedTrack;
 
   if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-management] Set the value for struct members of parsedPlaylist.");
 
@@ -601,10 +594,8 @@ int coglink_parseError(const struct lavaInfo *lavaInfo, struct requestInformatio
 
   if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseSuccessDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_debug("[coglink:jsmn-find] Parsed error search json, results:\n> message: %s\n> severity: %s", Message, Severity);
 
-  *parsedErrorStruct = &(struct parsedError) {
-    .message = Message,
-    .severity = Severity
-  };
+  (*parsedErrorStruct)->message = Message;
+  (*parsedErrorStruct)->severity = Severity;
 
   if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-management] Set the value for struct members of parsedError.");
 

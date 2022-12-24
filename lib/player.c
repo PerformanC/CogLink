@@ -122,6 +122,8 @@ int coglink_parseGetPlayers(struct lavaInfo *lavaInfo, struct requestInformation
     }
   };
 
+  /* TODO: &(struct ...) -> (changes abaixo)*/
+
   jsmnf_pair *guildId = jsmnf_find_path(pairs, res->body, path, 2);
   
   char GuildId[GUILD_ID_LENGTH];
@@ -173,16 +175,16 @@ int coglink_parseGetPlayers(struct lavaInfo *lavaInfo, struct requestInformation
     snprintf(Uri, sizeof(Uri), "%.*s", (int)uri->v.len, res->body + uri->v.pos);
     snprintf(SourceName, sizeof(SourceName), "%.*s", (int)sourceName->v.len, res->body + sourceName->v.pos);
 
-    strlcpy((*playerInfoStruct)->track->encoded, Track, TRACK_LENGTH);
-    strlcpy((*playerInfoStruct)->track->info->identifier, Identifier, IDENTIFIER_LENGTH);
-    strlcpy((*playerInfoStruct)->track->info->isSeekable, IsSeekable, TRUE_FALSE_LENGTH);
-    strlcpy((*playerInfoStruct)->track->info->author, Author, AUTHOR_NAME_LENGTH);
-    strlcpy((*playerInfoStruct)->track->info->length, Length, VIDEO_LENGTH);
-    strlcpy((*playerInfoStruct)->track->info->isStream, IsStream, TRUE_FALSE_LENGTH);
-    strlcpy((*playerInfoStruct)->track->info->position, Position, VIDEO_LENGTH);
-    strlcpy((*playerInfoStruct)->track->info->title, Title, TRACK_TITLE_LENGTH);
-    strlcpy((*playerInfoStruct)->track->info->uri, Uri, URL_LENGTH);
-    strlcpy((*playerInfoStruct)->track->info->sourceName, SourceName, SOURCENAME_LENGTH);
+    strncpy((*playerInfoStruct)->track->encoded, Track, TRACK_LENGTH);
+    strncpy((*playerInfoStruct)->track->info->identifier, Identifier, IDENTIFIER_LENGTH);
+    strncpy((*playerInfoStruct)->track->info->isSeekable, IsSeekable, TRUE_FALSE_LENGTH);
+    strncpy((*playerInfoStruct)->track->info->author, Author, AUTHOR_NAME_LENGTH);
+    strncpy((*playerInfoStruct)->track->info->length, Length, VIDEO_LENGTH);
+    strncpy((*playerInfoStruct)->track->info->isStream, IsStream, TRUE_FALSE_LENGTH);
+    strncpy((*playerInfoStruct)->track->info->position, Position, VIDEO_LENGTH);
+    strncpy((*playerInfoStruct)->track->info->title, Title, TRACK_TITLE_LENGTH);
+    strncpy((*playerInfoStruct)->track->info->uri, Uri, URL_LENGTH);
+    strncpy((*playerInfoStruct)->track->info->sourceName, SourceName, SOURCENAME_LENGTH);
   }
 
   path[1] = "volume";
@@ -198,8 +200,8 @@ int coglink_parseGetPlayers(struct lavaInfo *lavaInfo, struct requestInformation
   snprintf(Volume, sizeof(Volume), "%.*s", (int)volume->v.len, res->body + volume->v.pos);
   snprintf(Paused, sizeof(Paused), "%.*s", (int)paused->v.len, res->body + paused->v.pos);
 
-  strlcpy((*playerInfoStruct)->volume, Volume, VOLUME_LENGTH);
-  strlcpy((*playerInfoStruct)->paused, Paused, TRUE_FALSE_LENGTH);
+  strncpy((*playerInfoStruct)->volume, Volume, VOLUME_LENGTH);
+  strncpy((*playerInfoStruct)->paused, Paused, TRUE_FALSE_LENGTH);
 
   path[1] = "voice";
   path[2] = "token";
@@ -230,11 +232,11 @@ int coglink_parseGetPlayers(struct lavaInfo *lavaInfo, struct requestInformation
   snprintf(Connected, sizeof(Connected), "%.*s", (int)connected->v.len, res->body + connected->v.pos);
   snprintf(Ping, sizeof(Ping), "%.*s", (int)ping->v.len, res->body + ping->v.pos);
 
-  strlcpy((*playerInfoStruct)->voice->token, Token, TOKEN_LENGTH);
-  strlcpy((*playerInfoStruct)->voice->endpoint, Endpoint, ENDPOINT_LENGTH);
-  strlcpy((*playerInfoStruct)->voice->sessionId, SessionId, SESSIONID_LENGTH);
-  strlcpy((*playerInfoStruct)->voice->connected, Connected, TRUE_FALSE_LENGTH);
-  strlcpy((*playerInfoStruct)->voice->ping, Ping, PING_LENGTH);
+  strncpy((*playerInfoStruct)->voice->token, Token, TOKEN_LENGTH);
+  strncpy((*playerInfoStruct)->voice->endpoint, Endpoint, ENDPOINT_LENGTH);
+  strncpy((*playerInfoStruct)->voice->sessionId, SessionId, SESSIONID_LENGTH);
+  strncpy((*playerInfoStruct)->voice->connected, Connected, TRUE_FALSE_LENGTH);
+  strncpy((*playerInfoStruct)->voice->ping, Ping, PING_LENGTH);
 
   path[1] = "filters";
   path[2] = "volume";
@@ -245,7 +247,7 @@ int coglink_parseGetPlayers(struct lavaInfo *lavaInfo, struct requestInformation
 
     snprintf(VolumeFilter, sizeof(VolumeFilter), "%.*s", (int)volumeFilter->v.len, res->body + volumeFilter->v.pos);
 
-    strlcpy((*playerInfoStruct)->filters->volume, VolumeFilter, VOLUME_LENGTH);
+    strncpy((*playerInfoStruct)->filters->volume, VolumeFilter, VOLUME_LENGTH);
   }
 
   path[2] = "equalizer";
@@ -262,8 +264,8 @@ int coglink_parseGetPlayers(struct lavaInfo *lavaInfo, struct requestInformation
     snprintf(Bands, sizeof(Bands), "%.*s", (int)bands->v.len, res->body + bands->v.pos);
     snprintf(Gain, sizeof(Gain), "%.*s", (int)gain->v.len, res->body + gain->v.pos);
 
-    strlcpy((*playerInfoStruct)->filters->equalizer->bands, Bands, 512);
-    strlcpy((*playerInfoStruct)->filters->equalizer->gain, Gain, 128);
+    strncpy((*playerInfoStruct)->filters->equalizer->bands, Bands, 512);
+    strncpy((*playerInfoStruct)->filters->equalizer->gain, Gain, 128);
   }
 
   path[2] = "karaoke";
@@ -288,10 +290,10 @@ int coglink_parseGetPlayers(struct lavaInfo *lavaInfo, struct requestInformation
     snprintf(FilterBand, sizeof(FilterBand), "%.*s", (int)filterBand->v.len, res->body + filterBand->v.pos);
     snprintf(FilterWidth, sizeof(FilterWidth), "%.*s", (int)filterWidth->v.len, res->body + filterWidth->v.pos);
 
-    strlcpy((*playerInfoStruct)->filters->karaoke->level, Level, 16);
-    strlcpy((*playerInfoStruct)->filters->karaoke->monoLevel, MonoLevel, 16);
-    strlcpy((*playerInfoStruct)->filters->karaoke->filterBand, FilterBand, 16);
-    strlcpy((*playerInfoStruct)->filters->karaoke->filterWidth, FilterWidth, 16);
+    strncpy((*playerInfoStruct)->filters->karaoke->level, Level, 16);
+    strncpy((*playerInfoStruct)->filters->karaoke->monoLevel, MonoLevel, 16);
+    strncpy((*playerInfoStruct)->filters->karaoke->filterBand, FilterBand, 16);
+    strncpy((*playerInfoStruct)->filters->karaoke->filterWidth, FilterWidth, 16);
   }
 
   path[2] = "timescale";
@@ -312,9 +314,9 @@ int coglink_parseGetPlayers(struct lavaInfo *lavaInfo, struct requestInformation
     snprintf(Pitch, sizeof(Pitch), "%.*s", (int)pitch->v.len, res->body + pitch->v.pos);
     snprintf(Rate, sizeof(Rate), "%.*s", (int)rate->v.len, res->body + rate->v.pos);
 
-    strlcpy((*playerInfoStruct)->filters->timescale->speed, Speed, 8);
-    strlcpy((*playerInfoStruct)->filters->timescale->pitch, Pitch, 8);
-    strlcpy((*playerInfoStruct)->filters->timescale->rate, Rate, 8);
+    strncpy((*playerInfoStruct)->filters->timescale->speed, Speed, 8);
+    strncpy((*playerInfoStruct)->filters->timescale->pitch, Pitch, 8);
+    strncpy((*playerInfoStruct)->filters->timescale->rate, Rate, 8);
   }
 
   path[2] = "tremolo";
@@ -331,8 +333,8 @@ int coglink_parseGetPlayers(struct lavaInfo *lavaInfo, struct requestInformation
     snprintf(Frequency, sizeof(Frequency), "%.*s", (int)frequency->v.len, res->body + frequency->v.pos);
     snprintf(Depth, sizeof(Depth), "%.*s", (int)depth->v.len, res->body + depth->v.pos);
 
-    strlcpy((*playerInfoStruct)->filters->tremolo->frequency, Frequency, 8);
-    strlcpy((*playerInfoStruct)->filters->tremolo->depth, Depth, 4);
+    strncpy((*playerInfoStruct)->filters->tremolo->frequency, Frequency, 8);
+    strncpy((*playerInfoStruct)->filters->tremolo->depth, Depth, 4);
   }
 
   path[2] = "vibrato";
@@ -349,8 +351,8 @@ int coglink_parseGetPlayers(struct lavaInfo *lavaInfo, struct requestInformation
     snprintf(Frequency, sizeof(Frequency), "%.*s", (int)frequency->v.len, res->body + frequency->v.pos);
     snprintf(Depth, sizeof(Depth), "%.*s", (int)depth->v.len, res->body + depth->v.pos);
 
-    strlcpy((*playerInfoStruct)->filters->vibrato->frequency, Frequency, 4);
-    strlcpy((*playerInfoStruct)->filters->vibrato->depth, Depth, 4);
+    strncpy((*playerInfoStruct)->filters->vibrato->frequency, Frequency, 4);
+    strncpy((*playerInfoStruct)->filters->vibrato->depth, Depth, 4);
   }
 
   path[2] = "rotation";
@@ -363,7 +365,7 @@ int coglink_parseGetPlayers(struct lavaInfo *lavaInfo, struct requestInformation
 
     snprintf(RotationHz, sizeof(RotationHz), "%.*s", (int)rotationHz->v.len, res->body + rotationHz->v.pos);
 
-    strlcpy((*playerInfoStruct)->filters->rotation, RotationHz, 8);
+    strncpy((*playerInfoStruct)->filters->rotation, RotationHz, 8);
   }
 
   path[2] = "distortion";
@@ -404,14 +406,14 @@ int coglink_parseGetPlayers(struct lavaInfo *lavaInfo, struct requestInformation
     snprintf(Offset, sizeof(Offset), "%.*s", (int)offset->v.len, res->body + offset->v.pos);
     snprintf(Scale, sizeof(Scale), "%.*s", (int)scale->v.len, res->body + scale->v.pos);
 
-    strlcpy((*playerInfoStruct)->filters->distortion->sinOffset, SinOffset, 8);
-    strlcpy((*playerInfoStruct)->filters->distortion->sinScale, SinScale, 8);
-    strlcpy((*playerInfoStruct)->filters->distortion->cosOffset, CosOffset, 8);
-    strlcpy((*playerInfoStruct)->filters->distortion->cosScale, CosScale, 8);
-    strlcpy((*playerInfoStruct)->filters->distortion->tanOffset, TanOffset, 8);
-    strlcpy((*playerInfoStruct)->filters->distortion->tanScale, TanScale, 8);
-    strlcpy((*playerInfoStruct)->filters->distortion->offset, Offset, 8);
-    strlcpy((*playerInfoStruct)->filters->distortion->scale, Scale, 8);
+    strncpy((*playerInfoStruct)->filters->distortion->sinOffset, SinOffset, 8);
+    strncpy((*playerInfoStruct)->filters->distortion->sinScale, SinScale, 8);
+    strncpy((*playerInfoStruct)->filters->distortion->cosOffset, CosOffset, 8);
+    strncpy((*playerInfoStruct)->filters->distortion->cosScale, CosScale, 8);
+    strncpy((*playerInfoStruct)->filters->distortion->tanOffset, TanOffset, 8);
+    strncpy((*playerInfoStruct)->filters->distortion->tanScale, TanScale, 8);
+    strncpy((*playerInfoStruct)->filters->distortion->offset, Offset, 8);
+    strncpy((*playerInfoStruct)->filters->distortion->scale, Scale, 8);
   }
 
   path[2] = "channelMix";
@@ -436,10 +438,10 @@ int coglink_parseGetPlayers(struct lavaInfo *lavaInfo, struct requestInformation
     snprintf(RightToLeft, sizeof(RightToLeft), "%.*s", (int)rightToLeft->v.len, res->body + rightToLeft->v.pos);
     snprintf(RightToRight, sizeof(RightToRight), "%.*s", (int)rightToRight->v.len, res->body + rightToRight->v.pos);
 
-    strlcpy((*playerInfoStruct)->filters->channelMix->leftToLeft, LeftToLeft, 4);
-    strlcpy((*playerInfoStruct)->filters->channelMix->leftToRight, LeftToRight, 4);
-    strlcpy((*playerInfoStruct)->filters->channelMix->rightToLeft, RightToLeft, 4);
-    strlcpy((*playerInfoStruct)->filters->channelMix->rightToRight, RightToRight, 4);
+    strncpy((*playerInfoStruct)->filters->channelMix->leftToLeft, LeftToLeft, 4);
+    strncpy((*playerInfoStruct)->filters->channelMix->leftToRight, LeftToRight, 4);
+    strncpy((*playerInfoStruct)->filters->channelMix->rightToLeft, RightToLeft, 4);
+    strncpy((*playerInfoStruct)->filters->channelMix->rightToRight, RightToRight, 4);
   }
 
   path[2] = "lowPass";
@@ -452,10 +454,10 @@ int coglink_parseGetPlayers(struct lavaInfo *lavaInfo, struct requestInformation
 
     snprintf(Smoothing, sizeof(Smoothing), "%.*s", (int)smoothing->v.len, res->body + smoothing->v.pos);
 
-    strlcpy((*playerInfoStruct)->filters->lowPass, Smoothing, 8);
+    strncpy((*playerInfoStruct)->filters->lowPass, Smoothing, 8);
   }
 
-  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-strlcpy] Set the value for struct members of playerInfoStruct.");
+  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-strncpy] Set the value for struct members of playerInfoStruct.");
 
   return COGLINK_SUCCESS;
 }

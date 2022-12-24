@@ -44,32 +44,32 @@ struct lavalinkStats {
 };
 
 struct coglinkDebugging {
-  _Bool allDebugging;
-  _Bool sendPayloadErrorsDebugging;
-  _Bool sendPayloadSuccessDebugging;
-  _Bool checkParseErrorsDebugging;
-  _Bool checkParseSuccessDebugging;
-  _Bool joinVoiceDebugging;
-  _Bool jsmnfErrorsDebugging;
-  _Bool jsmnfSuccessDebugging;
-  _Bool handleSchedulerVoiceStateDebugging;
-  _Bool handleSchedulerVoiceServerDebugging;
-  _Bool joinUserVoiceChannelDebugging;
-  _Bool tablecErrorsDebugging;
-  _Bool tablecSuccessDebugging;
-  _Bool parseTrackErrorsDebugging;
-  _Bool parseTrackSuccessDebugging;
-  _Bool parsePlaylistErrorsDebugging;
-  _Bool parsePlaylistSuccessDebugging;
-  _Bool parseErrorsDebugging;
-  _Bool parseSuccessDebugging;
-  _Bool parseLoadtypeErrorsDebugging;
-  _Bool parseLoadtypeSuccessDebugging;
-  _Bool searchSongErrorsDebugging;
-  _Bool searchSongSuccessDebugging;
-  _Bool curlErrorsDebugging;
-  _Bool curlSuccessDebugging;
-  _Bool memoryDebugging;
+  int allDebugging;
+  int sendPayloadErrorsDebugging;
+  int sendPayloadSuccessDebugging;
+  int checkParseErrorsDebugging;
+  int checkParseSuccessDebugging;
+  int joinVoiceDebugging;
+  int jsmnfErrorsDebugging;
+  int jsmnfSuccessDebugging;
+  int handleSchedulerVoiceStateDebugging;
+  int handleSchedulerVoiceServerDebugging;
+  int joinUserVoiceChannelDebugging;
+  int tablecErrorsDebugging;
+  int tablecSuccessDebugging;
+  int parseTrackErrorsDebugging;
+  int parseTrackSuccessDebugging;
+  int parsePlaylistErrorsDebugging;
+  int parsePlaylistSuccessDebugging;
+  int parseErrorsDebugging;
+  int parseSuccessDebugging;
+  int parseLoadtypeErrorsDebugging;
+  int parseLoadtypeSuccessDebugging;
+  int searchSongErrorsDebugging;
+  int searchSongSuccessDebugging;
+  int curlErrorsDebugging;
+  int curlSuccessDebugging;
+  int memoryDebugging;
 };
 
 struct lavalinkNode {
@@ -78,7 +78,7 @@ struct lavalinkNode {
   char *password;
   char *shards;
   char *botId;
-  _Bool ssl;
+  int ssl;
   char resumeKey[8];
   char sessionId[LAVALINK_SESSIONID_LENGTH];
 };
@@ -108,8 +108,8 @@ struct lavaInfo {
   struct hashtable *hashtable;
   CURLM *mhandle;
   uint64_t tstamp;
-  _Bool allowResuming;
-  _Bool allowCachingVoiceChannelIds;
+  int allowResuming;
+  int allowCachingVoiceChannelIds;
 };
 
 struct parsedTrack {

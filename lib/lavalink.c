@@ -110,13 +110,13 @@ void onTextEvent(void *data, struct websockets *ws, struct ws_info *info, const 
 
       snprintf(SessionId, sizeof(SessionId), "%.*s", (int)sessionId->v.len, text + sessionId->v.pos);
 
-      strlcpy(lavaInfo->node->sessionId, SessionId, LAVALINK_SESSIONID_LENGTH);
+      strncpy(lavaInfo->node->sessionId, SessionId, LAVALINK_SESSIONID_LENGTH);
 
       if (lavaInfo->allowResuming && lavaInfo->node->resumeKey[0] == '\0') {
         char resumeKey[] = { [8] = '\1' };
         __coglink_randomString(resumeKey, sizeof(resumeKey) - 1);
 
-        strlcpy(lavaInfo->node->resumeKey, resumeKey, 8);
+        strncpy(lavaInfo->node->resumeKey, resumeKey, 8);
 
         char reqPath[27];
         snprintf(reqPath, sizeof(reqPath), "/sessions/%s", SessionId);
@@ -128,7 +128,7 @@ void onTextEvent(void *data, struct websockets *ws, struct ws_info *info, const 
                                                   .requestType = __COGLINK_PATCH_REQ,
                                                   .path = reqPath,
                                                   .pathLength = sizeof(reqPath),
-                                                  .useV3Path = true,
+                                                  .useV3Path = 1,
                                                   .body = payload,
                                                   .bodySize = sizeof(payload)
                                                 });
@@ -562,7 +562,7 @@ enum discord_event_scheduler __coglink_handleScheduler(struct discord *client, c
                                                 .additionalDebuggingError = lavaInfo->debugging->handleSchedulerVoiceServerDebugging,
                                                 .path = reqPath,
                                                 .pathLength = sizeof(reqPath),
-                                                .useV3Path = true,
+                                                .useV3Path = 1,
                                                 .body = payload,
                                                 .bodySize = sizeof(payload)
                                               });
@@ -629,7 +629,7 @@ void coglink_connectNodeCleanup(struct lavaInfo *lavaInfo, struct discord *clien
 }
 
 int coglink_connectNode(struct lavaInfo *lavaInfo, struct discord *client, struct lavalinkNode *node) {
-  tablec_init(&hashtable, 128, true);
+  tablec_init(&hashtable, 128, 1);
 
   char hostname[strnlen(node->hostname, 128) + (node->ssl ? 21 : 20)];
   if (node->ssl) snprintf(hostname, sizeof(hostname), "wss://%s/v3/websocket", node->hostname);
