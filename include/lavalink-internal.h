@@ -21,7 +21,7 @@ struct __coglink_requestConfig {
   _Bool additionalDebuggingError;
   char *path;
   int pathLength;
-  _Bool useV3Path;
+  _Bool useVPath;
   char *body;
   long bodySize;
   _Bool getResponse;

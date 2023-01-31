@@ -58,11 +58,11 @@ int __coglink_performRequest(struct lavaInfo *lavaInfo, struct requestInformatio
     return COGLINK_LIBCURL_FAILED_INITIALIZE;
   }
 
-  char lavaURL[strnlen(lavaInfo->node->hostname, 128) + (config->useV3Path ? (lavaInfo->node->ssl ? 12 : 11) : (lavaInfo->node->ssl ? 9 : 8)) + config->pathLength];
+  char lavaURL[strnlen(lavaInfo->node->hostname, 128) + (config->useVPath ? (lavaInfo->node->ssl ? 12 : 11) : (lavaInfo->node->ssl ? 9 : 8)) + config->pathLength];
 
-  if (config->useV3Path) {
-    if (lavaInfo->node->ssl) snprintf(lavaURL, sizeof(lavaURL), "https://%s/v3%s", lavaInfo->node->hostname, config->path);
-    else snprintf(lavaURL, sizeof(lavaURL), "http://%s/v3%s", lavaInfo->node->hostname, config->path);
+  if (config->useVPath) {
+    if (lavaInfo->node->ssl) snprintf(lavaURL, sizeof(lavaURL), "https://%s/v4%s", lavaInfo->node->hostname, config->path);
+    else snprintf(lavaURL, sizeof(lavaURL), "http://%s/v4%s", lavaInfo->node->hostname, config->path);
   } else {
     if (lavaInfo->node->ssl) snprintf(lavaURL, sizeof(lavaURL), "https://%s%s", lavaInfo->node->hostname, config->path);
     else snprintf(lavaURL, sizeof(lavaURL), "http://%s%s", lavaInfo->node->hostname, config->path);

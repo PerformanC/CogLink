@@ -14,7 +14,7 @@
 #include <coglink/player.h>
 #include <coglink/tablec.h>
 
-struct hashtable hashtable;
+struct tablec_ht hashtable;
 
 void onCloseEvent(void *data, struct websockets *ws, struct ws_info *info, enum ws_close_reason wscode, const char *reason, size_t length) {
   (void) ws;
@@ -112,29 +112,7 @@ void onTextEvent(void *data, struct websockets *ws, struct ws_info *info, const 
 
       strncpy(lavaInfo->node->sessionId, SessionId, LAVALINK_SESSIONID_LENGTH);
 
-      if (lavaInfo->allowResuming && lavaInfo->node->resumeKey[0] == '\0') {
-        char resumeKey[] = { [8] = '\1' };
-        __coglink_randomString(resumeKey, sizeof(resumeKey) - 1);
-
-        strncpy(lavaInfo->node->resumeKey, resumeKey, 8);
-
-        char reqPath[27];
-        snprintf(reqPath, sizeof(reqPath), "/sessions/%s", SessionId);
-
-        char payload[27];
-        snprintf(payload, sizeof(payload), "{\"resumingKey\":\"%s\"}", resumeKey);
-
-        __coglink_performRequest(lavaInfo, NULL, &(struct __coglink_requestConfig) {
-                                                  .requestType = __COGLINK_PATCH_REQ,
-                                                  .path = reqPath,
-                                                  .pathLength = sizeof(reqPath),
-                                                  .useV3Path = 1,
-                                                  .body = payload,
-                                                  .bodySize = sizeof(payload)
-                                                });
-      }
-
-      if (lavaInfo->events->onConnect) lavaInfo->events->onConnect();
+      if (lavaInfo->events->onConnect) lavaInfo->events->onConnect(SessionId);
       break;
     }
     case 'e': {
@@ -471,11 +449,11 @@ enum discord_event_scheduler __coglink_handleScheduler(struct discord *client, c
         if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->handleSchedulerVoiceStateDebugging) log_debug("[coglink:tablec] Parsed voice state update json, results:\n> guild_id: %s\n> user_id: %s\n> session_id: %s", guildId, userId, sessionId);
 
         if (sessionId[0] != 'n') {
-          tablec_set(&hashtable, guildId, 0, sessionId);
+          tablec_set(&hashtable, guildId, sessionId);
 
           if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->handleSchedulerVoiceStateDebugging || lavaInfo->debugging->tablecSuccessDebugging) log_debug("[coglink:tablec] The user that got updated is the bot, saving the sessionId.");
         } else {
-          tablec_del(&hashtable, guildId, 0);
+          tablec_del(&hashtable, guildId);
 
           if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->handleSchedulerVoiceStateDebugging || lavaInfo->debugging->tablecSuccessDebugging) log_debug("[coglink:tablec] The user that got updated is the bot, but the sessionId is NULL, removing the sessionId from the hashtable.");
         }
@@ -490,11 +468,11 @@ enum discord_event_scheduler __coglink_handleScheduler(struct discord *client, c
         if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->handleSchedulerVoiceStateDebugging) log_debug("[coglink:tablec] Parsed voice state update json, results:\n> guild_id: %s\n> user_id: %s\n> channel_id: %s", guildId, userId, channelId);
 
         if (channelId[0] != 'n') {
-          tablec_set(&hashtable, userId, 0, channelId);
+          tablec_set(&hashtable, userId, channelId);
 
           if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->handleSchedulerVoiceStateDebugging || lavaInfo->debugging->tablecSuccessDebugging) log_debug("[coglink:tablec] Optional save members channel ID is enabled, saving the channelId.");
         } else {
-          tablec_del(&hashtable, userId, 0);
+          tablec_del(&hashtable, userId);
 
           if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->handleSchedulerVoiceStateDebugging || lavaInfo->debugging->tablecSuccessDebugging) log_debug("[coglink:tablec] Optional save members channel ID is enabled, but the channelId is NULL, removing the channelId from the hashtable.");
         }
@@ -531,7 +509,7 @@ enum discord_event_scheduler __coglink_handleScheduler(struct discord *client, c
       char guildId[GUILD_ID_LENGTH];
       snprintf(guildId, sizeof(guildId), "%.*s", (int)VGI->v.len, data + VGI->v.pos);
 
-      char *sessionId = tablec_get(&hashtable, guildId, 0);
+      char *sessionId = tablec_get(&hashtable, guildId);
       if (sessionId[0] == '\0') {
         if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->handleSchedulerVoiceServerDebugging || lavaInfo->debugging->tablecErrorsDebugging) log_error("[coglink:jsmn-find] The hashtable does not contain any data related to the guildId.");
         return DISCORD_EVENT_IGNORE;
@@ -562,7 +540,7 @@ enum discord_event_scheduler __coglink_handleScheduler(struct discord *client, c
                                                 .additionalDebuggingError = lavaInfo->debugging->handleSchedulerVoiceServerDebugging,
                                                 .path = reqPath,
                                                 .pathLength = sizeof(reqPath),
-                                                .useV3Path = 1,
+                                                .useVPath = 1,
                                                 .body = payload,
                                                 .bodySize = sizeof(payload)
                                               });
@@ -587,7 +565,7 @@ int coglink_joinUserVoiceChannel(struct lavaInfo *lavaInfo, struct discord *clie
   char userIdStr[USER_ID_LENGTH];
   snprintf(userIdStr, sizeof(userIdStr), "%"PRIu64"", userId);
 
-  void *voiceId = tablec_get(&hashtable, userIdStr, 0);
+  void *voiceId = tablec_get(&hashtable, userIdStr);
 
   if (!voiceId) {
     if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->joinUserVoiceChannelDebugging || lavaInfo->debugging->tablecErrorsDebugging) log_error("[coglink:tablec] The hashtable does not contain any data related to the userId.");
@@ -629,11 +607,11 @@ void coglink_connectNodeCleanup(struct lavaInfo *lavaInfo, struct discord *clien
 }
 
 int coglink_connectNode(struct lavaInfo *lavaInfo, struct discord *client, struct lavalinkNode *node) {
-  tablec_init(&hashtable, 128, 1);
+  tablec_init(&hashtable, 128);
 
   char hostname[strnlen(node->hostname, 128) + (node->ssl ? 21 : 20)];
-  if (node->ssl) snprintf(hostname, sizeof(hostname), "wss://%s/v3/websocket", node->hostname);
-  else snprintf(hostname, sizeof(hostname), "ws://%s/v3/websocket", node->hostname);
+  if (node->ssl) snprintf(hostname, sizeof(hostname), "wss://%s/v4/websocket", node->hostname);
+  else snprintf(hostname, sizeof(hostname), "ws://%s/v4/websocket", node->hostname);
 
   discord_set_data(client, lavaInfo);
   discord_set_event_scheduler(client, __coglink_handleScheduler);
@@ -657,7 +635,7 @@ int coglink_connectNode(struct lavaInfo *lavaInfo, struct discord *client, struc
   ws_set_url(ws, hostname, NULL);
   ws_start(ws);
 
-  if (lavaInfo->node->resumeKey[0] != '\0') ws_add_header(ws, "Resume-Key", lavaInfo->node->resumeKey);
+  if (lavaInfo->allowResuming) ws_add_header(ws, "Session-Id", lavaInfo->node->sessionId);
   ws_add_header(ws, "Authorization", node->password);
   ws_add_header(ws, "Num-Shards", node->shards);
   ws_add_header(ws, "User-Id", node->botId);

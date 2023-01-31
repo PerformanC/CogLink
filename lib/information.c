@@ -31,7 +31,7 @@ int coglink_getLavalinkInfo(struct lavaInfo *lavaInfo, struct requestInformation
                                                     .requestType = __COGLINK_GET_REQ,
                                                     .path = "/info",
                                                     .pathLength = 6,
-                                                    .useV3Path = true,
+                                                    .useVPath = true,
                                                     .getResponse = true
                                                   });
 }
@@ -166,7 +166,7 @@ int coglink_getLavalinkStats(struct lavaInfo *lavaInfo, struct requestInformatio
                                                     .requestType = __COGLINK_GET_REQ,
                                                     .path = "/stats",
                                                     .pathLength = 6,
-                                                    .useV3Path = true,
+                                                    .useVPath = true,
                                                     .getResponse = true
                                                   });
 }

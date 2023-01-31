@@ -17,7 +17,7 @@ int coglink_getPlayers(struct lavaInfo *lavaInfo, struct requestInformation *res
                                                     .requestType = __COGLINK_GET_REQ,
                                                     .path = reqPath,
                                                     .pathLength = sizeof(reqPath),
-                                                    .useV3Path = true,
+                                                    .useVPath = true,
                                                     .getResponse = true
                                                   });
 }
@@ -498,7 +498,7 @@ int coglink_playSong(struct lavaInfo *lavaInfo, char *track, u64snowflake guildI
                                               .requestType = __COGLINK_PATCH_REQ,
                                               .path = reqPath,
                                               .pathLength = sizeof(reqPath),
-                                              .useV3Path = true,
+                                              .useVPath = true,
                                               .body = payload,
                                               .bodySize = sizeof(payload)
                                             });
@@ -512,7 +512,7 @@ void coglink_destroyPlayer(struct lavaInfo *lavaInfo, u64snowflake guildId) {
                                               .requestType = __COGLINK_DELETE_REQ,
                                               .path = reqPath,
                                               .pathLength = sizeof(reqPath),
-                                              .useV3Path = true
+                                              .useVPath = true
                                             });
 }
 
@@ -524,7 +524,7 @@ void coglink_stopPlayer(struct lavaInfo *lavaInfo, u64snowflake guildId) {
                                               .requestType = __COGLINK_PATCH_REQ,
                                               .path = reqPath,
                                               .pathLength = sizeof(reqPath),
-                                              .useV3Path = true,
+                                              .useVPath = true,
                                               .body = "{\"encodedTrack\":\"null\"}",
                                               .bodySize = 32
                                             });
@@ -541,7 +541,7 @@ void coglink_pausePlayer(struct lavaInfo *lavaInfo, u64snowflake guildId, char *
                                               .requestType = __COGLINK_PATCH_REQ,
                                               .path = reqPath,
                                               .pathLength = sizeof(reqPath),
-                                              .useV3Path = true,
+                                              .useVPath = true,
                                               .body = payload,
                                               .bodySize = sizeof(payload)
                                             });
@@ -558,7 +558,7 @@ void coglink_seekTrack(struct lavaInfo *lavaInfo, u64snowflake guildId, char *po
                                               .requestType = __COGLINK_PATCH_REQ,
                                               .path = reqPath,
                                               .pathLength = sizeof(reqPath),
-                                              .useV3Path = true,
+                                              .useVPath = true,
                                               .body = payload,
                                               .bodySize = sizeof(payload)
                                             });
@@ -575,7 +575,7 @@ void coglink_setPlayerVolume(struct lavaInfo *lavaInfo, u64snowflake guildId, ch
                                               .requestType = __COGLINK_PATCH_REQ,
                                               .path = reqPath,
                                               .pathLength = sizeof(reqPath),
-                                              .useV3Path = true,
+                                              .useVPath = true,
                                               .body = payload,
                                               .bodySize = sizeof(payload)
                                             });
@@ -636,7 +636,7 @@ void coglink_setEffect(struct lavaInfo *lavaInfo, u64snowflake guildId, int effe
                                               .requestType = __COGLINK_PATCH_REQ,
                                               .path = reqPath,
                                               .pathLength = sizeof(reqPath),
-                                              .useV3Path = true,
+                                              .useVPath = true,
                                               .body = payload,
                                               .bodySize = sizeof(payload)
                                             });

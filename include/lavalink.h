@@ -85,7 +85,7 @@ struct lavalinkNode {
 
 struct lavalinkEvents {
   int (*onRaw)(struct lavaInfo *lavaInfo, const char *data, size_t length);
-  void (*onConnect)(void);
+  void (*onConnect)(char *sessionId);
   void (*onClose)(enum ws_close_reason wscode, const char *reason);
   void (*onTrackStart)(char *track, u64snowflake guildId);
   void (*onTrackEnd)(char *reason, char *track, u64snowflake guildId);
@@ -105,7 +105,6 @@ struct lavaInfo {
   struct websockets *ws;
   struct coglinkPlugins *plugins;
   struct coglinkDebugging *debugging;
-  struct hashtable *hashtable;
   CURLM *mhandle;
   uint64_t tstamp;
   int allowResuming;
@@ -122,6 +121,8 @@ struct parsedTrack {
   char *position;
   char *title;
   char *uri;
+  char *isrc;
+  char *artworkUrl;
   char *sourceName;
 };
 

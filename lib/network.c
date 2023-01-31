@@ -14,7 +14,7 @@ int coglink_getRouterPlanner(struct lavaInfo *lavaInfo, struct requestInformatio
                                                     .requestType = __COGLINK_GET_REQ,
                                                     .path = "/routeplanner/status",
                                                     .pathLength = 21,
-                                                    .useV3Path = true,
+                                                    .useVPath = true,
                                                     .getResponse = true
                                                   });
 }
@@ -220,7 +220,7 @@ int coglink_freeFailingAddress(struct lavaInfo *lavaInfo, char *ip) {
                                                     .requestType = __COGLINK_POST_REQ,
                                                     .path = "/routeplanner/free/address",
                                                     .pathLength = 27,
-                                                    .useV3Path = true,
+                                                    .useVPath = true,
                                                     .body = payload,
                                                     .bodySize = sizeof(payload)
                                                   });
@@ -231,6 +231,6 @@ int coglink_freeFailingAllAddresses(struct lavaInfo *lavaInfo) {
                                                     .requestType = __COGLINK_POST_REQ,
                                                     .path = "/routeplanner/free/all",
                                                     .pathLength = 23,
-                                                    .useV3Path = true
+                                                    .useVPath = true
                                                   });
 }

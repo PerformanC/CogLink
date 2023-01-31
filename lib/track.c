@@ -37,7 +37,7 @@ int coglink_decodeTrack(struct lavaInfo *lavaInfo, char *track, struct requestIn
                                                     .requestType = __COGLINK_GET_REQ,
                                                     .path = reqPath,
                                                     .pathLength = sizeof(reqPath),
-                                                    .useV3Path = true,
+                                                    .useVPath = true,
                                                     .getResponse = true
                                                   });
 }
@@ -112,6 +112,12 @@ int coglink_parseDecodeTrack(struct lavaInfo *lavaInfo, struct requestInformatio
   path[1] = "uri";
   jsmnf_pair *uri = jsmnf_find_path(pairs, res->body, path, 2);
 
+  path[1] = "isrc";
+  jsmnf_pair *isrc = jsmnf_find_path(pairs, res->body, path, 2);
+
+  path[1] = "artworkUrl";
+  jsmnf_pair *artworkUrl = jsmnf_find_path(pairs, res->body, path, 2);
+
   path[1] = "sourceName";
   jsmnf_pair *sourceName = jsmnf_find_path(pairs, res->body, path, 2);
 
@@ -119,7 +125,7 @@ int coglink_parseDecodeTrack(struct lavaInfo *lavaInfo, struct requestInformatio
     if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseTrackErrorsDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_fatal("[coglink:jsmnf-find] Error while trying to find %s field.", !identifier ? "identifier": !isSeekable ? "isSeekable" : !author ? "author" : !length ? "length" : !isStream ? "isStream" : !position ? "position" : !title ? "title" : !uri ? "uri" : !sourceName ? "sourceName" : "???");
     return COGLINK_JSMNF_ERROR_FIND;
   }
-  char Identifier[IDENTIFIER_LENGTH], IsSeekable[TRUE_FALSE_LENGTH], Author[AUTHOR_NAME_LENGTH], Length[VIDEO_LENGTH], IsStream[TRUE_FALSE_LENGTH], Position[VIDEO_LENGTH], Title[TRACK_TITLE_LENGTH], Uri[URL_LENGTH], SourceName[SOURCENAME_LENGTH];
+  char Identifier[IDENTIFIER_LENGTH], IsSeekable[TRUE_FALSE_LENGTH], Author[AUTHOR_NAME_LENGTH], Length[VIDEO_LENGTH], IsStream[TRUE_FALSE_LENGTH], Position[VIDEO_LENGTH], Title[TRACK_TITLE_LENGTH], Uri[URL_LENGTH], Isrc[64], ArtworkUrl[256], SourceName[SOURCENAME_LENGTH];
 
   snprintf(Identifier, sizeof(Identifier), "%.*s", (int)identifier->v.len, res->body + identifier->v.pos);
   snprintf(IsSeekable, sizeof(IsSeekable), "%.*s", (int)isSeekable->v.len, res->body + isSeekable->v.pos);
@@ -129,6 +135,8 @@ int coglink_parseDecodeTrack(struct lavaInfo *lavaInfo, struct requestInformatio
   snprintf(Position, sizeof(Position), "%.*s", (int)position->v.len, res->body + position->v.pos);
   snprintf(Title, sizeof(Title), "%.*s", (int)title->v.len, res->body + title->v.pos);
   snprintf(Uri, sizeof(Uri), "%.*s", (int)uri->v.len, res->body + uri->v.pos);
+  if (isrc) snprintf(Isrc, sizeof(Isrc), "%.*s", (int)isrc->v.len, res->body + isrc->v.pos);
+  if (artworkUrl) snprintf(ArtworkUrl, sizeof(ArtworkUrl), "%.*s", (int)artworkUrl->v.len, res->body + artworkUrl->v.pos);
   snprintf(SourceName, sizeof(SourceName), "%.*s", (int)sourceName->v.len, res->body + sourceName->v.pos);
 
   if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseTrackSuccessDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_debug("[coglink:jsmn-find] Parsed song search json, results:\n> identifier: %s\n> isSeekable: %s\n> author: %s\n> length: %s\n> isStream: %s\n> position: %s\n> title: %s\n> uri: %s\n> sourceName: %s", Identifier, IsSeekable, Author, Length, IsStream, Position, Title, Uri, SourceName);
@@ -141,6 +149,8 @@ int coglink_parseDecodeTrack(struct lavaInfo *lavaInfo, struct requestInformatio
   (*parsedTrackStruct)->position = Position;
   (*parsedTrackStruct)->title = Title;
   (*parsedTrackStruct)->uri = Uri;
+  if (isrc) (*parsedTrackStruct)->isrc = Isrc;
+  if (artworkUrl) (*parsedTrackStruct)->artworkUrl = ArtworkUrl;
   (*parsedTrackStruct)->sourceName = SourceName;
 
   if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-management] Set the value for struct members of parsedTrackStruct.");
@@ -178,7 +188,7 @@ int coglink_decodeTracks(struct lavaInfo *lavaInfo, char *trackArray, long track
                                                     .requestType = __COGLINK_POST_REQ,
                                                     .path = "/decodetracks",
                                                     .pathLength = 14,
-                                                    .useV3Path = true,
+                                                    .useVPath = true,
                                                     .body = trackArray,
                                                     .bodySize = strnlen(trackArray, TRACK_LENGTH * trackArrayLength),
                                                     .getResponse = true
@@ -259,6 +269,12 @@ int coglink_parseDecodeTracks(struct lavaInfo *lavaInfo, struct requestInformati
   path[2] = "uri";
   jsmnf_pair *uri = jsmnf_find_path(pairs, res->body, path, 3);
 
+  path[2] = "isrc";
+  jsmnf_pair *isrc = jsmnf_find_path(pairs, res->body, path, 2);
+
+  path[2] = "artworkUrl";
+  jsmnf_pair *artworkUrl = jsmnf_find_path(pairs, res->body, path, 2);
+
   path[2] = "sourceName";
   jsmnf_pair *sourceName = jsmnf_find_path(pairs, res->body, path, 3);
 
@@ -267,7 +283,7 @@ int coglink_parseDecodeTracks(struct lavaInfo *lavaInfo, struct requestInformati
     return COGLINK_JSMNF_ERROR_FIND;
   }
 
-  char Track[TRACK_LENGTH], Identifier[IDENTIFIER_LENGTH], IsSeekable[TRUE_FALSE_LENGTH], Author[AUTHOR_NAME_LENGTH], Length[VIDEO_LENGTH], IsStream[TRUE_FALSE_LENGTH], Position[VIDEO_LENGTH], Title[TRACK_TITLE_LENGTH], Uri[URL_LENGTH], SourceName[SOURCENAME_LENGTH];
+  char Track[TRACK_LENGTH], Identifier[IDENTIFIER_LENGTH], IsSeekable[TRUE_FALSE_LENGTH], Author[AUTHOR_NAME_LENGTH], Length[VIDEO_LENGTH], IsStream[TRUE_FALSE_LENGTH], Position[VIDEO_LENGTH], Title[TRACK_TITLE_LENGTH], Uri[URL_LENGTH], Isrc[64], ArtworkUrl[256], SourceName[SOURCENAME_LENGTH];
 
   snprintf(Track, sizeof(Track), "%.*s", (int)track->v.len, res->body + track->v.pos);
   snprintf(Identifier, sizeof(Identifier), "%.*s", (int)identifier->v.len, res->body + identifier->v.pos);
@@ -278,6 +294,8 @@ int coglink_parseDecodeTracks(struct lavaInfo *lavaInfo, struct requestInformati
   snprintf(Position, sizeof(Position), "%.*s", (int)position->v.len, res->body + position->v.pos);
   snprintf(Title, sizeof(Title), "%.*s", (int)title->v.len, res->body + title->v.pos);
   snprintf(Uri, sizeof(Uri), "%.*s", (int)uri->v.len, res->body + uri->v.pos);
+  if (isrc) snprintf(Isrc, sizeof(Isrc), "%.*s", (int)isrc->v.len, res->body + isrc->v.pos);
+  if (artworkUrl) snprintf(ArtworkUrl, sizeof(ArtworkUrl), "%.*s", (int)artworkUrl->v.len, res->body + artworkUrl->v.pos);
   snprintf(SourceName, sizeof(SourceName), "%.*s", (int)sourceName->v.len, res->body + sourceName->v.pos);
 
   if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseTrackSuccessDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_debug("[coglink:jsmn-find] Parsed song search json, results:\n> track: %s\n> identifier: %s\n> isSeekable: %s\n> author: %s\n> length: %s\n> isStream: %s\n> position: %s\n> title: %s\n> uri: %s\n> sourceName: %s", Track, Identifier, IsSeekable, Author, Length, IsStream, Position, Title, Uri, SourceName);
@@ -291,6 +309,8 @@ int coglink_parseDecodeTracks(struct lavaInfo *lavaInfo, struct requestInformati
   (*parsedTrackStruct)->position = Position;
   (*parsedTrackStruct)->title = Title;
   (*parsedTrackStruct)->uri = Uri;
+  if (isrc) (*parsedTrackStruct)->isrc = Isrc;
+  if (artworkUrl) (*parsedTrackStruct)->artworkUrl = ArtworkUrl;
   (*parsedTrackStruct)->sourceName = SourceName;
 
   if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-management] Set the value for struct members of parsedTrackStruct.");
@@ -341,7 +361,7 @@ int coglink_searchSong(struct lavaInfo *lavaInfo, char *song, struct requestInfo
                                                     .additionalDebuggingError = lavaInfo->debugging->searchSongErrorsDebugging,
                                                     .path = reqPath,
                                                     .pathLength = sizeof(reqPath),
-                                                    .useV3Path = true,
+                                                    .useVPath = true,
                                                     .getResponse = true,
                                                     .usedCURL = curl
                                                   });
@@ -461,6 +481,12 @@ int coglink_parseTrack(const struct lavaInfo *lavaInfo, struct requestInformatio
   path[3] = "uri";
   jsmnf_pair *uri = jsmnf_find_path(pairs, res->body, path, 4);
 
+  path[3] = "isrc";
+  jsmnf_pair *isrc = jsmnf_find_path(pairs, res->body, path, 2);
+
+  path[3] = "artworkUrl";
+  jsmnf_pair *artworkUrl = jsmnf_find_path(pairs, res->body, path, 2);
+
   path[3] = "sourceName";
   jsmnf_pair *sourceName = jsmnf_find_path(pairs, res->body, path, 4);
 
@@ -469,7 +495,7 @@ int coglink_parseTrack(const struct lavaInfo *lavaInfo, struct requestInformatio
     return COGLINK_JSMNF_ERROR_FIND;
   }
 
-  char Track[TRACK_LENGTH], Identifier[IDENTIFIER_LENGTH], IsSeekable[TRUE_FALSE_LENGTH], Author[AUTHOR_NAME_LENGTH], Length[VIDEO_LENGTH], IsStream[TRUE_FALSE_LENGTH], Position[VIDEO_LENGTH], Title[TRACK_TITLE_LENGTH], Uri[URL_LENGTH], SourceName[SOURCENAME_LENGTH];
+  char Track[TRACK_LENGTH], Identifier[IDENTIFIER_LENGTH], IsSeekable[TRUE_FALSE_LENGTH], Author[AUTHOR_NAME_LENGTH], Length[VIDEO_LENGTH], IsStream[TRUE_FALSE_LENGTH], Position[VIDEO_LENGTH], Title[TRACK_TITLE_LENGTH], Uri[URL_LENGTH], Isrc[64], ArtworkUrl[256], SourceName[SOURCENAME_LENGTH];
 
   snprintf(Track, sizeof(Track), "%.*s", (int)track->v.len, res->body + track->v.pos);
   snprintf(Identifier, sizeof(Identifier), "%.*s", (int)identifier->v.len, res->body + identifier->v.pos);
@@ -493,6 +519,8 @@ int coglink_parseTrack(const struct lavaInfo *lavaInfo, struct requestInformatio
   (*parsedTrackStruct)->position = Position;
   (*parsedTrackStruct)->title = Title;
   (*parsedTrackStruct)->uri = Uri;
+  if (isrc) (*parsedTrackStruct)->isrc = isrc;
+  if (artworkUrl) (*parsedTrackStruct)->artworkUrl = artworkUrl;
   (*parsedTrackStruct)->sourceName = SourceName;
 
   if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-management] Set the value for struct members of parsedTrackStruct.");
