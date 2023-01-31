@@ -13,10 +13,10 @@ To parse the song search JSON, we will be using the `coglink_parseSearch` functi
 For example, you will mostly want it to parse the first song, so follow the example above to parse the first song:
 
 ```c
-struct lavaMusic music;
+struct parsedTrack song;
 
 /*
-  the second parameter, res, should be the struct httpRequest that you got from the coglink_searchSong function.
+  the second parameter, res, should be the struct requestInformation that you got from the coglink_searchSong function.
   the third parameter, songPos, should be the position of the song you want to parse, if you want to parse the first song, it should be 0.
   The last parameter, the library will fill with the information of the requested song.
 */
@@ -29,14 +29,14 @@ if (parseRes != 0) {
 log_info("Song name: %s", song->name);
 ```
 
-Done, now the `lavaSong` struct will be filled with the information of the song.
+Done, now the `parsedTrack` struct will be filled with the information of the song.
 
 ## Parsing + loop
 
 Let's be fancy here, in case you want to parse all the 10 first song founds, you can use the for loop, see the example below:
 
 ```c
-struct lavaSong song;
+struct parsedTrack song;
 
 for (int i = 0; i < 10; i++) {
   char iString[16];

@@ -6,7 +6,7 @@ Lavalink allows you to search from a lot of sources, and in this guide, you will
 
 ## Searching
 
-For searching for songs, we will be using the `coglink_searchSong` function, it will fill the last parameter, `struct httpRequest *` with the body (JSON) of the Lavalink response.
+For searching for songs, we will be using the `coglink_searchSong` function, it will fill the last parameter, `struct requestInformation *` with the body (JSON) of the Lavalink response.
 
 ### Why Coglink doesn't parse it automatically
 
@@ -15,7 +15,7 @@ Coglink was made with performance in mind, if it was parsing the whole JSON, it 
 Follow the example above of the `coglink_searchSong` function:
 
 ```c
-struct httpRequest res;
+struct requestInformation res;
 
 int resStatus = coglink_searchSong(&lavaInfo, "Very ordinary life", &res);
 

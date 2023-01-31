@@ -6,9 +6,11 @@
 #include <concord/discord-internal.h>
 
 #include <coglink/lavalink.h>
-#include <coglink/rest-lavalink.h>
+#include <coglink/information.h>
 #include <coglink/player.h>
 #include <coglink/definitions.h>
+#include <coglinl/plugins.h>
+#include <coglink/track.h>
 
 #define VOICE_ID 123456789012345678
 int onRaw(struct lavaInfo *lavaInfo, const char *text, size_t length) {
@@ -44,33 +46,32 @@ void onTrackStuck(char *track, int thresholdMs, u64snowflake guildId) {
   log_error("[COGLINK] Track stuck. [%s/%d/%"PRIu64"]", track, thresholdMs, guildId);
 }
 
-void onWebSocketClosed(int code, char *reason, char *byRemote, u64snowflake guildId) {
-  log_error("[COGLINK] Websocket closed. [%d/%s/%s/%"PRIu64"]", code, reason, byRemote, guildId);
+void onWebSocketClosed(int code, char *reason, int byRemote, u64snowflake guildId) {
+  log_error("[COGLINK] Websocket closed. [%d/%s/%d/%"PRIu64"]", code, reason, byRemote, guildId);
 }
 
 void onUnknownEvent(char *type, const char *text, u64snowflake guildId) {
   log_error("[COGLINK] Unknown event. [%s/%s/%"PRIu64"]", type, text, guildId);
 }
 
-void onStats(int playingPlayers, struct lavaMemory *infoMemory, int players, struct lavaFStats *infoFrameStats, struct lavaCPU *infoCPU, int uptime) {
-  printf("InfoMemory:\n  > Free: %s\n  > Used: %s\n  > Reservable: %s\n", infoMemory->free, infoMemory->used, infoMemory->reservable);
-  printf("InfoCPU:\n  > Cores: %s\n  > SystemLoad: %s\n  > LavalinkLoad: %s\n", infoCPU->cores, infoCPU->systemLoad, infoCPU->lavalinkLoad);
-  if (0 == strcmp(infoFrameStats->sent, "\0")) printf("InfoFrameStats:\n  > Sent: %s\n  > Nulled: %s\n  > Deficit: %s\n", infoFrameStats->sent, infoFrameStats->nulled, infoFrameStats->deficit);
-  printf("PlayingPlayers; %d\nPlayers: %d\nUptime: %d\n", playingPlayers, players, uptime);
+void onStats(struct lavalinkStats *stats) {
+  printf("InfoMemory:\n  > Free: %s\n  > Used: %s\n  > Reservable: %s\n", stats->memory->free, stats->memory->used, stats->memory->reservable);
+  printf("InfoCPU:\n  > Cores: %s\n  > SystemLoad: %s\n  > LavalinkLoad: %s\n", stats->cpu->cores, stats->cpu->systemLoad, stats->cpu->lavalinkLoad);
+  if (stats->frameStats) printf("InfoFrameStats:\n  > Sent: %s\n  > Nulled: %s\n  > Deficit: %s\n", stats->frameStats->sent, stats->frameStats->nulled, stats->frameStats->deficit);
+  printf("PlayingPlayers: %s\nPlayers: %s\nUptime: %s\n", stats->playingPlayers, stats->players, stats->uptime);
 }
 
-void onPlayerUpdate(int time, int position, char *connected, int ping, u64snowflake guildId) {
-  printf("TIME: %d/ POSITION: %d/ CONNECTED: %s/ PING: %d/ GUILDID: %"PRIu64"\n", time, position, connected, ping, guildId);
+void onPlayerUpdate(float time, int position, int connected, int ping, u64snowflake guildId) {
+  printf("TIME: %f/ POSITION: %d/ CONNECTED: %d/ PING: %d/ GUILDID: %"PRIu64"\n", time, position, connected, ping, guildId);
 }
 
 void onUnknownOp(char *op, const char *text) {
   log_error("[COGLINK] Unknown OP. [%s/%s]", op, text);
 }
 
-
 struct lavaInfo lavaInfo = {
   .events = 
-    &(struct lavaEvents) {
+    &(struct lavalinkEvents) {
       .onRaw = &onRaw,
 
       .onConnect = &onConnect,
@@ -125,7 +126,7 @@ void on_message(struct discord *client, const struct discord_message *message) {
       return;
     }
 
-    struct httpRequest res;
+    struct requestInformation res;
     coglink_searchSong(&lavaInfo, songName, &res);
 
     int loadType;
@@ -134,7 +135,7 @@ void on_message(struct discord *client, const struct discord_message *message) {
 
     switch(loadType) {
       case COGLINK_LOADTYPE_SEARCH_RESULT: {
-        struct lavaParsedTrack *song;
+        struct parsedTrack *song;
         coglink_parseTrack(&lavaInfo, &res, "0", &song);
         coglink_playSong(&lavaInfo, song->track, message->guild_id);
 
@@ -166,8 +167,6 @@ void on_message(struct discord *client, const struct discord_message *message) {
         };
 
         discord_create_message(client, message->channel_id, &params, NULL);
-
-        coglink_parseTrackCleanup(&lavaInfo, song);
         break;
       }
       case COGLINK_LOADTYPE_NO_MATCHES: {
@@ -257,12 +256,12 @@ void on_message(struct discord *client, const struct discord_message *message) {
     coglink_disconnectNode(&lavaInfo);
   }
   if (0 == strcmp(".getplugins", message->content)) {
-    struct httpRequest res;
+    struct requestInformation res;
 
     coglink_getPlugins(&lavaInfo, &res);
   }
   if (0 == strcmp(".getrouter", message->content)) {
-    struct httpRequest res;
+    struct requestInformation res;
 
     coglink_getRouterPlanner(&lavaInfo, &res);
   }
