@@ -6,28 +6,28 @@
 #define MISCELLANEOUS_H
 
 struct lavalinkInfoVersion {
-  char *semver;
-  char *major;
-  char *minor;
-  char *patch;
-  char *preRelease;
+  char semver[8];
+  char major[4];
+  char minor[4];
+  char patch[4];
+  char preRelease[8];
 };
 
 struct lavalinkInfoGit {
-  char *branch;
-  char *commit;
-  char *commitTime;
+  char branch[16];
+  char commit[32];
+  char commitTime[16];
 };
 
 struct lavalinkInfo {
   struct lavalinkInfoVersion *version;
-  char *buildTime;
+  char buildTime[16];
   struct lavalinkInfoGit *git;
-  char *jvm;
-  char *lavaplayer;
-  char *sourceManagers;
-  char *filters;
-  char *plugins;
+  char jvm[8];
+  char lavaplayer[8];
+  char sourceManagers[128];
+  char filters[128];
+  char plugins[128];
 };
 
 /**
@@ -53,7 +53,7 @@ int coglink_getLavalinkInfo(struct lavaInfo *lavaInfo, struct requestInformation
  * @param lavalinkInfoStruct Structure with the parsed information.
  * @returns COGLINK_SUCCESS / ERROR
  */
-int coglink_parseLavalinkInfo(struct lavaInfo *lavaInfo, struct requestInformation *res, struct lavalinkInfo **lavalinkInfoStruct);
+int coglink_parseLavalinkInfo(struct lavaInfo *lavaInfo, struct requestInformation *res, struct lavalinkInfo *lavalinkInfoStruct);
 
 /**
  * Frees the allocations generated while performing the function coglink_getLavalinkInfo.
@@ -76,7 +76,7 @@ int coglink_getLavalinkStats(struct lavaInfo *lavaInfo, struct requestInformatio
  * @param lavalinkStatsStruct Structure with the parsed information.
  * @returns COGLINK_SUCCESS / ERROR
  */
-int coglink_parseLavalinkStats(struct lavaInfo *lavaInfo, struct requestInformation *res, struct lavalinkStats **lavalinkStatsStruct);
+int coglink_parseLavalinkStats(struct lavaInfo *lavaInfo, struct requestInformation *res, struct lavalinkStats *lavalinkStatsStruct);
 
 /**
  * Frees the allocations generated while performing the function coglink_getLavalinkStats.

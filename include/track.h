@@ -21,7 +21,7 @@ int coglink_decodeTrack(struct lavaInfo *lavaInfo, char *track, struct requestIn
  * @param parsedTrackStruct Structure with the parsed information.
  * @returns COGLINK_SUCCESS / ERROR
  */
-int coglink_parseDecodeTrack(struct lavaInfo *lavaInfo, struct requestInformation *res, struct parsedTrack **parsedTrackStruct);
+int coglink_parseDecodeTrack(struct lavaInfo *lavaInfo, struct requestInformation *res, struct parsedTrack *parsedTrackStruct);
 
 /**
  * Frees the allocations generated while performing the function coglink_decodeTrack and coglink_decodeTracks.
@@ -47,7 +47,7 @@ int coglink_decodeTracks(struct lavaInfo *lavaInfo, char *trackArray, long track
  * @param parsedTrackStruct Structure with the parsed information.
  * @returns COGLINK_SUCCESS / ERROR
  */
-int coglink_parseDecodeTracks(struct lavaInfo *lavaInfo, struct requestInformation *res, char *songPos, struct parsedTrack **parsedTrackStruct);
+int coglink_parseDecodeTracks(struct lavaInfo *lavaInfo, struct requestInformation *res, char *songPos, struct parsedTrack *parsedTrackStruct);
 
 /**
  * Searches for the input query in YouTube.
@@ -81,7 +81,7 @@ int coglink_parseLoadtype(struct lavaInfo *lavaInfo, struct requestInformation *
  * @param parsedTrackStruct Structure that will be filled with the parsed information of the track. 
  * @returns COGLINK_SUCCESS / ERROR
  */
-int coglink_parseTrack(const struct lavaInfo *lavaInfo, struct requestInformation *res, char *songPos, struct parsedTrack **parsedTrackStruct);
+int coglink_parseTrack(const struct lavaInfo *lavaInfo, struct requestInformation *res, char *songPos, struct parsedTrack *parsedTrackStruct);
 
 /**
  * Parses the playlist returned by coglink_searchSong.
@@ -90,7 +90,7 @@ int coglink_parseTrack(const struct lavaInfo *lavaInfo, struct requestInformatio
  * @param parsedPlaylistStruct Structure that will be filled with the parsed information of the playlist. 
  * @returns COGLINK_SUCCESS / ERROR
  */
-int coglink_parsePlaylist(const struct lavaInfo *lavaInfo, struct requestInformation *res, struct parsedPlaylist **parsedPlaylistStruct);
+int coglink_parsePlaylist(const struct lavaInfo *lavaInfo, struct requestInformation *res, struct parsedPlaylist *parsedPlaylistStruct);
 
 /**
  * Parses the error returned by coglink_searchSong.
@@ -99,6 +99,6 @@ int coglink_parsePlaylist(const struct lavaInfo *lavaInfo, struct requestInforma
  * @param parsedErrorStruct Structure that will be filled with the parsed information of the error. 
  * @returns COGLINK_SUCCESS / ERROR
  */
-int coglink_parseError(const struct lavaInfo *lavaInfo, struct requestInformation *res, struct parsedError **parsedErrorStruct);
+int coglink_parseError(const struct lavaInfo *lavaInfo, struct requestInformation *res, struct parsedError *parsedErrorStruct);
 
 #endif

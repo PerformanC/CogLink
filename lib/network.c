@@ -19,7 +19,7 @@ int coglink_getRouterPlanner(struct lavaInfo *lavaInfo, struct requestInformatio
                                                   });
 }
 
-int coglink_parseRouterPlanner(struct lavaInfo *lavaInfo, struct requestInformation *res, char *ipPosition, struct lavalinkRouter **lavalinkRouterStruct) {
+int coglink_parseRouterPlanner(struct lavaInfo *lavaInfo, struct requestInformation *res, char *ipPosition, struct lavalinkRouter *lavalinkRouterStruct) {
   jsmn_parser parser;
   jsmntok_t tokens[128];
 
@@ -47,10 +47,9 @@ int coglink_parseRouterPlanner(struct lavaInfo *lavaInfo, struct requestInformat
   jsmnf_pair *class = jsmnf_find(pairs, res->body, "class", 5);
   if (__coglink_checkParse(lavaInfo, class, "class") != COGLINK_PROCEED) return COGLINK_JSMNF_ERROR_FIND;
 
-  char Class[ROUTERPLANNER_CLASS_LENGTH];
-  snprintf(Class, sizeof(Class), "%.*s", (int)class->v.len, res->body + class->v.pos);
+  snprintf(lavalinkRouterStruct->class, sizeof(lavalinkRouterStruct->class), "%.*s", (int)class->v.len, res->body + class->v.pos);
 
-  if (Class[0] == 'n') return COGLINK_ROUTERPLANNER_NOT_SET;
+  if (lavalinkRouterStruct->class[0] == 'n') return COGLINK_ROUTERPLANNER_NOT_SET;
 
   char *path[] = { "details", "ipBlock", "type", NULL };
   jsmnf_pair *type = jsmnf_find_path(pairs, res->body, path, 3);
@@ -77,7 +76,7 @@ int coglink_parseRouterPlanner(struct lavaInfo *lavaInfo, struct requestInformat
     return COGLINK_JSMNF_ERROR_FIND;
   }
 
-  if (Class[0] == 'R') {
+  if (lavalinkRouterStruct->class[0] == 'R') {
     path[1] = "rotateIndex";
     jsmnf_pair *rotateIndex = jsmnf_find_path(pairs, res->body, path, 2);
 
@@ -92,39 +91,16 @@ int coglink_parseRouterPlanner(struct lavaInfo *lavaInfo, struct requestInformat
       return COGLINK_JSMNF_ERROR_FIND;
     }
 
-    char Type[16], Size[16], Address[8], FailingTimestamp[16], FailingTime[16], RotateIndex[16], IpIndex[16], CurrentAddress[8];
-
-    snprintf(Type, sizeof(Type), "%.*s", (int)type->v.len, res->body + type->v.pos);
-    snprintf(Size, sizeof(Size), "%.*s", (int)size->v.len, res->body + size->v.pos);
-    snprintf(Address, sizeof(Address), "%.*s", (int)address->v.len, res->body + address->v.pos);
-    snprintf(FailingTimestamp, sizeof(FailingTimestamp), "%.*s", (int)failingTimestamp->v.len, res->body + failingTimestamp->v.pos);
-    snprintf(FailingTime, sizeof(FailingTime), "%.*s", (int)failingTime->v.len, res->body + failingTime->v.pos);
-    snprintf(RotateIndex, sizeof(RotateIndex), "%.*s", (int)rotateIndex->v.len, res->body + rotateIndex->v.pos);
-    snprintf(IpIndex, sizeof(IpIndex), "%.*s", (int)ipIndex->v.len, res->body + ipIndex->v.pos);
-    snprintf(CurrentAddress, sizeof(CurrentAddress), "%.*s", (int)currentAddress->v.len, res->body + currentAddress->v.pos);
-
-    if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseSuccessDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_debug("[coglink:jsmn-find] Parsed error search json, results:\n> class: %s\n> type: %s\n> size: %s\n> address: %s\n> failingTimestamp: %s\n> failingTime: %s\n> rotateIndex: %s\n> ipIndex: %s\n> currentAddress: %s\n", Class, Type, Size, Address, FailingTimestamp, FailingTime, RotateIndex, IpIndex, CurrentAddress);
-
-    *lavalinkRouterStruct = &(struct lavalinkRouter) {
-      .class = Class,
-      .details = &(struct lavalinkRouterDetails) {
-        .ipBlock = &(struct lavalinkDetailsIpBlock) {
-          .type = Type,
-          .size = Size
-        },
-        .failingAddress = &(struct lavalinkDetailsFailingAddress) {
-          .address = Address,
-          .failingTimestamp = FailingTimestamp,
-          .failingTime = FailingTime
-        },
-        .rotateIndex = RotateIndex,
-        .ipIndex = IpIndex,
-        .currentAddress = CurrentAddress
-      }
-    };
-
-    if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-management] Set the value for struct members of lavalinkRouterStruct.");
-  } else if (Class[0] == 'N') {
+    snprintf(lavalinkRouterStruct->details->ipBlock->type, sizeof(lavalinkRouterStruct->details->ipBlock->type), "%.*s", (int)type->v.len, res->body + type->v.pos);
+    snprintf(lavalinkRouterStruct->details->ipBlock->size, sizeof(lavalinkRouterStruct->details->ipBlock->size), "%.*s", (int)size->v.len, res->body + size->v.pos);
+    snprintf(lavalinkRouterStruct->details->failingAddress->address, sizeof(lavalinkRouterStruct->details->failingAddress->address), "%.*s", (int)address->v.len, res->body + address->v.pos);
+    snprintf(lavalinkRouterStruct->details->failingAddress->failingTimestamp, sizeof(lavalinkRouterStruct->details->failingAddress->failingTimestamp), "%.*s", (int)failingTimestamp->v.len, res->body + failingTimestamp->v.pos);
+    snprintf(lavalinkRouterStruct->details->failingAddress->failingTime, sizeof(lavalinkRouterStruct->details->failingAddress->failingTime), "%.*s", (int)failingTime->v.len, res->body + failingTime->v.pos);
+    snprintf(lavalinkRouterStruct->details->rotateIndex, sizeof(lavalinkRouterStruct->details->rotateIndex), "%.*s", (int)rotateIndex->v.len, res->body + rotateIndex->v.pos);
+    snprintf(lavalinkRouterStruct->details->ipIndex, sizeof(lavalinkRouterStruct->details->ipIndex), "%.*s", (int)ipIndex->v.len, res->body + ipIndex->v.pos);
+    snprintf(lavalinkRouterStruct->details->currentAddress, sizeof(lavalinkRouterStruct->details->currentAddress), "%.*s", (int)currentAddress->v.len, res->body + currentAddress->v.pos);
+    if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseSuccessDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_debug("[coglink:jsmn-find] Parsed error search json, results:\n> class: %s\n> type: %s\n> size: %s\n> address: %s\n> failingTimestamp: %s\n> failingTime: %s\n> rotateIndex: %s\n> ipIndex: %s\n> currentAddress: %s\n", lavalinkRouterStruct->class, lavalinkRouterStruct->details->ipBlock->type, lavalinkRouterStruct->details->ipBlock->size, lavalinkRouterStruct->details->failingAddress->address, lavalinkRouterStruct->details->failingAddress->failingTimestamp, lavalinkRouterStruct->details->failingAddress->failingTime, lavalinkRouterStruct->details->rotateIndex, lavalinkRouterStruct->details->ipIndex, lavalinkRouterStruct->details->currentAddress);
+  } else if (lavalinkRouterStruct->class[0] == 'N') {
     path[1] = "currentAddressIndex";
     jsmnf_pair *currentAddressIndex = jsmnf_find_path(pairs, res->body, path, 2);
 
@@ -133,34 +109,14 @@ int coglink_parseRouterPlanner(struct lavaInfo *lavaInfo, struct requestInformat
       return COGLINK_JSMNF_ERROR_FIND;
     }
 
-    char Type[16], Size[16], Address[8], FailingTimestamp[16], FailingTime[16], CurrentAddressIndex[16];
+    snprintf(lavalinkRouterStruct->details->ipBlock->type, sizeof(lavalinkRouterStruct->details->ipBlock->type), "%.*s", (int)type->v.len, res->body + type->v.pos);
+    snprintf(lavalinkRouterStruct->details->ipBlock->size, sizeof(lavalinkRouterStruct->details->ipBlock->size), "%.*s", (int)size->v.len, res->body + size->v.pos);
+    snprintf(lavalinkRouterStruct->details->failingAddress->address, sizeof(lavalinkRouterStruct->details->failingAddress->address), "%.*s", (int)address->v.len, res->body + address->v.pos);
+    snprintf(lavalinkRouterStruct->details->failingAddress->failingTimestamp, sizeof(lavalinkRouterStruct->details->failingAddress->failingTimestamp), "%.*s", (int)failingTimestamp->v.len, res->body + failingTimestamp->v.pos);
+    snprintf(lavalinkRouterStruct->details->failingAddress->failingTime, sizeof(lavalinkRouterStruct->details->failingAddress->failingTime), "%.*s", (int)failingTime->v.len, res->body + failingTime->v.pos);
+    snprintf(lavalinkRouterStruct->details->currentAddressIndex, sizeof(lavalinkRouterStruct->details->currentAddressIndex), "%.*s", (int)currentAddressIndex->v.len, res->body + currentAddressIndex->v.pos);
 
-    snprintf(Type, sizeof(Type), "%.*s", (int)type->v.len, res->body + type->v.pos);
-    snprintf(Size, sizeof(Size), "%.*s", (int)size->v.len, res->body + size->v.pos);
-    snprintf(Address, sizeof(Address), "%.*s", (int)address->v.len, res->body + address->v.pos);
-    snprintf(FailingTimestamp, sizeof(FailingTimestamp), "%.*s", (int)failingTimestamp->v.len, res->body + failingTimestamp->v.pos);
-    snprintf(FailingTime, sizeof(FailingTime), "%.*s", (int)failingTime->v.len, res->body + failingTime->v.pos);
-    snprintf(CurrentAddressIndex, sizeof(CurrentAddressIndex), "%.*s", (int)currentAddressIndex->v.len, res->body + currentAddressIndex->v.pos);
-
-    if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseSuccessDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_debug("[coglink:jsmn-find] Parsed error search json, results:\n> class: %s\n> type: %s\n> size: %s\n> address: %s\n> failingTimestamp: %s\n> failingTime: %s\n> currentAddressIndex: %s\n", Class, Type, Size, Address, FailingTimestamp, FailingTime, CurrentAddressIndex);
-
-    *lavalinkRouterStruct = &(struct lavalinkRouter) {
-      .class = Class,
-      .details = &(struct lavalinkRouterDetails) {
-        .ipBlock = &(struct lavalinkDetailsIpBlock) {
-          .type = Type,
-          .size = Size
-        },
-        .failingAddress = &(struct lavalinkDetailsFailingAddress) {
-          .address = Address,
-          .failingTimestamp = FailingTimestamp,
-          .failingTime = FailingTime
-        },
-        .currentAddressIndex = CurrentAddressIndex
-      }
-    };
-
-    if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-management] Set the value for struct members of lavalinkRouterStruct.");
+    if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseSuccessDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_debug("[coglink:jsmn-find] Parsed error search json, results:\n> class: %s\n> type: %s\n> size: %s\n> address: %s\n> failingTimestamp: %s\n> failingTime: %s\n> currentAddressIndex: %s\n", lavalinkRouterStruct->class, lavalinkRouterStruct->details->ipBlock->type, lavalinkRouterStruct->details->ipBlock->size, lavalinkRouterStruct->details->failingAddress->address, lavalinkRouterStruct->details->failingAddress->failingTimestamp, lavalinkRouterStruct->details->failingAddress->failingTime, lavalinkRouterStruct->details->currentAddressIndex);
   } else {
     path[1] = "blockIndex";
     jsmnf_pair *blockIndex = jsmnf_find_path(pairs, res->body, path, 2);
@@ -173,36 +129,15 @@ int coglink_parseRouterPlanner(struct lavaInfo *lavaInfo, struct requestInformat
       return COGLINK_JSMNF_ERROR_FIND;
     }
 
-    char Type[16], Size[16], Address[8], FailingTimestamp[16], FailingTime[16], CurrentAddressIndex[16], BlockIndex[16];
+    snprintf(lavalinkRouterStruct->details->ipBlock->type, sizeof(lavalinkRouterStruct->details->ipBlock->type), "%.*s", (int)type->v.len, res->body + type->v.pos);
+    snprintf(lavalinkRouterStruct->details->ipBlock->size, sizeof(lavalinkRouterStruct->details->ipBlock->size), "%.*s", (int)size->v.len, res->body + size->v.pos);
+    snprintf(lavalinkRouterStruct->details->failingAddress->address, sizeof(lavalinkRouterStruct->details->failingAddress->address), "%.*s", (int)address->v.len, res->body + address->v.pos);
+    snprintf(lavalinkRouterStruct->details->failingAddress->failingTimestamp, sizeof(lavalinkRouterStruct->details->failingAddress->failingTimestamp), "%.*s", (int)failingTimestamp->v.len, res->body + failingTimestamp->v.pos);
+    snprintf(lavalinkRouterStruct->details->failingAddress->failingTime, sizeof(lavalinkRouterStruct->details->failingAddress->failingTime), "%.*s", (int)failingTime->v.len, res->body + failingTime->v.pos);
+    snprintf(lavalinkRouterStruct->details->blockIndex, sizeof(lavalinkRouterStruct->details->blockIndex), "%.*s", (int)blockIndex->v.len, res->body + blockIndex->v.pos);
+    snprintf(lavalinkRouterStruct->details->currentAddressIndex, sizeof(lavalinkRouterStruct->details->currentAddressIndex), "%.*s", (int)currentAddressIndex->v.len, res->body + currentAddressIndex->v.pos);
 
-    snprintf(Type, sizeof(Type), "%.*s", (int)type->v.len, res->body + type->v.pos);
-    snprintf(Size, sizeof(Size), "%.*s", (int)size->v.len, res->body + size->v.pos);
-    snprintf(Address, sizeof(Address), "%.*s", (int)address->v.len, res->body + address->v.pos);
-    snprintf(FailingTimestamp, sizeof(FailingTimestamp), "%.*s", (int)failingTimestamp->v.len, res->body + failingTimestamp->v.pos);
-    snprintf(FailingTime, sizeof(FailingTime), "%.*s", (int)failingTime->v.len, res->body + failingTime->v.pos);
-    snprintf(BlockIndex, sizeof(BlockIndex), "%.*s", (int)blockIndex->v.len, res->body + blockIndex->v.pos);
-    snprintf(CurrentAddressIndex, sizeof(CurrentAddressIndex), "%.*s", (int)currentAddressIndex->v.len, res->body + currentAddressIndex->v.pos);
-
-    if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseSuccessDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_debug("[coglink:jsmn-find] Parsed error search json, results:\n> class: %s\n> type: %s\n> size: %s\n> address: %s\n> failingTimestamp: %s\n> failingTime: %s\n> blockIndex: %s\n> currentAddressIndex: %s\n", Class, Type, Size, Address, FailingTimestamp, FailingTime, BlockIndex, CurrentAddressIndex);
-
-    *lavalinkRouterStruct = &(struct lavalinkRouter) {
-      .class = Class,
-      .details = &(struct lavalinkRouterDetails) {
-        .ipBlock = &(struct lavalinkDetailsIpBlock) {
-          .type = Type,
-          .size = Size
-        },
-        .failingAddress = &(struct lavalinkDetailsFailingAddress) {
-          .address = Address,
-          .failingTimestamp = FailingTimestamp,
-          .failingTime = FailingTime
-        },
-        .blockIndex = BlockIndex,
-        .currentAddressIndex = CurrentAddressIndex
-      }
-    };
-
-    if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-management] Set the value for struct members of lavalinkRouterStruct.");
+    if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseSuccessDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_debug("[coglink:jsmn-find] Parsed error search json, results:\n> class: %s\n> type: %s\n> size: %s\n> address: %s\n> failingTimestamp: %s\n> failingTime: %s\n> blockIndex: %s\n> currentAddressIndex: %s\n", lavalinkRouterStruct->class, lavalinkRouterStruct->details->ipBlock->type, lavalinkRouterStruct->details->ipBlock->size, lavalinkRouterStruct->details->failingAddress->address, lavalinkRouterStruct->details->failingAddress->failingTimestamp, lavalinkRouterStruct->details->failingAddress->failingTime, lavalinkRouterStruct->details->blockIndex, lavalinkRouterStruct->details->currentAddressIndex);
   }
 
   return COGLINK_SUCCESS;
@@ -222,7 +157,7 @@ int coglink_freeFailingAddress(struct lavaInfo *lavaInfo, char *ip) {
                                                     .pathLength = 27,
                                                     .useVPath = true,
                                                     .body = payload,
-                                                    .bodySize = sizeof(payload)
+                                                    .bodySize = strlen(payload)
                                                   });
 }
 

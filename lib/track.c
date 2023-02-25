@@ -30,7 +30,7 @@ int coglink_decodeTrack(struct lavaInfo *lavaInfo, char *track, struct requestIn
     }
   }
 
-  char reqPath[strnlen(track, 512) + 26];
+  char reqPath[512 + 26];
   snprintf(reqPath, sizeof(reqPath), "/decodetrack?encodedTrack=%s", track);
 
   return __coglink_performRequest(lavaInfo, res, &(struct __coglink_requestConfig) {
@@ -42,7 +42,7 @@ int coglink_decodeTrack(struct lavaInfo *lavaInfo, char *track, struct requestIn
                                                   });
 }
 
-int coglink_parseDecodeTrack(struct lavaInfo *lavaInfo, struct requestInformation *res, struct parsedTrack **parsedTrackStruct) {
+int coglink_parseDecodeTrack(struct lavaInfo *lavaInfo, struct requestInformation *res, struct parsedTrack *parsedTrackStruct) {
   if (lavaInfo->plugins && lavaInfo->plugins->events->onDecodeTrackParseRequest[0]) {
     if (lavaInfo->plugins->security->allowReadIOPoller) {
       for (int i = 0;i <+ lavaInfo->plugins->amount;i++) {
@@ -125,35 +125,20 @@ int coglink_parseDecodeTrack(struct lavaInfo *lavaInfo, struct requestInformatio
     if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseTrackErrorsDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_fatal("[coglink:jsmnf-find] Error while trying to find %s field.", !identifier ? "identifier": !isSeekable ? "isSeekable" : !author ? "author" : !length ? "length" : !isStream ? "isStream" : !position ? "position" : !title ? "title" : !uri ? "uri" : !sourceName ? "sourceName" : "???");
     return COGLINK_JSMNF_ERROR_FIND;
   }
-  char Identifier[IDENTIFIER_LENGTH], IsSeekable[TRUE_FALSE_LENGTH], Author[AUTHOR_NAME_LENGTH], Length[VIDEO_LENGTH], IsStream[TRUE_FALSE_LENGTH], Position[VIDEO_LENGTH], Title[TRACK_TITLE_LENGTH], Uri[URL_LENGTH], Isrc[64], ArtworkUrl[256], SourceName[SOURCENAME_LENGTH];
 
-  snprintf(Identifier, sizeof(Identifier), "%.*s", (int)identifier->v.len, res->body + identifier->v.pos);
-  snprintf(IsSeekable, sizeof(IsSeekable), "%.*s", (int)isSeekable->v.len, res->body + isSeekable->v.pos);
-  snprintf(Author, sizeof(Author), "%.*s", (int)author->v.len, res->body + author->v.pos);
-  snprintf(Length, sizeof(Length), "%.*s", (int)length->v.len, res->body + length->v.pos);
-  snprintf(IsStream, sizeof(IsStream), "%.*s", (int)isStream->v.len, res->body + isStream->v.pos);
-  snprintf(Position, sizeof(Position), "%.*s", (int)position->v.len, res->body + position->v.pos);
-  snprintf(Title, sizeof(Title), "%.*s", (int)title->v.len, res->body + title->v.pos);
-  snprintf(Uri, sizeof(Uri), "%.*s", (int)uri->v.len, res->body + uri->v.pos);
-  if (isrc) snprintf(Isrc, sizeof(Isrc), "%.*s", (int)isrc->v.len, res->body + isrc->v.pos);
-  if (artworkUrl) snprintf(ArtworkUrl, sizeof(ArtworkUrl), "%.*s", (int)artworkUrl->v.len, res->body + artworkUrl->v.pos);
-  snprintf(SourceName, sizeof(SourceName), "%.*s", (int)sourceName->v.len, res->body + sourceName->v.pos);
+  snprintf(parsedTrackStruct->identifier, sizeof(parsedTrackStruct->identifier), "%.*s", (int)identifier->v.len, res->body + identifier->v.pos);
+  snprintf(parsedTrackStruct->isSeekable, sizeof(parsedTrackStruct->isSeekable), "%.*s", (int)isSeekable->v.len, res->body + isSeekable->v.pos);
+  snprintf(parsedTrackStruct->author, sizeof(parsedTrackStruct->author), "%.*s", (int)author->v.len, res->body + author->v.pos);
+  snprintf(parsedTrackStruct->length, sizeof(parsedTrackStruct->length), "%.*s", (int)length->v.len, res->body + length->v.pos);
+  snprintf(parsedTrackStruct->isStream, sizeof(parsedTrackStruct->isStream), "%.*s", (int)isStream->v.len, res->body + isStream->v.pos);
+  snprintf(parsedTrackStruct->position, sizeof(parsedTrackStruct->position), "%.*s", (int)position->v.len, res->body + position->v.pos);
+  snprintf(parsedTrackStruct->title, sizeof(parsedTrackStruct->title), "%.*s", (int)title->v.len, res->body + title->v.pos);
+  snprintf(parsedTrackStruct->uri, sizeof(parsedTrackStruct->uri), "%.*s", (int)uri->v.len, res->body + uri->v.pos);
+  if (isrc) snprintf(parsedTrackStruct->isrc, sizeof(parsedTrackStruct->isrc), "%.*s", (int)isrc->v.len, res->body + isrc->v.pos);
+  if (artworkUrl) snprintf(parsedTrackStruct->artworkUrl, sizeof(parsedTrackStruct->artworkUrl), "%.*s", (int)artworkUrl->v.len, res->body + artworkUrl->v.pos);
+  snprintf(parsedTrackStruct->sourceName, sizeof(parsedTrackStruct->sourceName), "%.*s", (int)sourceName->v.len, res->body + sourceName->v.pos);
 
-  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseTrackSuccessDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_debug("[coglink:jsmn-find] Parsed song search json, results:\n> identifier: %s\n> isSeekable: %s\n> author: %s\n> length: %s\n> isStream: %s\n> position: %s\n> title: %s\n> uri: %s\n> sourceName: %s", Identifier, IsSeekable, Author, Length, IsStream, Position, Title, Uri, SourceName);
-
-  (*parsedTrackStruct)->identifier = Identifier;
-  (*parsedTrackStruct)->isSeekable = IsSeekable;
-  (*parsedTrackStruct)->author = Author;
-  (*parsedTrackStruct)->length = Length;
-  (*parsedTrackStruct)->isStream = IsStream;
-  (*parsedTrackStruct)->position = Position;
-  (*parsedTrackStruct)->title = Title;
-  (*parsedTrackStruct)->uri = Uri;
-  if (isrc) (*parsedTrackStruct)->isrc = Isrc;
-  if (artworkUrl) (*parsedTrackStruct)->artworkUrl = ArtworkUrl;
-  (*parsedTrackStruct)->sourceName = SourceName;
-
-  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-management] Set the value for struct members of parsedTrackStruct.");
+  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseTrackSuccessDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_debug("[coglink:jsmn-find] Parsed song search json, results:\n> identifier: %s\n> isSeekable: %s\n> author: %s\n> length: %s\n> isStream: %s\n> position: %s\n> title: %s\n> uri: %s\n> sourceName: %s", parsedTrackStruct->identifier, parsedTrackStruct->isSeekable, parsedTrackStruct->author, parsedTrackStruct->length, parsedTrackStruct->isStream, parsedTrackStruct->position, parsedTrackStruct->title, parsedTrackStruct->uri, parsedTrackStruct->sourceName);
 
   return COGLINK_SUCCESS;
 }
@@ -190,12 +175,12 @@ int coglink_decodeTracks(struct lavaInfo *lavaInfo, char *trackArray, long track
                                                     .pathLength = 14,
                                                     .useVPath = true,
                                                     .body = trackArray,
-                                                    .bodySize = strnlen(trackArray, TRACK_LENGTH * trackArrayLength),
+                                                    .bodySize = strlen(trackArray),
                                                     .getResponse = true
                                                   });
 }
 
-int coglink_parseDecodeTracks(struct lavaInfo *lavaInfo, struct requestInformation *res, char *songPos, struct parsedTrack **parsedTrackStruct) {
+int coglink_parseDecodeTracks(struct lavaInfo *lavaInfo, struct requestInformation *res, char *songPos, struct parsedTrack *parsedTrackStruct) {
   if (lavaInfo->plugins && lavaInfo->plugins->events->onDecodeTracksParseRequest[0]) {
     if (lavaInfo->plugins->security->allowReadIOPoller) {
       for (int i = 0;i <+ lavaInfo->plugins->amount;i++) {
@@ -283,37 +268,20 @@ int coglink_parseDecodeTracks(struct lavaInfo *lavaInfo, struct requestInformati
     return COGLINK_JSMNF_ERROR_FIND;
   }
 
-  char Track[TRACK_LENGTH], Identifier[IDENTIFIER_LENGTH], IsSeekable[TRUE_FALSE_LENGTH], Author[AUTHOR_NAME_LENGTH], Length[VIDEO_LENGTH], IsStream[TRUE_FALSE_LENGTH], Position[VIDEO_LENGTH], Title[TRACK_TITLE_LENGTH], Uri[URL_LENGTH], Isrc[64], ArtworkUrl[256], SourceName[SOURCENAME_LENGTH];
+  snprintf(parsedTrackStruct->track, sizeof(parsedTrackStruct->track), "%.*s", (int)track->v.len, res->body + track->v.pos);
+  snprintf(parsedTrackStruct->identifier, sizeof(parsedTrackStruct->identifier), "%.*s", (int)identifier->v.len, res->body + identifier->v.pos);
+  snprintf(parsedTrackStruct->isSeekable, sizeof(parsedTrackStruct->isSeekable), "%.*s", (int)isSeekable->v.len, res->body + isSeekable->v.pos);
+  snprintf(parsedTrackStruct->author, sizeof(parsedTrackStruct->author), "%.*s", (int)author->v.len, res->body + author->v.pos);
+  snprintf(parsedTrackStruct->length, sizeof(parsedTrackStruct->length), "%.*s", (int)length->v.len, res->body + length->v.pos);
+  snprintf(parsedTrackStruct->isStream, sizeof(parsedTrackStruct->isStream), "%.*s", (int)isStream->v.len, res->body + isStream->v.pos);
+  snprintf(parsedTrackStruct->position, sizeof(parsedTrackStruct->position), "%.*s", (int)position->v.len, res->body + position->v.pos);
+  snprintf(parsedTrackStruct->title, sizeof(parsedTrackStruct->title), "%.*s", (int)title->v.len, res->body + title->v.pos);
+  snprintf(parsedTrackStruct->uri, sizeof(parsedTrackStruct->uri), "%.*s", (int)uri->v.len, res->body + uri->v.pos);
+  if (isrc) snprintf(parsedTrackStruct->isrc, sizeof(parsedTrackStruct->isrc), "%.*s", (int)isrc->v.len, res->body + isrc->v.pos);
+  if (artworkUrl) snprintf(parsedTrackStruct->artworkUrl, sizeof(parsedTrackStruct->artworkUrl), "%.*s", (int)artworkUrl->v.len, res->body + artworkUrl->v.pos);
+  snprintf(parsedTrackStruct->sourceName, sizeof(parsedTrackStruct->sourceName), "%.*s", (int)sourceName->v.len, res->body + sourceName->v.pos);
 
-  snprintf(Track, sizeof(Track), "%.*s", (int)track->v.len, res->body + track->v.pos);
-  snprintf(Identifier, sizeof(Identifier), "%.*s", (int)identifier->v.len, res->body + identifier->v.pos);
-  snprintf(IsSeekable, sizeof(IsSeekable), "%.*s", (int)isSeekable->v.len, res->body + isSeekable->v.pos);
-  snprintf(Author, sizeof(Author), "%.*s", (int)author->v.len, res->body + author->v.pos);
-  snprintf(Length, sizeof(Length), "%.*s", (int)length->v.len, res->body + length->v.pos);
-  snprintf(IsStream, sizeof(IsStream), "%.*s", (int)isStream->v.len, res->body + isStream->v.pos);
-  snprintf(Position, sizeof(Position), "%.*s", (int)position->v.len, res->body + position->v.pos);
-  snprintf(Title, sizeof(Title), "%.*s", (int)title->v.len, res->body + title->v.pos);
-  snprintf(Uri, sizeof(Uri), "%.*s", (int)uri->v.len, res->body + uri->v.pos);
-  if (isrc) snprintf(Isrc, sizeof(Isrc), "%.*s", (int)isrc->v.len, res->body + isrc->v.pos);
-  if (artworkUrl) snprintf(ArtworkUrl, sizeof(ArtworkUrl), "%.*s", (int)artworkUrl->v.len, res->body + artworkUrl->v.pos);
-  snprintf(SourceName, sizeof(SourceName), "%.*s", (int)sourceName->v.len, res->body + sourceName->v.pos);
-
-  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseTrackSuccessDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_debug("[coglink:jsmn-find] Parsed song search json, results:\n> track: %s\n> identifier: %s\n> isSeekable: %s\n> author: %s\n> length: %s\n> isStream: %s\n> position: %s\n> title: %s\n> uri: %s\n> sourceName: %s", Track, Identifier, IsSeekable, Author, Length, IsStream, Position, Title, Uri, SourceName);
-
-  (*parsedTrackStruct)->track = Track;
-  (*parsedTrackStruct)->identifier = Identifier;
-  (*parsedTrackStruct)->isSeekable = IsSeekable;
-  (*parsedTrackStruct)->author = Author;
-  (*parsedTrackStruct)->length = Length;
-  (*parsedTrackStruct)->isStream = IsStream;
-  (*parsedTrackStruct)->position = Position;
-  (*parsedTrackStruct)->title = Title;
-  (*parsedTrackStruct)->uri = Uri;
-  if (isrc) (*parsedTrackStruct)->isrc = Isrc;
-  if (artworkUrl) (*parsedTrackStruct)->artworkUrl = ArtworkUrl;
-  (*parsedTrackStruct)->sourceName = SourceName;
-
-  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-management] Set the value for struct members of parsedTrackStruct.");
+  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseTrackSuccessDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_debug("[coglink:jsmn-find] Parsed song search json, results:\n> track: %s\n> identifier: %s\n> isSeekable: %s\n> author: %s\n> length: %s\n> isStream: %s\n> position: %s\n> title: %s\n> uri: %s\n> sourceName: %s", parsedTrackStruct->track, parsedTrackStruct->identifier, parsedTrackStruct->isSeekable, parsedTrackStruct->author, parsedTrackStruct->length, parsedTrackStruct->isStream, parsedTrackStruct->position, parsedTrackStruct->title, parsedTrackStruct->uri, parsedTrackStruct->sourceName);
 
   return COGLINK_SUCCESS;
 }
@@ -343,9 +311,9 @@ int coglink_searchSong(struct lavaInfo *lavaInfo, char *song, struct requestInfo
   curl_global_init(CURL_GLOBAL_ALL);
 
   CURL *curl = curl_easy_init();
-  char *songEncoded = curl_easy_escape(curl, song, strnlen(song, 2000) + 1);
+  char *songEncoded = curl_easy_escape(curl, song, strlen(song) + 1);
 
-  char reqPath[strnlen(songEncoded, 2000) + 33];
+  char reqPath[2000 + 33];
   snprintf(reqPath, sizeof(reqPath), "/loadtracks?identifier=");
 
   size_t reqPathLength = strlen(reqPath);
@@ -373,7 +341,7 @@ void coglink_searchSongCleanup(struct requestInformation *res) {
 
 int coglink_parseLoadtype(struct lavaInfo *lavaInfo, struct requestInformation *res, int *loadTypeValue) {
   jsmn_parser parser;
-  jsmntok_t tokens[512];
+  jsmntok_t tokens[60000];
 
   jsmn_init(&parser);
   int r = jsmn_parse(&parser, res->body, res->size, tokens, sizeof(tokens));
@@ -385,7 +353,7 @@ int coglink_parseLoadtype(struct lavaInfo *lavaInfo, struct requestInformation *
   if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseLoadtypeSuccessDebugging || lavaInfo->debugging->jsmnfSuccessDebugging) log_debug("[jsmn-find] Successfully parsed JSON.");
 
   jsmnf_loader loader;
-  jsmnf_pair pairs[1024];
+  jsmnf_pair pairs[60000];
 
   jsmnf_init(&loader);
   r = jsmnf_load(&loader, res->body, tokens, parser.toknext, pairs, sizeof(pairs) / sizeof(*pairs));
@@ -428,9 +396,9 @@ int coglink_parseLoadtype(struct lavaInfo *lavaInfo, struct requestInformation *
   return COGLINK_SUCCESS;
 }
 
-int coglink_parseTrack(const struct lavaInfo *lavaInfo, struct requestInformation *res, char *songPos, struct parsedTrack **parsedTrackStruct) {
+int coglink_parseTrack(const struct lavaInfo *lavaInfo, struct requestInformation *res, char *songPos, struct parsedTrack *parsedTrackStruct) {
   jsmn_parser parser;
-  jsmntok_t tokens[512];
+  jsmntok_t tokens[1024];
 
   jsmn_init(&parser);
   int r = jsmn_parse(&parser, res->body, res->size, tokens, sizeof(tokens));
@@ -442,7 +410,7 @@ int coglink_parseTrack(const struct lavaInfo *lavaInfo, struct requestInformatio
   if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseTrackSuccessDebugging || lavaInfo->debugging->jsmnfSuccessDebugging) log_debug("[jsmn-find] Successfully parsed JSON.");
 
   jsmnf_loader loader;
-  jsmnf_pair pairs[1024];
+  jsmnf_pair pairs[2048];
 
   jsmnf_init(&loader);
   r = jsmnf_load(&loader, res->body, tokens, parser.toknext, pairs, sizeof(pairs) / sizeof(*pairs));
@@ -495,40 +463,25 @@ int coglink_parseTrack(const struct lavaInfo *lavaInfo, struct requestInformatio
     return COGLINK_JSMNF_ERROR_FIND;
   }
 
-  char Track[TRACK_LENGTH], Identifier[IDENTIFIER_LENGTH], IsSeekable[TRUE_FALSE_LENGTH], Author[AUTHOR_NAME_LENGTH], Length[VIDEO_LENGTH], IsStream[TRUE_FALSE_LENGTH], Position[VIDEO_LENGTH], Title[TRACK_TITLE_LENGTH], Uri[URL_LENGTH], Isrc[64], ArtworkUrl[256], SourceName[SOURCENAME_LENGTH];
+  snprintf(parsedTrackStruct->track, sizeof(parsedTrackStruct->track), "%.*s", (int)track->v.len, res->body + track->v.pos);
+  snprintf(parsedTrackStruct->identifier, sizeof(parsedTrackStruct->identifier), "%.*s", (int)identifier->v.len, res->body + identifier->v.pos);
+  snprintf(parsedTrackStruct->isSeekable, sizeof(parsedTrackStruct->isSeekable), "%.*s", (int)isSeekable->v.len, res->body + isSeekable->v.pos);
+  snprintf(parsedTrackStruct->author, sizeof(parsedTrackStruct->author), "%.*s", (int)author->v.len, res->body + author->v.pos);
+  snprintf(parsedTrackStruct->length, sizeof(parsedTrackStruct->length), "%.*s", (int)length->v.len, res->body + length->v.pos);
+  snprintf(parsedTrackStruct->isStream, sizeof(parsedTrackStruct->isStream), "%.*s", (int)isStream->v.len, res->body + isStream->v.pos);
+  snprintf(parsedTrackStruct->position, sizeof(parsedTrackStruct->position), "%.*s", (int)position->v.len, res->body + position->v.pos);
+  snprintf(parsedTrackStruct->title, sizeof(parsedTrackStruct->title), "%.*s", (int)title->v.len, res->body + title->v.pos);
+  snprintf(parsedTrackStruct->uri, sizeof(parsedTrackStruct->uri), "%.*s", (int)uri->v.len, res->body + uri->v.pos);
+  if (isrc) snprintf(parsedTrackStruct->isrc, sizeof(parsedTrackStruct->isrc), "%.*s", (int)isrc->v.len, res->body + isrc->v.pos);
+  if (artworkUrl) snprintf(parsedTrackStruct->artworkUrl, sizeof(parsedTrackStruct->artworkUrl), "%.*s", (int)artworkUrl->v.len, res->body + artworkUrl->v.pos);
+  snprintf(parsedTrackStruct->sourceName, sizeof(parsedTrackStruct->sourceName), "%.*s", (int)sourceName->v.len, res->body + sourceName->v.pos);
 
-  snprintf(Track, sizeof(Track), "%.*s", (int)track->v.len, res->body + track->v.pos);
-  snprintf(Identifier, sizeof(Identifier), "%.*s", (int)identifier->v.len, res->body + identifier->v.pos);
-  snprintf(IsSeekable, sizeof(IsSeekable), "%.*s", (int)isSeekable->v.len, res->body + isSeekable->v.pos);
-  snprintf(Author, sizeof(Author), "%.*s", (int)author->v.len, res->body + author->v.pos);
-  snprintf(Length, sizeof(Length), "%.*s", (int)length->v.len, res->body + length->v.pos);
-  snprintf(IsStream, sizeof(IsStream), "%.*s", (int)isStream->v.len, res->body + isStream->v.pos);
-  snprintf(Position, sizeof(Position), "%.*s", (int)position->v.len, res->body + position->v.pos);
-  snprintf(Title, sizeof(Title), "%.*s", (int)title->v.len, res->body + title->v.pos);
-  snprintf(Uri, sizeof(Uri), "%.*s", (int)uri->v.len, res->body + uri->v.pos);
-  snprintf(SourceName, sizeof(SourceName), "%.*s", (int)sourceName->v.len, res->body + sourceName->v.pos);
-
-  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseTrackSuccessDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_debug("[coglink:jsmn-find] Parsed song search json, results:\n> track: %s\n> identifier: %s\n> isSeekable: %s\n> author: %s\n> length: %s\n> isStream: %s\n> position: %s\n> title: %s\n> uri: %s\n> sourceName: %s", Track, Identifier, IsSeekable, Author, Length, IsStream, Position, Title, Uri, SourceName);
-
-  (*parsedTrackStruct)->track = Track;
-  (*parsedTrackStruct)->identifier = Identifier;
-  (*parsedTrackStruct)->isSeekable = IsSeekable;
-  (*parsedTrackStruct)->author = Author;
-  (*parsedTrackStruct)->length = Length;
-  (*parsedTrackStruct)->isStream = IsStream;
-  (*parsedTrackStruct)->position = Position;
-  (*parsedTrackStruct)->title = Title;
-  (*parsedTrackStruct)->uri = Uri;
-  if (isrc) (*parsedTrackStruct)->isrc = isrc;
-  if (artworkUrl) (*parsedTrackStruct)->artworkUrl = artworkUrl;
-  (*parsedTrackStruct)->sourceName = SourceName;
-
-  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-management] Set the value for struct members of parsedTrackStruct.");
+  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseTrackSuccessDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_debug("[coglink:jsmn-find] Parsed song search json, results:\n> track: %s\n> identifier: %s\n> isSeekable: %s\n> author: %s\n> length: %s\n> isStream: %s\n> position: %s\n> title: %s\n> uri: %s\n> sourceName: %s", parsedTrackStruct->track, parsedTrackStruct->identifier, parsedTrackStruct->isSeekable, parsedTrackStruct->author, parsedTrackStruct->length, parsedTrackStruct->isStream, parsedTrackStruct->position, parsedTrackStruct->title, parsedTrackStruct->uri, parsedTrackStruct->sourceName);
 
   return COGLINK_SUCCESS;
 }
 
-int coglink_parsePlaylist(const struct lavaInfo *lavaInfo, struct requestInformation *res, struct parsedPlaylist **parsedPlaylistStruct) {
+int coglink_parsePlaylist(const struct lavaInfo *lavaInfo, struct requestInformation *res, struct parsedPlaylist *parsedPlaylistStruct) {
   jsmn_parser parser;
   jsmntok_t tokens[512];
 
@@ -564,22 +517,15 @@ int coglink_parsePlaylist(const struct lavaInfo *lavaInfo, struct requestInforma
     return COGLINK_JSMNF_ERROR_FIND;
   } 
 
-  char Name[PLAYLIST_NAME_LENGTH], SelectedTrack[8];
+  snprintf(parsedPlaylistStruct->name, sizeof(parsedPlaylistStruct->name), "%.*s", (int)name->v.len, res->body + name->v.pos);
+  snprintf(parsedPlaylistStruct->selectedTrack, sizeof(parsedPlaylistStruct->selectedTrack), "%.*s", (int)selectedTrack->v.len, res->body + selectedTrack->v.pos);
 
-  snprintf(Name, sizeof(Name), "%.*s", (int)name->v.len, res->body + name->v.pos);
-  snprintf(SelectedTrack, sizeof(SelectedTrack), "%.*s", (int)selectedTrack->v.len, res->body + selectedTrack->v.pos);
-
-  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parsePlaylistSuccessDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_debug("[coglink:jsmn-find] Parsed playlist search json, results:\n> name: %s\n> selectedTrack: %s", Name, SelectedTrack);
-
-  (*parsedPlaylistStruct)->name = Name;
-  (*parsedPlaylistStruct)->selectedTrack = SelectedTrack;
-
-  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-management] Set the value for struct members of parsedPlaylist.");
+  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parsePlaylistSuccessDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_debug("[coglink:jsmn-find] Parsed playlist search json, results:\n> name: %s\n> selectedTrack: %s", parsedPlaylistStruct->name, parsedPlaylistStruct->selectedTrack);
 
   return COGLINK_SUCCESS;
 }
 
-int coglink_parseError(const struct lavaInfo *lavaInfo, struct requestInformation *res, struct parsedError **parsedErrorStruct) {
+int coglink_parseError(const struct lavaInfo *lavaInfo, struct requestInformation *res, struct parsedError *parsedErrorStruct) {
   jsmn_parser parser;
   jsmntok_t tokens[512];
 
@@ -615,17 +561,10 @@ int coglink_parseError(const struct lavaInfo *lavaInfo, struct requestInformatio
     return COGLINK_JSMNF_ERROR_FIND;
   }
 
-  char Message[128], Severity[16];
+  snprintf(parsedErrorStruct->message, sizeof(parsedErrorStruct->message), "%.*s", (int)message->v.len, res->body + message->v.pos);
+  snprintf(parsedErrorStruct->severity, sizeof(parsedErrorStruct->severity), "%.*s", (int)severity->v.len, res->body + severity->v.pos);
 
-  snprintf(Message, sizeof(Message), "%.*s", (int)message->v.len, res->body + message->v.pos);
-  snprintf(Severity, sizeof(Severity), "%.*s", (int)severity->v.len, res->body + severity->v.pos);
-
-  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseSuccessDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_debug("[coglink:jsmn-find] Parsed error search json, results:\n> message: %s\n> severity: %s", Message, Severity);
-
-  (*parsedErrorStruct)->message = Message;
-  (*parsedErrorStruct)->severity = Severity;
-
-  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-management] Set the value for struct members of parsedError.");
+  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseSuccessDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_debug("[coglink:jsmn-find] Parsed error search json, results:\n> message: %s\n> severity: %s", parsedErrorStruct->message, parsedErrorStruct->severity);
 
   return COGLINK_SUCCESS;
 }

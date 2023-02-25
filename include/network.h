@@ -6,28 +6,28 @@
 #define NETWORK_H
 
 struct lavalinkDetailsIpBlock {
-  char *type;
-  char *size;
+  char type[16];
+  char size[16];
 };
 
 struct lavalinkDetailsFailingAddress {
-  char *address;
-  char *failingTimestamp;
-  char *failingTime;
+  char address[8];
+  char failingTimestamp[16];
+  char failingTime[16];
 };
 
 struct lavalinkRouterDetails {
   struct lavalinkDetailsIpBlock *ipBlock;
   struct lavalinkDetailsFailingAddress *failingAddress;
-  char *blockIndex;
-  char *currentAddressIndex;
-  char *rotateIndex;
-  char *ipIndex;
-  char *currentAddress;
+  char blockIndex[16];
+  char currentAddressIndex[16];
+  char rotateIndex[16];
+  char ipIndex[16];
+  char currentAddress[8];
 };
 
 struct lavalinkRouter {
-  char *class;
+  char class[16];
   struct lavalinkRouterDetails *details;
 };
 
@@ -47,7 +47,7 @@ int coglink_getRouterPlanner(struct lavaInfo *lavaInfo, struct requestInformatio
  * @param lavalinkRouterStruct Structure with the parsed information.
  * @returns COGLINK_SUCCESS / ERROR
  */
-int coglink_parseRouterPlanner(struct lavaInfo *lavaInfo, struct requestInformation *res, char *ipPosition, struct lavalinkRouter **lavalinkRouterStruct);
+int coglink_parseRouterPlanner(struct lavaInfo *lavaInfo, struct requestInformation *res, char *ipPosition, struct lavalinkRouter *lavalinkRouterStruct);
 
 /**
  * Frees the allocations generated while performing the function coglink_getRouterPlanner.

@@ -16,28 +16,28 @@ struct requestInformation {
 };
 
 struct lavalinkStatsMemory {
-  char *free;
-  char *used;
-  char *allocated;
-  char *reservable;
+  char free[16];
+  char used[16];
+  char allocated[16];
+  char reservable[16];
 };
 
 struct lavalinkStatsFrameStats {
-  char *sent;
-  char *deficit;
-  char *nulled;
+  char sent[16];
+  char deficit[16];
+  char nulled[16];
 };
 
 struct lavalinkStatsCPU {
-  char *cores;
-  char *systemLoad;
-  char *lavalinkLoad;
+  char cores[8];
+  char systemLoad[16];
+  char lavalinkLoad[16];
 };
 
 struct lavalinkStats {
-  char *players;
-  char *playingPlayers;
-  char *uptime;
+  char players[8];
+  char playingPlayers[8];
+  char uptime[32];
   struct lavalinkStatsMemory *memory;
   struct lavalinkStatsCPU *cpu;
   struct lavalinkStatsFrameStats *frameStats;
@@ -112,28 +112,28 @@ struct lavaInfo {
 };
 
 struct parsedTrack {
-  char *track;
-  char *identifier;
-  char *isSeekable;
-  char *author;
-  char *length;
-  char *isStream;
-  char *position;
-  char *title;
-  char *uri;
-  char *isrc;
-  char *artworkUrl;
-  char *sourceName;
+  char track[TRACK_LENGTH];
+  char identifier[IDENTIFIER_LENGTH];
+  char isSeekable[TRUE_FALSE_LENGTH];
+  char author[AUTHOR_NAME_LENGTH];
+  char length[VIDEO_LENGTH];
+  char isStream[TRUE_FALSE_LENGTH];
+  char position[VIDEO_LENGTH];
+  char title[TRACK_TITLE_LENGTH];
+  char uri[URL_LENGTH];
+  char isrc[64];
+  char artworkUrl[256];
+  char sourceName[SOURCENAME_LENGTH];
 };
 
 struct parsedPlaylist {
-  char *name;
-  char *selectedTrack;
+  char name[PLAYLIST_NAME_LENGTH];
+  char selectedTrack[8];
 };
 
 struct parsedError {
-  char *message;
-  char *severity;
+  char message[128];
+  char severity[16];
 };
 
 struct ws_info;

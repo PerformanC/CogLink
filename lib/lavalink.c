@@ -31,7 +31,7 @@ void onCloseEvent(void *data, struct websockets *ws, struct ws_info *info, enum 
       }
     } else {
       struct lavaInfo *lavaInfoPlugin = lavaInfo;
-      lavaInfo->ws = NULL;
+      lavaInfoPlugin->ws = NULL;
 
       for (int i = 0;i <= lavaInfo->plugins->amount;i++) {
         if (!lavaInfo->plugins->events->onLavalinkClose[i]) break;
@@ -49,6 +49,8 @@ void onTextEvent(void *data, struct websockets *ws, struct ws_info *info, const 
   (void) ws; (void) info;
   struct lavaInfo *lavaInfo = data;
 
+  printf("Received: %s\n", text);
+
   if (lavaInfo->plugins && lavaInfo->plugins->events->onLavalinkPacketReceived[0]) {
     if (lavaInfo->plugins->security->allowReadWebsocket) {
       for (int i = 0;i <= lavaInfo->plugins->amount;i++) {
@@ -59,7 +61,7 @@ void onTextEvent(void *data, struct websockets *ws, struct ws_info *info, const 
       }
     } else {
       struct lavaInfo *lavaInfoPlugin = lavaInfo;
-      lavaInfo->ws = NULL;
+      lavaInfoPlugin->ws = NULL;
 
       for (int i = 0;i <= lavaInfo->plugins->amount;i++) {
         if (!lavaInfo->plugins->events->onLavalinkPacketReceived[i]) break;
@@ -271,64 +273,60 @@ void onTextEvent(void *data, struct websockets *ws, struct ws_info *info, const 
       jsmnf_pair *lavalinkLoad = jsmnf_find_path(pairs, text, path, 2);
       if (__coglink_checkParse(lavaInfo, lavalinkLoad, "lavalinkLoad") != COGLINK_PROCEED) return;
 
-      char Players[8], PlayingPlayers[8], Uptime[32], Free[16], Used[16], Allocated[16], Reservable[16], Cores[8], SystemLoad[16], LavalinkLoad[16], Sent[16], Nulled[16], Deficit[16];
+      struct lavalinkStats *lavalinkStatsStruct = &(struct lavalinkStats) {
+        .players = "\0",
+        .playingPlayers = "",
+        .uptime = "",
+        .memory = &(struct lavalinkStatsMemory) {
+          .free = "",
+          .used = "",
+          .allocated = "",
+          .reservable = ""
+        },
+        .cpu = &(struct lavalinkStatsCPU) {
+          .cores = "",
+          .systemLoad = "",
+          .lavalinkLoad = ""
+        },
+        .frameStats = &(struct lavalinkStatsFrameStats) {
+          .sent = "",
+          .deficit = "",
+          .nulled = ""
+        }
+      };
 
       path[0] = "frameStats";
       path[1] = "sent";
       jsmnf_pair *sent = jsmnf_find_path(pairs, text, path, 2);
       if (sent) {
-        snprintf(Sent, sizeof(Sent), "%.*s", (int)sent->v.len, text + sent->v.pos);
+        snprintf(lavalinkStatsStruct->frameStats->sent, sizeof(lavalinkStatsStruct->frameStats->sent), "%.*s", (int)sent->v.len, text + sent->v.pos);
 
         path[1] = "deficit";
         jsmnf_pair *deficit = jsmnf_find_path(pairs, text, path, 2);
         if (__coglink_checkParse(lavaInfo, deficit, "deficit") != COGLINK_PROCEED) return;
 
-        snprintf(Deficit, sizeof(Deficit), "%.*s", (int)deficit->v.len, text + deficit->v.pos);
+        snprintf(lavalinkStatsStruct->frameStats->deficit, sizeof(lavalinkStatsStruct->frameStats->deficit), "%.*s", (int)deficit->v.len, text + deficit->v.pos);
 
         path[1] = "nulled";
         jsmnf_pair *nulled = jsmnf_find_path(pairs, text, path, 2);
         if (__coglink_checkParse(lavaInfo, nulled, "nulled") != COGLINK_PROCEED) return;
 
-        snprintf(Nulled, sizeof(Nulled), "%.*s", (int)nulled->v.len, text + nulled->v.pos);
+        snprintf(lavalinkStatsStruct->frameStats->nulled, sizeof(lavalinkStatsStruct->frameStats->nulled), "%.*s", (int)nulled->v.len, text + nulled->v.pos);
       }
 
-      snprintf(Players, sizeof(Players), "%.*s", (int)players->v.len, text + players->v.pos);
-      snprintf(PlayingPlayers, sizeof(PlayingPlayers), "%.*s", (int)playingPlayers->v.len, text + playingPlayers->v.pos);
-      snprintf(Uptime, sizeof(Uptime), "%.*s", (int)uptime->v.len, text + uptime->v.pos);
-      snprintf(Free, sizeof(Free), "%.*s", (int)lavaFree->v.len, text + lavaFree->v.pos);
-      snprintf(Used, sizeof(Used), "%.*s", (int)used->v.len, text + used->v.pos);
-      snprintf(Allocated, sizeof(Allocated), "%.*s", (int)allocated->v.len, text + allocated->v.pos);
-      snprintf(Reservable, sizeof(Reservable), "%.*s", (int)reservable->v.len, text + reservable->v.pos);
-      snprintf(Cores, sizeof(Cores), "%.*s", (int)cores->v.len, text + cores->v.pos);
-      snprintf(SystemLoad, sizeof(SystemLoad), "%.*s", (int)systemLoad->v.len, text + systemLoad->v.pos);
-      snprintf(LavalinkLoad, sizeof(LavalinkLoad), "%.*s", (int)lavalinkLoad->v.len, text + lavalinkLoad->v.pos);
+      snprintf(lavalinkStatsStruct->players, sizeof(lavalinkStatsStruct->players), "%.*s", (int)players->v.len, text + players->v.pos);
+      snprintf(lavalinkStatsStruct->playingPlayers, sizeof(lavalinkStatsStruct->playingPlayers), "%.*s", (int)playingPlayers->v.len, text + playingPlayers->v.pos);
+      snprintf(lavalinkStatsStruct->uptime, sizeof(lavalinkStatsStruct->uptime), "%.*s", (int)uptime->v.len, text + uptime->v.pos);
+      snprintf(lavalinkStatsStruct->memory->free, sizeof(lavalinkStatsStruct->memory->free), "%.*s", (int)lavaFree->v.len, text + lavaFree->v.pos);
+      snprintf(lavalinkStatsStruct->memory->used, sizeof(lavalinkStatsStruct->memory->used), "%.*s", (int)used->v.len, text + used->v.pos);
+      snprintf(lavalinkStatsStruct->memory->allocated, sizeof(lavalinkStatsStruct->memory->allocated), "%.*s", (int)allocated->v.len, text + allocated->v.pos);
+      snprintf(lavalinkStatsStruct->memory->reservable, sizeof(lavalinkStatsStruct->memory->reservable), "%.*s", (int)reservable->v.len, text + reservable->v.pos);
+      snprintf(lavalinkStatsStruct->cpu->cores, sizeof(lavalinkStatsStruct->cpu->cores), "%.*s", (int)cores->v.len, text + cores->v.pos);
+      snprintf(lavalinkStatsStruct->cpu->systemLoad, sizeof(lavalinkStatsStruct->cpu->systemLoad), "%.*s", (int)systemLoad->v.len, text + systemLoad->v.pos);
+      snprintf(lavalinkStatsStruct->cpu->lavalinkLoad, sizeof(lavalinkStatsStruct->cpu->lavalinkLoad), "%.*s", (int)lavalinkLoad->v.len, text + lavalinkLoad->v.pos);
 
-      if (sent) { if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseSuccessDebugging || lavaInfo->debugging->jsmnfSuccessDebugging) log_debug("[coglink:jsmn-find] Parsed error search json, results:\n> Players: %s\n> PlayingPlayers: %s\n> Uptime: %s\n> Free: %s\n> Used: %s\n> Allocated: %s\n> Reservable: %s\n> Cores: %s\n> SystemLoad: %s\n> LavalinkLoad: %s\n> Sent: %s\n> Nulled: %s\n> Deficit: %s", Players, PlayingPlayers, Uptime, Free, Used, Allocated, Reservable, Cores, SystemLoad, LavalinkLoad, Sent, Nulled, Deficit); }
-      else if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseSuccessDebugging || lavaInfo->debugging->jsmnfSuccessDebugging) log_debug("[coglink:jsmn-find] Parsed error search json, results:\n> Players: %s\n> PlayingPlayers: %s\n> Uptime: %s\n> Free: %s\n> Used: %s\n> Allocated: %s\n> Reservable: %s\n> Cores: %s\n> SystemLoad: %s\n> LavalinkLoad: %s", Players, PlayingPlayers, Uptime, Free, Used, Allocated, Reservable, Cores, SystemLoad, LavalinkLoad);
-
-      struct lavalinkStats *lavalinkStatsStruct = &(struct lavalinkStats) {
-        .players = Players,
-        .playingPlayers = PlayingPlayers,
-        .uptime = Uptime,
-        .memory = &(struct lavalinkStatsMemory) {
-          .free = Free,
-          .used = Used,
-          .allocated = Allocated,
-          .reservable = Reservable
-        },
-        .cpu = &(struct lavalinkStatsCPU) {
-          .cores = Cores,
-          .systemLoad = SystemLoad,
-          .lavalinkLoad = LavalinkLoad
-        },
-        .frameStats = &(struct lavalinkStatsFrameStats) {
-          .sent = (sent ? Sent : NULL),
-          .nulled = (sent ? Nulled : NULL),
-          .deficit = (sent ? Deficit : NULL)
-        }
-      };
-
-      if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-management] Set the value for struct members of lavalinkStatsStruct.");
+      if (sent && (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseSuccessDebugging || lavaInfo->debugging->jsmnfSuccessDebugging)) log_debug("[coglink:jsmn-find] Parsed error search json, results:\n> Players: %s\n> PlayingPlayers: %s\n> Uptime: %s\n> Free: %s\n> Used: %s\n> Allocated: %s\n> Reservable: %s\n> Cores: %s\n> SystemLoad: %s\n> LavalinkLoad: %s\n> Sent: %s\n> Nulled: %s\n> Deficit: %s", lavalinkStatsStruct->players, lavalinkStatsStruct->playingPlayers, lavalinkStatsStruct->uptime, lavalinkStatsStruct->memory->free, lavalinkStatsStruct->memory->used, lavalinkStatsStruct->memory->allocated, lavalinkStatsStruct->memory->reservable, lavalinkStatsStruct->cpu->cores, lavalinkStatsStruct->cpu->systemLoad, lavalinkStatsStruct->cpu->lavalinkLoad, lavalinkStatsStruct->frameStats->sent, lavalinkStatsStruct->frameStats->nulled, lavalinkStatsStruct->frameStats->deficit);
+      else if (!sent && (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseSuccessDebugging || lavaInfo->debugging->jsmnfSuccessDebugging)) log_debug("[coglink:jsmn-find] Parsed error search json, results:\n> Players: %s\n> PlayingPlayers: %s\n> Uptime: %s\n> Free: %s\n> Used: %s\n> Allocated: %s\n> Reservable: %s\n> Cores: %s\n> SystemLoad: %s\n> LavalinkLoad: %s", lavalinkStatsStruct->players, lavalinkStatsStruct->playingPlayers, lavalinkStatsStruct->uptime, lavalinkStatsStruct->memory->free, lavalinkStatsStruct->memory->used, lavalinkStatsStruct->memory->allocated, lavalinkStatsStruct->memory->reservable, lavalinkStatsStruct->cpu->cores, lavalinkStatsStruct->cpu->systemLoad, lavalinkStatsStruct->cpu->lavalinkLoad);
 
       lavaInfo->events->onStats(lavalinkStatsStruct);
       break;
@@ -388,14 +386,15 @@ enum discord_event_scheduler __coglink_handleScheduler(struct discord *client, c
       }
     } else {
       struct lavaInfo *lavaInfoPlugin = lavaInfo;
-      lavaInfo->ws = NULL;
+      lavaInfoPlugin->ws = NULL;
 
-      client->io_poller = NULL;
+      struct discord *clientPlugin = client;
+      clientPlugin->io_poller = NULL;
 
       for (int i = 0;i <= lavaInfo->plugins->amount;i++) {
         if (!lavaInfo->plugins->events->onCoglinkScheduler[i]) break;
 
-        int pluginResultCode = lavaInfo->plugins->events->onCoglinkScheduler[i](lavaInfoPlugin, client, data, length, event);
+        int pluginResultCode = lavaInfo->plugins->events->onCoglinkScheduler[i](lavaInfoPlugin, clientPlugin, data, length, event);
         if (pluginResultCode != COGLINK_PROCEED) return pluginResultCode;
       }
     }
@@ -436,8 +435,6 @@ enum discord_event_scheduler __coglink_handleScheduler(struct discord *client, c
       snprintf(guildId, sizeof(guildId), "%.*s", (int)VGI->v.len, data + VGI->v.pos);
       snprintf(userId, sizeof(userId), "%.*s", (int)VUI->v.len, data + VUI->v.pos);
 
-      printf("%s\n", data);
-
       if (0 == strcmp(userId, lavaInfo->node->botId)) {
         jsmnf_pair *SSI = jsmnf_find(pairs, data, "session_id", 10);
         if (__coglink_checkParse(lavaInfo, SSI, "session_id") != COGLINK_PROCEED) return DISCORD_EVENT_IGNORE;
@@ -449,7 +446,7 @@ enum discord_event_scheduler __coglink_handleScheduler(struct discord *client, c
         if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->handleSchedulerVoiceStateDebugging) log_debug("[coglink:tablec] Parsed voice state update json, results:\n> guild_id: %s\n> user_id: %s\n> session_id: %s", guildId, userId, sessionId);
 
         if (sessionId[0] != 'n') {
-          tablec_set(&hashtable, guildId, sessionId);
+          tablec_set(&hashtable, guildId, sessionId, sizeof(sessionId));
 
           if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->handleSchedulerVoiceStateDebugging || lavaInfo->debugging->tablecSuccessDebugging) log_debug("[coglink:tablec] The user that got updated is the bot, saving the sessionId.");
         } else {
@@ -461,14 +458,14 @@ enum discord_event_scheduler __coglink_handleScheduler(struct discord *client, c
         jsmnf_pair *VCI = jsmnf_find(pairs, data, "channel_id", 10);
         if (__coglink_checkParse(lavaInfo, VCI, "channel_id") != COGLINK_PROCEED) return DISCORD_EVENT_IGNORE;
 
-        char *channelId = malloc(VOICE_ID_LENGTH);
-        snprintf(channelId, VOICE_ID_LENGTH, "%.*s", (int)VCI->v.len, data + VCI->v.pos);
+        char channelId[VOICE_ID_LENGTH];
+        snprintf(channelId, sizeof(VOICE_ID_LENGTH), "%.*s", (int)VCI->v.len, data + VCI->v.pos);
 
         if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging)  log_debug("[coglink:memory] Allocated %d bytes for voiceId to be saved in the hashtable.", VOICE_ID_LENGTH);
         if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->handleSchedulerVoiceStateDebugging) log_debug("[coglink:tablec] Parsed voice state update json, results:\n> guild_id: %s\n> user_id: %s\n> channel_id: %s", guildId, userId, channelId);
 
         if (channelId[0] != 'n') {
-          tablec_set(&hashtable, userId, channelId);
+          tablec_set(&hashtable, userId, channelId, sizeof(channelId));
 
           if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->handleSchedulerVoiceStateDebugging || lavaInfo->debugging->tablecSuccessDebugging) log_debug("[coglink:tablec] Optional save members channel ID is enabled, saving the channelId.");
         } else {
@@ -510,12 +507,12 @@ enum discord_event_scheduler __coglink_handleScheduler(struct discord *client, c
       snprintf(guildId, sizeof(guildId), "%.*s", (int)VGI->v.len, data + VGI->v.pos);
 
       char *sessionId = tablec_get(&hashtable, guildId);
-      if (sessionId[0] == '\0') {
-        if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->handleSchedulerVoiceServerDebugging || lavaInfo->debugging->tablecErrorsDebugging) log_error("[coglink:jsmn-find] The hashtable does not contain any data related to the guildId.");
+      if (!sessionId || sessionId[0] == '\0') {
+        if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->handleSchedulerVoiceServerDebugging || lavaInfo->debugging->tablecErrorsDebugging) log_error("[coglink:TableC] The hashtable does not contain any data related to the guildId.");
         return DISCORD_EVENT_IGNORE;
       }
 
-      if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->handleSchedulerVoiceServerDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_debug("[coglink:jsmn-find] Successfully found the sessionID in the hashtable.");
+      if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->handleSchedulerVoiceServerDebugging || lavaInfo->debugging->tablecSuccessDebugging) log_debug("[coglink:TableC] Successfully found the sessionID in the hashtable.");
   
       jsmnf_pair *token = jsmnf_find(pairs, data, "token", 5);
       if (__coglink_checkParse(lavaInfo, token, "token") != COGLINK_PROCEED) return DISCORD_EVENT_IGNORE;
@@ -523,16 +520,11 @@ enum discord_event_scheduler __coglink_handleScheduler(struct discord *client, c
       jsmnf_pair *endpoint = jsmnf_find(pairs, data, "endpoint", 8);
       if (__coglink_checkParse(lavaInfo, endpoint, "endpoint") != COGLINK_PROCEED) return DISCORD_EVENT_IGNORE;
 
-      char Token[DISCORD_TOKEN_LENGTH], Endpoint[ENDPOINT_LENGTH];
-
-      snprintf(Token, sizeof(Token), "%.*s", (int)token->v.len, data + token->v.pos);
-      snprintf(Endpoint, sizeof(Endpoint), "%.*s", (int)endpoint->v.len, data + endpoint->v.pos);
-
       char reqPath[128];
       snprintf(reqPath, sizeof(reqPath), "/sessions/%s/players/%s", lavaInfo->node->sessionId, guildId);
 
       char payload[256];
-      snprintf(payload, sizeof(payload), "{\"voice\":{\"token\":\"%s\",\"endpoint\":\"%s\",\"sessionId\":\"%s\"}}", Token, Endpoint, sessionId);
+      snprintf(payload, sizeof(payload), "{\"voice\":{\"token\":\"%.*s\",\"endpoint\":\"%.*s\",\"sessionId\":\"%s\"}}", (int)token->v.len, data + token->v.pos, (int)endpoint->v.len, data + endpoint->v.pos, sessionId);
 
       __coglink_performRequest(lavaInfo, NULL, &(struct __coglink_requestConfig) {
                                                 .requestType = __COGLINK_PATCH_REQ,
@@ -542,7 +534,7 @@ enum discord_event_scheduler __coglink_handleScheduler(struct discord *client, c
                                                 .pathLength = sizeof(reqPath),
                                                 .useVPath = 1,
                                                 .body = payload,
-                                                .bodySize = sizeof(payload)
+                                                .bodySize = strlen(payload)
                                               });
     } return DISCORD_EVENT_IGNORE;
     default:
@@ -554,7 +546,7 @@ void coglink_joinVoiceChannel(struct lavaInfo *lavaInfo, struct discord *client,
   char joinVCPayload[512];
   snprintf(joinVCPayload, sizeof(joinVCPayload), "{\"op\":4,\"d\":{\"guild_id\":%"PRIu64",\"channel_id\":\"%"PRIu64"\",\"self_mute\":false,\"self_deaf\":true}}", guildId, voiceChannelId);
 
-  if (!ws_send_text(client->gw.ws, NULL, joinVCPayload, strnlen(joinVCPayload, sizeof(joinVCPayload)))) {
+  if (!ws_send_text(client->gw.ws, NULL, joinVCPayload, strlen(joinVCPayload))) {
     if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->sendPayloadErrorsDebugging) log_fatal("[coglink:libcurl] Something went wrong while sending a payload with op 4 to Discord.");
     return;
   }
@@ -575,7 +567,7 @@ int coglink_joinUserVoiceChannel(struct lavaInfo *lavaInfo, struct discord *clie
   char joinVCPayload[512];
   snprintf(joinVCPayload, sizeof(joinVCPayload), "{\"op\":4,\"d\":{\"guild_id\":%"PRIu64",\"channel_id\":\"%s\",\"self_mute\":false,\"self_deaf\":true}}", guildId, (char *)voiceId);
 
-  if (!ws_send_text(client->gw.ws, NULL, joinVCPayload, strnlen(joinVCPayload, sizeof(joinVCPayload)))) {
+  if (!ws_send_text(client->gw.ws, NULL, joinVCPayload, strlen(joinVCPayload))) {
     if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->sendPayloadErrorsDebugging) log_fatal("[coglink:libcurl] Something went wrong while sending a payload with op 4 to Discord.");
     return COGLINK_ERROR;
   }
@@ -609,7 +601,7 @@ void coglink_connectNodeCleanup(struct lavaInfo *lavaInfo, struct discord *clien
 int coglink_connectNode(struct lavaInfo *lavaInfo, struct discord *client, struct lavalinkNode *node) {
   tablec_init(&hashtable, 128);
 
-  char hostname[strnlen(node->hostname, 128) + (node->ssl ? 21 : 20)];
+  char hostname[128 + 21];
   if (node->ssl) snprintf(hostname, sizeof(hostname), "wss://%s/v4/websocket", node->hostname);
   else snprintf(hostname, sizeof(hostname), "ws://%s/v4/websocket", node->hostname);
 

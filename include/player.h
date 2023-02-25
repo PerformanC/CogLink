@@ -6,85 +6,79 @@
 #define PLAYER_H
 
 struct equalizerStruct {
-  char *bands;
-  char *gain;
+  char bands[BANDS_LENGTH];
+  char gain[GAIN_LENGTH];
 };
 
 struct karaokeStruct {
-  char *level;
-  char *monoLevel;
-  char *filterBand;
-  char *filterWidth;
+  char level[16];
+  char monoLevel[16];
+  char filterBand[16];
+  char filterWidth[16];
 };
 
 struct timescaleStruct {
-  char *speed;
-  char *pitch;
-  char *rate;
+  char speed[8];
+  char pitch[8];
+  char rate[8];
 };
 
 struct frequencyDepthStruct {
-  char *frequency;
-  char *depth;
+  char frequency[8];
+  char depth[4];
 };
 
 struct distortionStruct {
-  char *sinOffset;
-  char *sinScale;
-  char *cosOffset;
-  char *cosScale;
-  char *tanOffset;
-  char *tanScale;
-  char *offset;
-  char *scale;
+  char sinOffset[8];
+  char sinScale[8];
+  char cosOffset[8];
+  char cosScale[8];
+  char tanOffset[8];
+  char tanScale[8];
+  char offset[8];
+  char scale[8];
 };
 
 struct channelMixStruct {
-  char *leftToLeft;
-  char *leftToRight;
-  char *rightToLeft;
-  char *rightToRight;
+  char leftToLeft[4];
+  char leftToRight[4];
+  char rightToLeft[4];
+  char rightToRight[4];
 };
 
 struct playerInfoTrack {
-  char *encoded;
+  char encoded[TRACK_LENGTH];
   struct parsedTrack *info;
 };
 
 struct playerInfoVoice {
-  char *token;
-  char *endpoint;
-  char *sessionId;
-  char *connected;
-  char *ping;
+  char token[TOKEN_LENGTH];
+  char endpoint[ENDPOINT_LENGTH];
+  char sessionId[SESSIONID_LENGTH];
+  char connected[TRUE_FALSE_LENGTH];
+  char ping[PING_LENGTH];
 };
 
 struct playerInfoFilters {
-  char *volume;
+  char volume[VOLUME_LENGTH];
   struct equalizerStruct *equalizer;
   struct karaokeStruct *karaoke;
   struct timescaleStruct *timescale;
   struct frequencyDepthStruct *tremolo;
   struct frequencyDepthStruct *vibrato;
-  char *rotation;
+  char rotation[8];
   struct distortionStruct *distortion;
   struct channelMixStruct *channelMix;
-  char *lowPass;
-};
-
-struct errorStruct {
-  char *status;
-  char *message;
+  char lowPass[8];
 };
 
 struct playerInfo {
-  char *guildId;
+  char guildId[GUILD_ID_LENGTH];
   struct playerInfoTrack *track;
-  char *volume;
-  char *paused;
+  char volume[VOLUME_LENGTH];
+  char paused[TRUE_FALSE_LENGTH];
   struct playerInfoVoice *voice;
   struct playerInfoFilters *filters;
-  struct errorStruct *error;
 };
 
 /**
@@ -103,7 +97,7 @@ int coglink_getPlayers(struct lavaInfo *lavaInfo, struct requestInformation *res
  * @param playerInfoStruct Structure with the parsed information.
  * @returns COGLINK_SUCCESS / ERROR
  */
-int coglink_parseGetPlayers(struct lavaInfo *lavaInfo, struct requestInformation *res, char *pos, struct playerInfo **playerInfoStruct);
+int coglink_parseGetPlayers(struct lavaInfo *lavaInfo, struct requestInformation *res, char *pos, struct playerInfo *playerInfoStruct);
 
 /**
  * Frees the allocations generated while performing the function coglink_getPlayers.
