@@ -6,52 +6,52 @@
 #define DEFINATIONS_H
 
 /** Macro for defininition of volume filter. */
-#define FILTER_VOLUME 0
+#define COGLINK_FILTER_VOLUME 0
 /** Macro for defininition of equalizer filte. */
-#define FILTER_EQUALIZER 1
+#define COGLINK_FILTER_EQUALIZER 1
 /** Macro for defininition of karaoke filte. */
-#define FILTER_KARAOKE 2
+#define COGLINK_FILTER_KARAOKE 2
 /** Macro for defininition of timescale filte. */
-#define FILTER_TIMESCALE 3
+#define COGLINK_FILTER_TIMESCALE 3
 /** Macro for defininition of tremolo filte. */
-#define FILTER_TREMOLO 4
+#define COGLINK_FILTER_TREMOLO 4
 /** Macro for defininition of rotation filter. */
-#define FILTER_ROTATION 5
+#define COGLINK_FILTER_ROTATION 5
 /** Macro for defininition of distortion filter. */
-#define FILTER_DISTORTION 6
+#define COGLINK_FILTER_DISTORTION 6
 /** Macro for defininition of channelMix filter. */
-#define FILTER_CHANNELMIX 7
+#define COGLINK_FILTER_CHANNELMIX 7
 /** Macro for defininition of lowPass filter. */
-#define FILTER_LOWPASS 8
+#define COGLINK_FILTER_LOWPASS 8
 /** Macro for defininition of "remove filter". */
-#define FILTER_REMOVE 9
+#define COGLINK_FILTER_REMOVE 9
 
-#define ROUTERPLANNER_CLASS_LENGTH 26
-#define LAVALINK_SESSIONID_LENGTH 17
+#define COGLINK_ROUTERPLANNER_CLASS_LENGTH 26
+#define COGLINK_LAVALINK_SESSIONID_LENGTH 17
 
-#define VOLUME_LENGTH 8
-#define TOKEN_LENGTH 128
-#define ENDPOINT_LENGTH 64
-#define SESSIONID_LENGTH 16
-#define PING_LENGTH 8
-#define BANDS_LENGTH 512
-#define GAIN_LENGTH 128
+#define COGLINK_VOLUME_LENGTH 8
+#define COGLINK_TOKEN_LENGTH 128
+#define COGLINK_ENDPOINT_LENGTH 64
+#define COGLINK_SESSIONID_LENGTH 16
+#define COGLINK_PING_LENGTH 8
+#define COGLINK_BANDS_LENGTH 512
+#define COGLINK_GAIN_LENGTH 128
 
-#define DISCORD_TOKEN_LENGTH 17
-#define VOICE_ID_LENGTH 32
-#define GUILD_ID_LENGTH 32
-#define USER_ID_LENGTH 32
-#define SESSION_ID_LENGTH 128
-#define TRUE_FALSE_LENGTH 8
+#define COGLINK_DISCORD_TOKEN_LENGTH 17
+#define COGLINK_VOICE_ID_LENGTH 32
+#define COGLINK_GUILD_ID_LENGTH 32
+#define COGLINK_USER_ID_LENGTH 32
+#define COGLINK_SESSION_ID_LENGTH 128
+#define COGLINK_TRUE_FALSE_LENGTH 8
 
-#define TRACK_LENGTH 256
-#define IDENTIFIER_LENGTH 13
-#define TRACK_TITLE_LENGTH 100
-#define PLAYLIST_NAME_LENGTH 64
-#define AUTHOR_NAME_LENGTH 30
-#define VIDEO_LENGTH 16
-#define URL_LENGTH 44
-#define SOURCENAME_LENGTH 10
+#define COGLINK_TRACK_LENGTH 512
+#define COGLINK_IDENTIFIER_LENGTH 13
+#define COGLINK_TRACK_TITLE_LENGTH 100
+#define COGLINK_PLAYLIST_NAME_LENGTH 64
+#define COGLINK_AUTHOR_NAME_LENGTH 30
+#define COGLINK_VIDEO_LENGTH 16
+#define COGLINK_URL_LENGTH 44
+#define COGLINK_SOURCENAME_LENGTH 10
 
 #define COGLINK_WAIT 103
 

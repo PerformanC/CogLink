@@ -53,7 +53,7 @@ int coglink_parseGetPlayers(struct lavaInfo *lavaInfo, struct requestInformation
 
   jsmnf_pair *guildId = jsmnf_find_path(pairs, res->body, path, 2);
   
-  char GuildId[GUILD_ID_LENGTH];
+  char GuildId[COGLINK_GUILD_ID_LENGTH];
   snprintf(GuildId, sizeof(GuildId), "%.*s", (int)guildId->v.len, res->body + guildId->v.pos);
 
   path[1] = "track";
@@ -334,7 +334,9 @@ int coglink_playSong(struct lavaInfo *lavaInfo, char *track, u64snowflake guildI
   snprintf(reqPath, sizeof(reqPath), "/sessions/%s/players/%"PRIu64"", lavaInfo->node->sessionId, guildId);
 
   char payload[1024];
-  snprintf(payload, sizeof(payload), "{\"encodedTrack\":\"%s\",\"noReplace\":false,\"pause\":false}", track);
+  snprintf(payload, sizeof(payload), "{\"encodedTrack\":\"%s\"}", track);
+
+  printf("%s\n", payload);
 
   return __coglink_performRequest(lavaInfo, NULL, &(struct __coglink_requestConfig) {
                                               .requestType = __COGLINK_PATCH_REQ,
@@ -427,43 +429,43 @@ void coglink_setEffect(struct lavaInfo *lavaInfo, u64snowflake guildId, int effe
   char payload[512 + 128];
   char effectStr[11] = "VOLUME";
   switch (effect) {
-    case FILTER_VOLUME: {
+    case COGLINK_FILTER_VOLUME: {
       snprintf(effectStr, sizeof(effectStr), "volume");
       break;
     }
-    case FILTER_EQUALIZER: {
+    case COGLINK_FILTER_EQUALIZER: {
       snprintf(effectStr, sizeof(effectStr), "equalizer");
       break;
     }
-    case FILTER_KARAOKE: {
+    case COGLINK_FILTER_KARAOKE: {
       snprintf(effectStr, sizeof(effectStr), "karaoke");
       break;
     }
-    case FILTER_TIMESCALE: {
+    case COGLINK_FILTER_TIMESCALE: {
       snprintf(effectStr, sizeof(effectStr), "timescale");
       break;
     }
-    case FILTER_TREMOLO: {
+    case COGLINK_FILTER_TREMOLO: {
       snprintf(effectStr, sizeof(effectStr), "tremolo");
       break;
     }
-    case FILTER_ROTATION: {
+    case COGLINK_FILTER_ROTATION: {
       snprintf(effectStr, sizeof(effectStr), "rotation");
       break;
     }
-    case FILTER_DISTORTION: {
+    case COGLINK_FILTER_DISTORTION: {
       snprintf(effectStr, sizeof(effectStr), "distortion");
       break;
     }
-    case FILTER_CHANNELMIX: {
+    case COGLINK_FILTER_CHANNELMIX: {
       snprintf(effectStr, sizeof(effectStr), "channelMix");
       break;
     }
-    case FILTER_LOWPASS: {
+    case COGLINK_FILTER_LOWPASS: {
       snprintf(effectStr, sizeof(effectStr), "lowPass");
       break;
     }
-    case FILTER_REMOVE: {
+    case COGLINK_FILTER_REMOVE: {
       break;
     }
   }
@@ -471,7 +473,7 @@ void coglink_setEffect(struct lavaInfo *lavaInfo, u64snowflake guildId, int effe
   char reqPath[64];
   snprintf(reqPath, sizeof(reqPath), "/sessions/%s/players/%"PRIu64"", lavaInfo->node->sessionId, guildId);
 
-  if (effect != FILTER_REMOVE) snprintf(payload, sizeof(payload), "{\"filters\":{\"%s\":%s}}", effectStr, value);
+  if (effect != COGLINK_FILTER_REMOVE) snprintf(payload, sizeof(payload), "{\"filters\":{\"%s\":%s}}", effectStr, value);
   else snprintf(payload, sizeof(payload), "{\"filters\":{}}");
 
   __coglink_performRequest(lavaInfo, NULL, &(struct __coglink_requestConfig) {

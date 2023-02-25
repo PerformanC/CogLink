@@ -80,7 +80,7 @@ struct lavalinkNode {
   char *botId;
   int ssl;
   char resumeKey[8];
-  char sessionId[LAVALINK_SESSIONID_LENGTH];
+  char sessionId[COGLINK_LAVALINK_SESSIONID_LENGTH];
 };
 
 struct lavalinkEvents {
@@ -112,22 +112,22 @@ struct lavaInfo {
 };
 
 struct parsedTrack {
-  char track[TRACK_LENGTH];
-  char identifier[IDENTIFIER_LENGTH];
-  char isSeekable[TRUE_FALSE_LENGTH];
-  char author[AUTHOR_NAME_LENGTH];
-  char length[VIDEO_LENGTH];
-  char isStream[TRUE_FALSE_LENGTH];
-  char position[VIDEO_LENGTH];
-  char title[TRACK_TITLE_LENGTH];
-  char uri[URL_LENGTH];
+  char track[COGLINK_TRACK_LENGTH];
+  char identifier[COGLINK_IDENTIFIER_LENGTH];
+  char isSeekable[COGLINK_TRUE_FALSE_LENGTH];
+  char author[COGLINK_AUTHOR_NAME_LENGTH];
+  char length[COGLINK_VIDEO_LENGTH];
+  char isStream[COGLINK_TRUE_FALSE_LENGTH];
+  char position[COGLINK_VIDEO_LENGTH];
+  char title[COGLINK_TRACK_TITLE_LENGTH];
+  char uri[COGLINK_URL_LENGTH];
   char isrc[64];
   char artworkUrl[256];
-  char sourceName[SOURCENAME_LENGTH];
+  char sourceName[COGLINK_SOURCENAME_LENGTH];
 };
 
 struct parsedPlaylist {
-  char name[PLAYLIST_NAME_LENGTH];
+  char name[COGLINK_PLAYLIST_NAME_LENGTH];
   char selectedTrack[8];
 };
 

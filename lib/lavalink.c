@@ -108,11 +108,11 @@ void onTextEvent(void *data, struct websockets *ws, struct ws_info *info, const 
       jsmnf_pair *sessionId = jsmnf_find(pairs, text, "sessionId", 9);
       if (__coglink_checkParse(lavaInfo, sessionId, "sessionId") != COGLINK_PROCEED) return;
 
-      char SessionId[LAVALINK_SESSIONID_LENGTH];
+      char SessionId[COGLINK_LAVALINK_SESSIONID_LENGTH];
 
       snprintf(SessionId, sizeof(SessionId), "%.*s", (int)sessionId->v.len, text + sessionId->v.pos);
 
-      strncpy(lavaInfo->node->sessionId, SessionId, LAVALINK_SESSIONID_LENGTH);
+      strncpy(lavaInfo->node->sessionId, SessionId, sizeof(lavaInfo->node->sessionId));
 
       if (lavaInfo->events->onConnect) lavaInfo->events->onConnect(SessionId);
       break;
@@ -124,7 +124,7 @@ void onTextEvent(void *data, struct websockets *ws, struct ws_info *info, const 
       jsmnf_pair *jsmnf_guildId = jsmnf_find(pairs, text, "guildId", 7);
       if (__coglink_checkParse(lavaInfo, jsmnf_guildId, "guildId") != COGLINK_PROCEED) return;
 
-      char Type[32], guildId[GUILD_ID_LENGTH];
+      char Type[32], guildId[COGLINK_GUILD_ID_LENGTH];
 
       snprintf(Type, sizeof(Type), "%.*s", (int)type->v.len, text + type->v.pos);
       snprintf(guildId, sizeof(guildId), "%.*s", (int)jsmnf_guildId->v.len, text + jsmnf_guildId->v.pos);
@@ -136,7 +136,7 @@ void onTextEvent(void *data, struct websockets *ws, struct ws_info *info, const 
           jsmnf_pair *track = jsmnf_find(pairs, text, "encodedTrack", 12);
           if (__coglink_checkParse(lavaInfo, track, "encodedTrack") != COGLINK_PROCEED) return;
 
-          char Track[TRACK_LENGTH];
+          char Track[COGLINK_TRACK_LENGTH];
 
           snprintf(Track, sizeof(Track), "%.*s", (int)track->v.len, text + track->v.pos);
 
@@ -152,7 +152,7 @@ void onTextEvent(void *data, struct websockets *ws, struct ws_info *info, const 
           jsmnf_pair *track = jsmnf_find(pairs, text, "encodedTrack", 12);
           if (__coglink_checkParse(lavaInfo, track, "encodedTrack") != COGLINK_PROCEED) return;
 
-          char Reason[16], Track[TRACK_LENGTH];
+          char Reason[16], Track[COGLINK_TRACK_LENGTH];
 
           snprintf(Reason, sizeof(Reason), "%.*s", (int)reason->v.len, text + reason->v.pos);
           snprintf(Track, sizeof(Track), "%.*s", (int)track->v.len, text + track->v.pos);
@@ -178,7 +178,7 @@ void onTextEvent(void *data, struct websockets *ws, struct ws_info *info, const 
           jsmnf_pair *cause = jsmnf_find_path(pairs, text, path, 2);
           if (__coglink_checkParse(lavaInfo, cause, "cause") != COGLINK_PROCEED) return;
 
-          char Track[TRACK_LENGTH], Message[128], Severity[16], Cause[256];
+          char Track[COGLINK_TRACK_LENGTH], Message[128], Severity[16], Cause[256];
 
           snprintf(Track, sizeof(Track), "%.*s", (int)track->v.len, text + track->v.pos);
           snprintf(Message, sizeof(Message), "%.*s", (int)message->v.len, text + message->v.pos);
@@ -197,7 +197,7 @@ void onTextEvent(void *data, struct websockets *ws, struct ws_info *info, const 
           jsmnf_pair *thresholdMs = jsmnf_find(pairs, text, "thresholdMs", 11);
           if (__coglink_checkParse(lavaInfo, thresholdMs, "thresholdMs") != COGLINK_PROCEED) return;
 
-          char Track[TRACK_LENGTH], ThresholdMs[16];
+          char Track[COGLINK_TRACK_LENGTH], ThresholdMs[16];
 
           snprintf(Track, sizeof(Track), "%.*s", (int)track->v.len, text + track->v.pos);
           snprintf(ThresholdMs, sizeof(ThresholdMs), "%.*s", (int)thresholdMs->v.len, text + thresholdMs->v.pos);
@@ -217,7 +217,7 @@ void onTextEvent(void *data, struct websockets *ws, struct ws_info *info, const 
           jsmnf_pair *byRemote = jsmnf_find(pairs, text, "byRemote", 8);
           if (__coglink_checkParse(lavaInfo, byRemote, "byRemote") != COGLINK_PROCEED) return;
 
-          char Code[16], Reason[128], ByRemote[TRUE_FALSE_LENGTH];
+          char Code[16], Reason[128], ByRemote[COGLINK_TRUE_FALSE_LENGTH];
 
           snprintf(Code, sizeof(Code), "%.*s", (int)code->v.len, text + code->v.pos);
           snprintf(Reason, sizeof(Reason), "%.*s", (int)reason->v.len, text + reason->v.pos);
@@ -351,7 +351,7 @@ void onTextEvent(void *data, struct websockets *ws, struct ws_info *info, const 
       path[1] = "ping";
       jsmnf_pair *ping = jsmnf_find_path(pairs, text, path, 2);
 
-      char guildId[GUILD_ID_LENGTH], Time[16], Position[16], Connected[TRUE_FALSE_LENGTH], Ping[8];
+      char guildId[COGLINK_GUILD_ID_LENGTH], Time[16], Position[16], Connected[COGLINK_TRUE_FALSE_LENGTH], Ping[8];
 
       snprintf(guildId, sizeof(guildId), "%.*s", (int)jsmnf_guildId->v.len, text + jsmnf_guildId->v.pos);
       snprintf(Time, sizeof(Time), "%.*s", (int)time->v.len, text + time->v.pos);
@@ -430,7 +430,7 @@ enum discord_event_scheduler __coglink_handleScheduler(struct discord *client, c
       jsmnf_pair *VUI = jsmnf_find(pairs, data, "user_id", 7);
       if (__coglink_checkParse(lavaInfo, VUI, "user_id") != COGLINK_PROCEED) return DISCORD_EVENT_IGNORE;
 
-      char guildId[GUILD_ID_LENGTH], userId[USER_ID_LENGTH];
+      char guildId[COGLINK_GUILD_ID_LENGTH], userId[COGLINK_USER_ID_LENGTH];
 
       snprintf(guildId, sizeof(guildId), "%.*s", (int)VGI->v.len, data + VGI->v.pos);
       snprintf(userId, sizeof(userId), "%.*s", (int)VUI->v.len, data + VUI->v.pos);
@@ -439,10 +439,10 @@ enum discord_event_scheduler __coglink_handleScheduler(struct discord *client, c
         jsmnf_pair *SSI = jsmnf_find(pairs, data, "session_id", 10);
         if (__coglink_checkParse(lavaInfo, SSI, "session_id") != COGLINK_PROCEED) return DISCORD_EVENT_IGNORE;
 
-        char sessionId[SESSION_ID_LENGTH];
-        snprintf(sessionId, SESSION_ID_LENGTH, "%.*s", (int)SSI->v.len, data + SSI->v.pos);
+        char sessionId[COGLINK_SESSION_ID_LENGTH];
+        snprintf(sessionId, COGLINK_SESSION_ID_LENGTH, "%.*s", (int)SSI->v.len, data + SSI->v.pos);
 
-        if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging)  log_debug("[coglink:memory] Allocated %d bytes for sessionId to be saved in the hashtable.", SESSION_ID_LENGTH);
+        if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging)  log_debug("[coglink:memory] Allocated %d bytes for sessionId to be saved in the hashtable.", sizeof(sessionId));
         if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->handleSchedulerVoiceStateDebugging) log_debug("[coglink:tablec] Parsed voice state update json, results:\n> guild_id: %s\n> user_id: %s\n> session_id: %s", guildId, userId, sessionId);
 
         if (sessionId[0] != 'n') {
@@ -458,10 +458,10 @@ enum discord_event_scheduler __coglink_handleScheduler(struct discord *client, c
         jsmnf_pair *VCI = jsmnf_find(pairs, data, "channel_id", 10);
         if (__coglink_checkParse(lavaInfo, VCI, "channel_id") != COGLINK_PROCEED) return DISCORD_EVENT_IGNORE;
 
-        char channelId[VOICE_ID_LENGTH];
-        snprintf(channelId, sizeof(VOICE_ID_LENGTH), "%.*s", (int)VCI->v.len, data + VCI->v.pos);
+        char channelId[COGLINK_VOICE_ID_LENGTH];
+        snprintf(channelId, sizeof(channelId), "%.*s", (int)VCI->v.len, data + VCI->v.pos);
 
-        if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging)  log_debug("[coglink:memory] Allocated %d bytes for voiceId to be saved in the hashtable.", VOICE_ID_LENGTH);
+        if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging)  log_debug("[coglink:memory] Allocated %d bytes for voiceId to be saved in the hashtable.", sizeof(channelId));
         if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->handleSchedulerVoiceStateDebugging) log_debug("[coglink:tablec] Parsed voice state update json, results:\n> guild_id: %s\n> user_id: %s\n> channel_id: %s", guildId, userId, channelId);
 
         if (channelId[0] != 'n') {
@@ -503,7 +503,7 @@ enum discord_event_scheduler __coglink_handleScheduler(struct discord *client, c
       jsmnf_pair *VGI = jsmnf_find(pairs, data, "guild_id", 8);
       if (__coglink_checkParse(lavaInfo, VGI, "guild_id") != COGLINK_PROCEED) return DISCORD_EVENT_IGNORE;
 
-      char guildId[GUILD_ID_LENGTH];
+      char guildId[COGLINK_GUILD_ID_LENGTH];
       snprintf(guildId, sizeof(guildId), "%.*s", (int)VGI->v.len, data + VGI->v.pos);
 
       char *sessionId = tablec_get(&hashtable, guildId);
@@ -554,7 +554,7 @@ void coglink_joinVoiceChannel(struct lavaInfo *lavaInfo, struct discord *client,
 }
 
 int coglink_joinUserVoiceChannel(struct lavaInfo *lavaInfo, struct discord *client, u64snowflake userId, u64snowflake guildId) {
-  char userIdStr[USER_ID_LENGTH];
+  char userIdStr[COGLINK_USER_ID_LENGTH];
   snprintf(userIdStr, sizeof(userIdStr), "%"PRIu64"", userId);
 
   void *voiceId = tablec_get(&hashtable, userIdStr);
@@ -634,9 +634,6 @@ int coglink_connectNode(struct lavaInfo *lavaInfo, struct discord *client, struc
   ws_add_header(ws, "Client-Name", "Coglink");
 
   lavaInfo->ws = ws;
-
-  io_poller_curlm_add(client->io_poller, lavaInfo->mhandle, __coglink_IOPoller, lavaInfo);
-  io_poller_curlm_enable_perform(client->io_poller, lavaInfo->mhandle);
 
   return COGLINK_SUCCESS;
 }

@@ -6,8 +6,8 @@
 #define PLAYER_H
 
 struct equalizerStruct {
-  char bands[BANDS_LENGTH];
-  char gain[GAIN_LENGTH];
+  char bands[COGLINK_BANDS_LENGTH];
+  char gain[COGLINK_GAIN_LENGTH];
 };
 
 struct karaokeStruct {
@@ -47,20 +47,20 @@ struct channelMixStruct {
 };
 
 struct playerInfoTrack {
-  char encoded[TRACK_LENGTH];
+  char encoded[COGLINK_TRACK_LENGTH];
   struct parsedTrack *info;
 };
 
 struct playerInfoVoice {
-  char token[TOKEN_LENGTH];
-  char endpoint[ENDPOINT_LENGTH];
-  char sessionId[SESSIONID_LENGTH];
-  char connected[TRUE_FALSE_LENGTH];
-  char ping[PING_LENGTH];
+  char token[COGLINK_TOKEN_LENGTH];
+  char endpoint[COGLINK_ENDPOINT_LENGTH];
+  char sessionId[COGLINK_SESSIONID_LENGTH];
+  char connected[COGLINK_TRUE_FALSE_LENGTH];
+  char ping[COGLINK_PING_LENGTH];
 };
 
 struct playerInfoFilters {
-  char volume[VOLUME_LENGTH];
+  char volume[COGLINK_VOLUME_LENGTH];
   struct equalizerStruct *equalizer;
   struct karaokeStruct *karaoke;
   struct timescaleStruct *timescale;
@@ -73,10 +73,10 @@ struct playerInfoFilters {
 };
 
 struct playerInfo {
-  char guildId[GUILD_ID_LENGTH];
+  char guildId[COGLINK_GUILD_ID_LENGTH];
   struct playerInfoTrack *track;
-  char volume[VOLUME_LENGTH];
-  char paused[TRUE_FALSE_LENGTH];
+  char volume[COGLINK_VOLUME_LENGTH];
+  char paused[COGLINK_TRUE_FALSE_LENGTH];
   struct playerInfoVoice *voice;
   struct playerInfoFilters *filters;
 };
