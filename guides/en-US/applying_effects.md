@@ -11,7 +11,7 @@ In this guide, the example of how to change the rotation effect will be used.
 Coglink have the `coglink_setEffect` functions, that you can use to change all effects that Lavalink have, your use is deadly easy, see the example below:
 
 ```c
-coglink_setEffect(&lavaInfo, message->guild_id, FILTER_ROTATION, "{\"rotationHz\":0.2}");
+coglink_setEffect(&lavaInfo, message->guild_id, COGLINK_FILTER_ROTATION, "{\"rotationHz\":0.2}");
 ```
 
 Hm? "Where is the rest of the code"? Yep, it's only this, incredible, isn't it?

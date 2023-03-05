@@ -44,7 +44,7 @@ int coglink_parseRouterPlanner(struct lavaInfo *lavaInfo, struct requestInformat
   }
   if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseSuccessDebugging || lavaInfo->debugging->jsmnfSuccessDebugging) log_debug("[coglink:jsmn-find] Successfully loaded jsmn-find.");
 
-  jsmnf_pair *class = jsmnf_find(pairs, res->body, "class", 5);
+  jsmnf_pair *class = jsmnf_find(pairs, res->body, "class", sizeof("class") - 1);
   if (__coglink_checkParse(lavaInfo, class, "class") != COGLINK_PROCEED) return COGLINK_JSMNF_ERROR_FIND;
 
   snprintf(lavalinkRouterStruct->class, sizeof(lavalinkRouterStruct->class), "%.*s", (int)class->v.len, res->body + class->v.pos);
@@ -148,8 +148,8 @@ void coglink_getRouterPlannerCleanup(struct requestInformation *res) {
 }
 
 int coglink_freeFailingAddress(struct lavaInfo *lavaInfo, char *ip) {
-  char payload[32];
-  snprintf(payload, sizeof(payload), "{\"address\":\"%s\"}", ip);
+  char payload[16];
+  int payloadLen = snprintf(payload, sizeof(payload), "{\"address\":\"%s\"}", ip);
 
   return __coglink_performRequest(lavaInfo, NULL, &(struct __coglink_requestConfig) {
                                                     .requestType = __COGLINK_POST_REQ,
@@ -157,7 +157,7 @@ int coglink_freeFailingAddress(struct lavaInfo *lavaInfo, char *ip) {
                                                     .pathLength = 27,
                                                     .useVPath = true,
                                                     .body = payload,
-                                                    .bodySize = strlen(payload)
+                                                    .bodySize = payloadLen
                                                   });
 }
 

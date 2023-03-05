@@ -81,7 +81,7 @@ int coglink_parseLavalinkInfo(struct lavaInfo *lavaInfo, struct requestInformati
     return COGLINK_JSMNF_ERROR_FIND;
   }
 
-  jsmnf_pair *buildTime = jsmnf_find(pairs, res->body, "buildTime", 9);
+  jsmnf_pair *buildTime = jsmnf_find(pairs, res->body, "buildTime", sizeof("buildTime") - 1);
 
   path[0] = "git";
   path[1] = "branch";
@@ -98,19 +98,19 @@ int coglink_parseLavalinkInfo(struct lavaInfo *lavaInfo, struct requestInformati
     return COGLINK_JSMNF_ERROR_FIND;
   }
 
-  jsmnf_pair *jvm = jsmnf_find(pairs, res->body, "jvm", 3);
+  jsmnf_pair *jvm = jsmnf_find(pairs, res->body, "jvm", sizeof("jvm") - 1);
   if (__coglink_checkParse(lavaInfo, jvm, "jvm")) return COGLINK_JSMNF_ERROR_FIND;
 
-  jsmnf_pair *lavaplayer = jsmnf_find(pairs, res->body, "lavaplayer", 10);
+  jsmnf_pair *lavaplayer = jsmnf_find(pairs, res->body, "lavaplayer", sizeof("lavaplayer") - 1);
   if (__coglink_checkParse(lavaInfo, lavaplayer, "lavaplayer")) return COGLINK_JSMNF_ERROR_FIND;
 
-  jsmnf_pair *sourceManagers = jsmnf_find(pairs, res->body, "sourceManagers", 14);
+  jsmnf_pair *sourceManagers = jsmnf_find(pairs, res->body, "sourceManagers", sizeof("sourceManagers") - 1);
   if (__coglink_checkParse(lavaInfo, sourceManagers, "sourceManagers")) return COGLINK_JSMNF_ERROR_FIND;
 
-  jsmnf_pair *filters = jsmnf_find(pairs, res->body, "filters", 7);
+  jsmnf_pair *filters = jsmnf_find(pairs, res->body, "filters", sizeof("filters") - 1);
   if (__coglink_checkParse(lavaInfo, filters, "filters")) return COGLINK_JSMNF_ERROR_FIND;
 
-  jsmnf_pair *plugins = jsmnf_find(pairs, res->body, "plugins", 7);
+  jsmnf_pair *plugins = jsmnf_find(pairs, res->body, "plugins", sizeof("plugins") - 1);
   if (__coglink_checkParse(lavaInfo, plugins, "plugins")) return COGLINK_JSMNF_ERROR_FIND;
 
   snprintf(lavalinkInfoStruct->version->semver, sizeof(lavalinkInfoStruct->version->semver), "%.*s", (int)semver->v.len, res->body + semver->v.pos);
@@ -172,13 +172,13 @@ int coglink_parseLavalinkStats(struct lavaInfo *lavaInfo, struct requestInformat
   }
   if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseSuccessDebugging || lavaInfo->debugging->jsmnfSuccessDebugging) log_debug("[coglink:jsmn-find] Successfully loaded jsmn-find.");
  
-  jsmnf_pair *players = jsmnf_find(pairs, res->body, "players", 7);
+  jsmnf_pair *players = jsmnf_find(pairs, res->body, "players", sizeof("players") - 1);
   if (__coglink_checkParse(lavaInfo, players, "players") != COGLINK_PROCEED) return COGLINK_JSMNF_ERROR_FIND;
 
-  jsmnf_pair *playingPlayers = jsmnf_find(pairs, res->body, "playingPlayers", 14);
+  jsmnf_pair *playingPlayers = jsmnf_find(pairs, res->body, "playingPlayers", sizeof("playingPlayers") - 1);
   if (__coglink_checkParse(lavaInfo, playingPlayers, "playingPlayers") != COGLINK_PROCEED) return COGLINK_JSMNF_ERROR_FIND;
 
-  jsmnf_pair *uptime = jsmnf_find(pairs, res->body, "uptime", 6);
+  jsmnf_pair *uptime = jsmnf_find(pairs, res->body, "uptime", sizeof("uptime") - 1);
   if (__coglink_checkParse(lavaInfo, uptime, "uptime") != COGLINK_PROCEED) return COGLINK_JSMNF_ERROR_FIND;
 
   char *path[] = { "memory", "free" };

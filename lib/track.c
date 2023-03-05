@@ -31,12 +31,12 @@ int coglink_decodeTrack(struct lavaInfo *lavaInfo, char *track, struct requestIn
   }
 
   char reqPath[512 + 26];
-  snprintf(reqPath, sizeof(reqPath), "/decodetrack?encodedTrack=%s", track);
+  int pathLen = snprintf(reqPath, sizeof(reqPath), "/decodetrack?encodedTrack=%s", track);
 
   return __coglink_performRequest(lavaInfo, res, &(struct __coglink_requestConfig) {
                                                     .requestType = __COGLINK_GET_REQ,
                                                     .path = reqPath,
-                                                    .pathLength = sizeof(reqPath),
+                                                    .pathLength = pathLen,
                                                     .useVPath = true,
                                                     .getResponse = true
                                                   });
@@ -314,12 +314,10 @@ int coglink_searchSong(struct lavaInfo *lavaInfo, char *song, struct requestInfo
   char *songEncoded = curl_easy_escape(curl, song, strlen(song) + 1);
 
   char reqPath[2000 + 33];
-  snprintf(reqPath, sizeof(reqPath), "/loadtracks?identifier=");
+  int pathLen = snprintf(reqPath, sizeof(reqPath), "/loadtracks?identifier=");
 
-  size_t reqPathLength = strlen(reqPath);
-
-  if (0 != strncmp(songEncoded, "https://", 8)) strncat(reqPath, "ytsearch:", sizeof(reqPath) - reqPathLength - 1);
-  strncat(reqPath, songEncoded, sizeof(reqPath) - reqPathLength - 1);
+  if (0 != strncmp(songEncoded, "https://", 8)) strncat(reqPath, "ytsearch:", sizeof(reqPath) - pathLen - 1);
+  strncat(reqPath, songEncoded, sizeof(reqPath) - pathLen - 1);
 
   curl_free(songEncoded);
 
@@ -328,7 +326,7 @@ int coglink_searchSong(struct lavaInfo *lavaInfo, char *song, struct requestInfo
                                                     .additionalDebuggingSuccess = lavaInfo->debugging->searchSongSuccessDebugging,
                                                     .additionalDebuggingError = lavaInfo->debugging->searchSongErrorsDebugging,
                                                     .path = reqPath,
-                                                    .pathLength = sizeof(reqPath),
+                                                    .pathLength = strlen(reqPath),
                                                     .useVPath = true,
                                                     .getResponse = true,
                                                     .usedCURL = curl
@@ -364,7 +362,7 @@ int coglink_parseLoadtype(struct lavaInfo *lavaInfo, struct requestInformation *
   }
   if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseLoadtypeSuccessDebugging || lavaInfo->debugging->jsmnfSuccessDebugging) log_debug("[coglink:jsmn-find] Successfully loaded jsmn-find.");
 
-  jsmnf_pair *loadType = jsmnf_find(pairs, res->body, "loadType", 8);
+  jsmnf_pair *loadType = jsmnf_find(pairs, res->body, "loadType", sizeof("loadType") - 1);
   if (__coglink_checkParse(lavaInfo, loadType, "loadType") != COGLINK_PROCEED) return COGLINK_JSMNF_ERROR_FIND;
 
   char LoadType[16];
