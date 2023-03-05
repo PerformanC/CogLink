@@ -51,12 +51,17 @@ struct playerInfoTrack {
   struct parsedTrack *info;
 };
 
+struct playerInfoState {
+  char time[COGLINK_TIME_LENGTH];
+  char position[COGLINK_VIDEO_LENGTH];
+  char connected[COGLINK_TRUE_FALSE_LENGTH];
+  char ping[COGLINK_PING_LENGTH];
+};
+
 struct playerInfoVoice {
   char token[COGLINK_TOKEN_LENGTH];
   char endpoint[COGLINK_ENDPOINT_LENGTH];
   char sessionId[COGLINK_SESSIONID_LENGTH];
-  char connected[COGLINK_TRUE_FALSE_LENGTH];
-  char ping[COGLINK_PING_LENGTH];
 };
 
 struct playerInfoFilters {
@@ -77,6 +82,7 @@ struct playerInfo {
   struct playerInfoTrack *track;
   char volume[COGLINK_VOLUME_LENGTH];
   char paused[COGLINK_TRUE_FALSE_LENGTH];
+  struct playerInfoState *state;
   struct playerInfoVoice *voice;
   struct playerInfoFilters *filters;
 };

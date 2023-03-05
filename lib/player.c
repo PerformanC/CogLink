@@ -112,6 +112,30 @@ int coglink_parseGetPlayers(struct lavaInfo *lavaInfo, struct requestInformation
   snprintf(playerInfoStruct->volume, sizeof(playerInfoStruct->volume), "%.*s", (int)volume->v.len, res->body + volume->v.pos);
   snprintf(playerInfoStruct->paused, sizeof(playerInfoStruct->paused), "%.*s", (int)paused->v.len, res->body + paused->v.pos);
 
+  path[1] = "state";
+  path[2] = "time";
+  jsmnf_pair *time = jsmnf_find_path(pairs, res->body, path, 3);
+
+  path[2] = "position";
+  jsmnf_pair *position = jsmnf_find_path(pairs, res->body, path, 3);
+  if (position) 
+    snprintf(playerInfoStruct->state->position, sizeof(playerInfoStruct->state->position), "%.*s", (int)position->v.len, res->body + position->v.pos);
+
+  path[2] = "connected";
+  jsmnf_pair *connected = jsmnf_find_path(pairs, res->body, path, 3);
+
+  path[2] = "ping";
+  jsmnf_pair *ping = jsmnf_find_path(pairs, res->body, path, 3);
+
+  if (!time || !connected || !ping) {
+    if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_fatal("[coglink:jsmnf-find] Error while trying to find %s field.", !time ? "time" : !connected ? "connected" : "ping");
+    return COGLINK_JSMNF_ERROR_FIND;
+  }
+
+  snprintf(playerInfoStruct->state->time, sizeof(playerInfoStruct->state->time), "%.*s", (int)time->v.len, res->body + time->v.pos);
+  snprintf(playerInfoStruct->state->connected, sizeof(playerInfoStruct->state->connected), "%.*s", (int)connected->v.len, res->body + connected->v.pos);
+  snprintf(playerInfoStruct->state->ping, sizeof(playerInfoStruct->state->ping), "%.*s", (int)ping->v.len, res->body + ping->v.pos);
+
   path[1] = "voice";
   path[2] = "token";
   jsmnf_pair *token = jsmnf_find_path(pairs, res->body, path, 3);
@@ -122,22 +146,14 @@ int coglink_parseGetPlayers(struct lavaInfo *lavaInfo, struct requestInformation
   path[2] = "sessionId";
   jsmnf_pair *sessionId = jsmnf_find_path(pairs, res->body, path, 3);
 
-  path[2] = "connected";
-  jsmnf_pair *connected = jsmnf_find_path(pairs, res->body, path, 3);
-
-  path[2] = "ping";
-  jsmnf_pair *ping = jsmnf_find_path(pairs, res->body, path, 3);
-
-  if (!token || !endpoint || !sessionId || !connected || !ping) {
-    if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_fatal("[coglink:jsmnf-find] Error while trying to find %s field.", !token ? "token" : !endpoint ? "endpoint": !sessionId ? "sessionId" : !connected ? "connected" : !ping ? "ping" : "???");
+  if (!token || !endpoint || !sessionId) {
+    if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_fatal("[coglink:jsmnf-find] Error while trying to find %s field.", !token ? "token" : !endpoint ? "endpoint": !sessionId ? "sessionId" : !connected ? "connected" : "ping");
     return COGLINK_JSMNF_ERROR_FIND;
   }
 
   snprintf(playerInfoStruct->voice->token, sizeof(playerInfoStruct->voice->token), "%.*s", (int)token->v.len, res->body + token->v.pos);
   snprintf(playerInfoStruct->voice->endpoint, sizeof(playerInfoStruct->voice->endpoint), "%.*s", (int)endpoint->v.len, res->body + endpoint->v.pos);
   snprintf(playerInfoStruct->voice->sessionId, sizeof(playerInfoStruct->voice->sessionId), "%.*s", (int)sessionId->v.len, res->body + sessionId->v.pos);
-  snprintf(playerInfoStruct->voice->connected, sizeof(playerInfoStruct->voice->connected), "%.*s", (int)connected->v.len, res->body + connected->v.pos);
-  snprintf(playerInfoStruct->voice->ping, sizeof(playerInfoStruct->voice->ping), "%.*s", (int)ping->v.len, res->body + ping->v.pos);
 
   path[1] = "filters";
   path[2] = "volume";
@@ -426,8 +442,7 @@ void coglink_setPlayerVolume(struct lavaInfo *lavaInfo, u64snowflake guildId, ch
 }
 
 void coglink_setEffect(struct lavaInfo *lavaInfo, u64snowflake guildId, int effect, char *value) {
-  char payload[512 + 128];
-  char effectStr[11] = "VOLUME";
+  char payload[512 + 128], effectStr[11] = "VOLUME";
   switch (effect) {
     case COGLINK_FILTER_VOLUME: {
       snprintf(effectStr, sizeof(effectStr), "volume");
