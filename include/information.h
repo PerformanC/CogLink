@@ -5,7 +5,7 @@
 #ifndef MISCELLANEOUS_H
 #define MISCELLANEOUS_H
 
-struct lavalinkInfoVersion {
+struct coglink_lavalinkInfoVersion {
   char semver[8];
   char major[4];
   char minor[4];
@@ -13,16 +13,16 @@ struct lavalinkInfoVersion {
   char preRelease[8];
 };
 
-struct lavalinkInfoGit {
+struct coglink_lavalinkInfoGit {
   char branch[16];
   char commit[32];
   char commitTime[16];
 };
 
-struct lavalinkInfo {
-  struct lavalinkInfoVersion *version;
+struct coglink_lavalinkInfo {
+  struct coglink_lavalinkInfoVersion *version;
   char buildTime[16];
-  struct lavalinkInfoGit *git;
+  struct coglink_lavalinkInfoGit *git;
   char jvm[8];
   char lavaplayer[8];
   char sourceManagers[128];
@@ -36,7 +36,7 @@ struct lavalinkInfo {
  * @param version String with Lavalink version.
  * @returns COGLINK_SUCCESS / ERROR
  */
-int coglink_getLavalinkVersion(struct lavaInfo *lavaInfo, char **version);
+int coglink_getLavalinkVersion(struct coglink_lavaInfo *lavaInfo, char **version);
 
 /**
  * Retrieves the informations of the Lavalink node Lavalink.jar.
@@ -44,7 +44,7 @@ int coglink_getLavalinkVersion(struct lavaInfo *lavaInfo, char **version);
  * @param res Structure with the information of the request.
  * @returns COGLINK_SUCCESS / ERROR
  */
-int coglink_getLavalinkInfo(struct lavaInfo *lavaInfo, struct requestInformation *res);
+int coglink_getLavalinkInfo(struct coglink_lavaInfo *lavaInfo, struct coglink_requestInformation *res);
 
 /**
  * Parses the response body of coglink_getLavalinkInfo function.
@@ -53,13 +53,13 @@ int coglink_getLavalinkInfo(struct lavaInfo *lavaInfo, struct requestInformation
  * @param lavalinkInfoStruct Structure with the parsed information.
  * @returns COGLINK_SUCCESS / ERROR
  */
-int coglink_parseLavalinkInfo(struct lavaInfo *lavaInfo, struct requestInformation *res, struct lavalinkInfo *lavalinkInfoStruct);
+int coglink_parseLavalinkInfo(struct coglink_lavaInfo *lavaInfo, struct coglink_requestInformation *res, struct coglink_lavalinkInfo *lavalinkInfoStruct);
 
 /**
  * Frees the allocations generated while performing the function coglink_getLavalinkInfo.
  * @param res Structure with the information of the request.
  */
-void coglink_getLavalinkInfoCleanup(struct requestInformation *res);
+void coglink_getLavalinkInfoCleanup(struct coglink_requestInformation *res);
 
 /**
  * Retrieves the stats of the Lavalink node.
@@ -67,7 +67,7 @@ void coglink_getLavalinkInfoCleanup(struct requestInformation *res);
  * @param res Structure with the information of the request.
  * @returns COGLINK_SUCCESS / ERROR
  */
-int coglink_getLavalinkStats(struct lavaInfo *lavaInfo, struct requestInformation *res);
+int coglink_getLavalinkStats(struct coglink_lavaInfo *lavaInfo, struct coglink_requestInformation *res);
 
 /**
  * Parses the response body of coglink_getLavalinkStats function.
@@ -76,12 +76,12 @@ int coglink_getLavalinkStats(struct lavaInfo *lavaInfo, struct requestInformatio
  * @param lavalinkStatsStruct Structure with the parsed information.
  * @returns COGLINK_SUCCESS / ERROR
  */
-int coglink_parseLavalinkStats(struct lavaInfo *lavaInfo, struct requestInformation *res, struct lavalinkStats *lavalinkStatsStruct);
+int coglink_parseLavalinkStats(struct coglink_lavaInfo *lavaInfo, struct coglink_requestInformation *res, struct coglink_lavalinkStats *lavalinkStatsStruct);
 
 /**
  * Frees the allocations generated while performing the function coglink_getLavalinkStats.
  * @param res Structure with the information of the request.
  */
-void coglink_getLavalinkStatsCleanup(struct requestInformation *res);
+void coglink_getLavalinkStatsCleanup(struct coglink_requestInformation *res);
 
 #endif

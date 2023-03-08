@@ -19,25 +19,23 @@ struct tablec_ht hashtable;
 void onCloseEvent(void *data, struct websockets *ws, struct ws_info *info, enum ws_close_reason wscode, const char *reason, size_t length) {
   (void) ws;
 
-  struct lavaInfo *lavaInfo = data;
+  struct coglink_lavaInfo *lavaInfo = data;
 
   if (lavaInfo->plugins && lavaInfo->plugins->events->onLavalinkClose[0]) {
     if (lavaInfo->plugins->security->allowReadWebsocket) {
       for (int i = 0;i <= lavaInfo->plugins->amount;i++) {
         if (!lavaInfo->plugins->events->onLavalinkClose[i]) break;
 
-        int pluginResultCode = lavaInfo->plugins->events->onLavalinkClose[i](lavaInfo, info, wscode, reason, length);
-        if (pluginResultCode != COGLINK_PROCEED) return;
+        if (lavaInfo->plugins->events->onLavalinkClose[i](lavaInfo, info, wscode, reason, length) != COGLINK_PROCEED) return;
       }
     } else {
-      struct lavaInfo *lavaInfoPlugin = lavaInfo;
+      struct coglink_lavaInfo *lavaInfoPlugin = lavaInfo;
       lavaInfoPlugin->ws = NULL;
 
       for (int i = 0;i <= lavaInfo->plugins->amount;i++) {
         if (!lavaInfo->plugins->events->onLavalinkClose[i]) break;
 
-        int pluginResultCode = lavaInfo->plugins->events->onLavalinkClose[i](lavaInfoPlugin, info, wscode, reason, length);
-        if (pluginResultCode != COGLINK_PROCEED) return;
+        if (lavaInfo->plugins->events->onLavalinkClose[i](lavaInfoPlugin, info, wscode, reason, length) != COGLINK_PROCEED) return;
       }
     }
   }
@@ -47,25 +45,23 @@ void onCloseEvent(void *data, struct websockets *ws, struct ws_info *info, enum 
 
 void onTextEvent(void *data, struct websockets *ws, struct ws_info *info, const char *text, size_t length) {
   (void) ws; (void) info;
-  struct lavaInfo *lavaInfo = data;
+  struct coglink_lavaInfo *lavaInfo = data;
 
   if (lavaInfo->plugins && lavaInfo->plugins->events->onLavalinkPacketReceived[0]) {
     if (lavaInfo->plugins->security->allowReadWebsocket) {
       for (int i = 0;i <= lavaInfo->plugins->amount;i++) {
         if (!lavaInfo->plugins->events->onLavalinkPacketReceived[i]) break;
 
-        int pluginResultCode = lavaInfo->plugins->events->onLavalinkPacketReceived[i](lavaInfo, text, length);
-        if (pluginResultCode != COGLINK_PROCEED) return;
+        if (lavaInfo->plugins->events->onLavalinkPacketReceived[i](lavaInfo, text, length) != COGLINK_PROCEED) return;
       }
     } else {
-      struct lavaInfo *lavaInfoPlugin = lavaInfo;
+      struct coglink_lavaInfo *lavaInfoPlugin = lavaInfo;
       lavaInfoPlugin->ws = NULL;
 
       for (int i = 0;i <= lavaInfo->plugins->amount;i++) {
         if (!lavaInfo->plugins->events->onLavalinkPacketReceived[i]) break;
 
-        int pluginResultCode = lavaInfo->plugins->events->onLavalinkPacketReceived[i](lavaInfoPlugin, text, length);
-        if (pluginResultCode != COGLINK_PROCEED) return;
+        if (lavaInfo->plugins->events->onLavalinkPacketReceived[i](lavaInfoPlugin, text, length) != COGLINK_PROCEED) return;
       }
     }
   }
@@ -267,22 +263,22 @@ void onTextEvent(void *data, struct websockets *ws, struct ws_info *info, const 
       jsmnf_pair *lavalinkLoad = jsmnf_find_path(pairs, text, path, 2);
       if (__coglink_checkParse(lavaInfo, lavalinkLoad, "lavalinkLoad") != COGLINK_PROCEED) return;
 
-      struct lavalinkStats *lavalinkStatsStruct = &(struct lavalinkStats) {
+      struct coglink_lavalinkStats *lavalinkStatsStruct = &(struct coglink_lavalinkStats) {
         .players = "",
         .playingPlayers = "",
         .uptime = "",
-        .memory = &(struct lavalinkStatsMemory) {
+        .memory = &(struct coglink_lavalinkStatsMemory) {
           .free = "",
           .used = "",
           .allocated = "",
           .reservable = ""
         },
-        .cpu = &(struct lavalinkStatsCPU) {
+        .cpu = &(struct coglink_lavalinkStatsCPU) {
           .cores = "",
           .systemLoad = "",
           .lavalinkLoad = ""
         },
-        .frameStats = &(struct lavalinkStatsFrameStats) {
+        .frameStats = &(struct coglink_lavalinkStatsFrameStats) {
           .sent = "",
           .deficit = "",
           .nulled = ""
@@ -365,24 +361,24 @@ void onTextEvent(void *data, struct websockets *ws, struct ws_info *info, const 
 }
 
 enum discord_event_scheduler __coglink_handleScheduler(struct discord *client, const char data[], size_t length, enum discord_gateway_events event) {
-  struct lavaInfo *lavaInfo = discord_get_data(client);
+  struct coglink_lavaInfo *lavaInfo = discord_get_data(client);
 
   if (lavaInfo->plugins && lavaInfo->plugins->events->onCoglinkScheduler[0]) {
-    if (lavaInfo->plugins->security->allowReadBotToken) client->token = NULL;
-    if (lavaInfo->plugins->security->allowReadConcordWebsocket) client->gw = (struct discord_gateway) { 0 };
+    struct discord *clientPlugin = client;
+    if (lavaInfo->plugins->security->allowReadBotToken) clientPlugin->token = NULL;
+    if (lavaInfo->plugins->security->allowReadConcordWebsocket) clientPlugin->gw = (struct discord_gateway) { 0 };
 
     if (lavaInfo->plugins->security->allowReadWebsocket) {
       for (int i = 0;i <= lavaInfo->plugins->amount;i++) {
         if (!lavaInfo->plugins->events->onCoglinkScheduler[i]) break;
 
-        int pluginResultCode = lavaInfo->plugins->events->onCoglinkScheduler[i](lavaInfo, client, data, length, event);
+        int pluginResultCode = lavaInfo->plugins->events->onCoglinkScheduler[i](lavaInfo, clientPlugin, data, length, event);
         if (pluginResultCode != COGLINK_PROCEED) return pluginResultCode;
       }
     } else {
-      struct lavaInfo *lavaInfoPlugin = lavaInfo;
+      struct coglink_lavaInfo *lavaInfoPlugin = lavaInfo;
       lavaInfoPlugin->ws = NULL;
 
-      struct discord *clientPlugin = client;
       clientPlugin->io_poller = NULL;
 
       for (int i = 0;i <= lavaInfo->plugins->amount;i++) {
@@ -536,7 +532,7 @@ enum discord_event_scheduler __coglink_handleScheduler(struct discord *client, c
   }
 }
 
-void coglink_joinVoiceChannel(struct lavaInfo *lavaInfo, struct discord *client, u64snowflake voiceChannelId, u64snowflake guildId) {
+void coglink_joinVoiceChannel(struct coglink_lavaInfo *lavaInfo, struct discord *client, u64snowflake voiceChannelId, u64snowflake guildId) {
   char joinVCPayload[512];
   int payloadLen = snprintf(joinVCPayload, sizeof(joinVCPayload), "{\"op\":4,\"d\":{\"guild_id\":%"PRIu64",\"channel_id\":\"%"PRIu64"\",\"self_mute\":false,\"self_deaf\":true}}", guildId, voiceChannelId);
 
@@ -547,7 +543,7 @@ void coglink_joinVoiceChannel(struct lavaInfo *lavaInfo, struct discord *client,
   if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->sendPayloadSuccessDebugging) log_debug("[coglink:libcurl] Successfully sent the payload with op 4 to Discord.");
 }
 
-int coglink_joinUserVoiceChannel(struct lavaInfo *lavaInfo, struct discord *client, u64snowflake userId, u64snowflake guildId) {
+int coglink_joinUserVoiceChannel(struct coglink_lavaInfo *lavaInfo, struct discord *client, u64snowflake userId, u64snowflake guildId) {
   char userIdStr[COGLINK_USER_ID_LENGTH];
   snprintf(userIdStr, sizeof(userIdStr), "%"PRIu64"", userId);
 
@@ -570,19 +566,19 @@ int coglink_joinUserVoiceChannel(struct lavaInfo *lavaInfo, struct discord *clie
   return COGLINK_SUCCESS;
 }
 
-void coglink_freeNodeInfo(struct lavaInfo *lavaInfo) {
+void coglink_freeNodeInfo(struct coglink_lavaInfo *lavaInfo) {
   if (lavaInfo) lavaInfo = NULL;
 }
 
-void coglink_setEvents(struct lavaInfo *lavaInfo, struct lavalinkEvents *lavalinkEvents) {
+void coglink_setEvents(struct coglink_lavaInfo *lavaInfo, struct coglink_lavalinkEvents *lavalinkEvents) {
   lavaInfo->events = lavalinkEvents;
 }
 
-void coglink_disconnectNode(struct lavaInfo *lavaInfo) {
+void coglink_disconnectNode(struct coglink_lavaInfo *lavaInfo) {
   ws_close(lavaInfo->ws, 1000, "Requested to be closed", 23);
 }
 
-void coglink_connectNodeCleanup(struct lavaInfo *lavaInfo, struct discord *client) {
+void coglink_connectNodeCleanup(struct coglink_lavaInfo *lavaInfo, struct discord *client) {
   tablec_cleanup(&hashtable);
   ws_close(lavaInfo->ws, 1000, "Normal close", 13);
   io_poller_curlm_del(client->io_poller, lavaInfo->mhandle);
@@ -592,7 +588,7 @@ void coglink_connectNodeCleanup(struct lavaInfo *lavaInfo, struct discord *clien
   coglink_freeNodeInfo(lavaInfo);
 }
 
-int coglink_connectNode(struct lavaInfo *lavaInfo, struct discord *client, struct lavalinkNode *node) {
+int coglink_connectNode(struct coglink_lavaInfo *lavaInfo, struct discord *client, struct coglink_lavalinkNode *node) {
   tablec_init(&hashtable, 128);
 
   char hostname[128 + 21];

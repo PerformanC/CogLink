@@ -10,40 +10,40 @@
 #include <coglink/plugins.h>
 #include <coglink/definitions.h>
 
-struct requestInformation {
+struct coglink_requestInformation {
   char *body;
   size_t size;
 };
 
-struct lavalinkStatsMemory {
+struct coglink_lavalinkStatsMemory {
   char free[16];
   char used[16];
   char allocated[16];
   char reservable[16];
 };
 
-struct lavalinkStatsFrameStats {
+struct coglink_lavalinkStatsFrameStats {
   char sent[16];
   char deficit[16];
   char nulled[16];
 };
 
-struct lavalinkStatsCPU {
+struct coglink_lavalinkStatsCPU {
   char cores[8];
   char systemLoad[16];
   char lavalinkLoad[16];
 };
 
-struct lavalinkStats {
+struct coglink_lavalinkStats {
   char players[8];
   char playingPlayers[8];
   char uptime[32];
-  struct lavalinkStatsMemory *memory;
-  struct lavalinkStatsCPU *cpu;
-  struct lavalinkStatsFrameStats *frameStats;
+  struct coglink_lavalinkStatsMemory *memory;
+  struct coglink_lavalinkStatsCPU *cpu;
+  struct coglink_lavalinkStatsFrameStats *frameStats;
 };
 
-struct coglinkDebugging {
+struct coglink_coglinkDebugging {
   int allDebugging;
   int sendPayloadErrorsDebugging;
   int sendPayloadSuccessDebugging;
@@ -72,7 +72,7 @@ struct coglinkDebugging {
   int memoryDebugging;
 };
 
-struct lavalinkNode {
+struct coglink_lavalinkNode {
   char *name;
   char *hostname;
   char *password;
@@ -83,8 +83,8 @@ struct lavalinkNode {
   char sessionId[COGLINK_LAVALINK_SESSIONID_LENGTH];
 };
 
-struct lavalinkEvents {
-  int (*onRaw)(struct lavaInfo *lavaInfo, const char *data, size_t length);
+struct coglink_lavalinkEvents {
+  int (*onRaw)(struct coglink_lavaInfo *lavaInfo, const char *data, size_t length);
   void (*onConnect)(char *sessionId);
   void (*onClose)(enum ws_close_reason wscode, const char *reason);
   void (*onTrackStart)(char *track, char *guildId);
@@ -94,24 +94,24 @@ struct lavalinkEvents {
   void (*onWebSocketClosed)(char *code, char *reason, int byRemote, char *guildId);
   void (*onUnknownEvent)(char *type, const char *text, char *guildId);
   void (*onPlayerUpdate)(char *time, char *position, int connected, char *ping, char *guildId);
-  void (*onStats)(struct lavalinkStats *stats);
+  void (*onStats)(struct coglink_lavalinkStats *stats);
   void (*onUnknownOp)(char *op, const char *text);
 };
 
-struct lavaInfo {
-  struct lavalinkNode *node;
-  struct lavalinkEvents *events;
+struct coglink_lavaInfo {
+  struct coglink_lavalinkNode *node;
+  struct coglink_lavalinkEvents *events;
   struct io_poller *io_poller;
   struct websockets *ws;
-  struct coglinkPlugins *plugins;
-  struct coglinkDebugging *debugging;
+  struct coglink_coglinkPlugins *plugins;
+  struct coglink_coglinkDebugging *debugging;
   CURLM *mhandle;
   uint64_t tstamp;
   int allowResuming;
   int allowCachingVoiceChannelIds;
 };
 
-struct parsedTrack {
+struct coglink_parsedTrack {
   char track[COGLINK_TRACK_LENGTH];
   char identifier[COGLINK_IDENTIFIER_LENGTH];
   char isSeekable[COGLINK_TRUE_FALSE_LENGTH];
@@ -126,12 +126,12 @@ struct parsedTrack {
   char sourceName[COGLINK_SOURCENAME_LENGTH];
 };
 
-struct parsedPlaylist {
+struct coglink_parsedPlaylist {
   char name[COGLINK_PLAYLIST_NAME_LENGTH];
   char selectedTrack[8];
 };
 
-struct parsedError {
+struct coglink_parsedError {
   char message[128];
   char severity[16];
 };
@@ -152,7 +152,7 @@ void onTextEvent(void *data, struct websockets *ws, struct ws_info *info, const 
  * @param voiceChannelId ID of the voice channel that the bot will join.
  * @param guildId ID of the guild of the voice channel that the bot will join.
  */
-void coglink_joinVoiceChannel(struct lavaInfo *lavaInfo, struct discord *client, u64snowflake voiceChannelId, u64snowflake guildId);
+void coglink_joinVoiceChannel(struct coglink_lavaInfo *lavaInfo, struct discord *client, u64snowflake voiceChannelId, u64snowflake guildId);
 
 /**
  * Joins a voice channel that a user is in, must have the optional settings enabled for it.
@@ -161,33 +161,33 @@ void coglink_joinVoiceChannel(struct lavaInfo *lavaInfo, struct discord *client,
  * @param userId ID of the user that the bot will join in its voice channel.
  * @param guildId ID of the guild of the voice channel that the bot will join.
  */
-int coglink_joinUserVoiceChannel(struct lavaInfo *lavaInfo, struct discord *client, u64snowflake userId, u64snowflake guildId);
+int coglink_joinUserVoiceChannel(struct coglink_lavaInfo *lavaInfo, struct discord *client, u64snowflake userId, u64snowflake guildId);
 
 /**
  * Removes all information in the lavaInfo struct
  * @param lavaInfo Structure with important informations of the Lavalink.
  */
-void coglink_freeNodeInfo(struct lavaInfo *lavaInfo);
+void coglink_freeNodeInfo(struct coglink_lavaInfo *lavaInfo);
 
 /**
  * Closes the WebSocket connection with the Lavalink node.
  * @param lavaInfo Structure with important informations of the Lavalink.
  */
-void coglink_disconnectNode(struct lavaInfo *lavaInfo);
+void coglink_disconnectNode(struct coglink_lavaInfo *lavaInfo);
 
 /**
  * Sets the Lavalink events when not including it directly into lavaInfo structure.
  * @param lavaInfo Structure with important informations of the Lavalink.
- * @param lavalinkEvents Lavalink event's structure with all pointers to the functions that will be executed when the event it emitted.
+ * @param coglink_lavalinkEvents Lavalink event's structure with all pointers to the functions that will be executed when the event it emitted.
  */
-void coglink_setEvents(struct lavaInfo *lavaInfo, struct lavalinkEvents *lavalinkEvents);
+void coglink_setEvents(struct coglink_lavaInfo *lavaInfo, struct coglink_lavalinkEvents *lavalinkEvents);
 
 /**
  * Frees all mallocs used while connecting to a node and in other functions.
  * @param lavaInfo Structure with important informations of the Lavalink.
  * @param client Concord's client stucture generated with discord_init.
  */
-void coglink_connectNodeCleanup(struct lavaInfo *lavaInfo, struct discord *client);
+void coglink_connectNodeCleanup(struct coglink_lavaInfo *lavaInfo, struct discord *client);
 
 /**
  * Creates a WebSocket connecting with the Lavalink node.
@@ -196,6 +196,6 @@ void coglink_connectNodeCleanup(struct lavaInfo *lavaInfo, struct discord *clien
  * @param node Structure with all Lavalink node information.
  * @returns COGLINK_SUCCESS
  */
-int coglink_connectNode(struct lavaInfo *lavaInfo, struct discord *client, struct lavalinkNode *node);
+int coglink_connectNode(struct coglink_lavaInfo *lavaInfo, struct discord *client, struct coglink_lavalinkNode *node);
 
 #endif

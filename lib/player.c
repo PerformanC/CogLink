@@ -9,7 +9,7 @@
 #include <coglink/definitions.h>
 #include <coglink/player.h>
 
-int coglink_getPlayers(struct lavaInfo *lavaInfo, struct requestInformation *res) {
+int coglink_getPlayers(struct coglink_lavaInfo *lavaInfo, struct coglink_requestInformation *res) {
   char reqPath[35];
   int pathLen = snprintf(reqPath, sizeof(reqPath), "/sessions/%s/players", lavaInfo->node->sessionId);
 
@@ -22,7 +22,7 @@ int coglink_getPlayers(struct lavaInfo *lavaInfo, struct requestInformation *res
                                                   });
 }
 
-int coglink_parseGetPlayers(struct lavaInfo *lavaInfo, struct requestInformation *res, char *pos, struct playerInfo *playerInfoStruct) {
+int coglink_parseGetPlayers(struct coglink_lavaInfo *lavaInfo, struct coglink_requestInformation *res, char *pos, struct coglink_playerInfo *playerInfoStruct) {
   if (res->body[0] == '[' && res->body[1] == ']') return COGLINK_NO_PLAYERS;
 
   jsmn_parser parser;
@@ -320,11 +320,11 @@ int coglink_parseGetPlayers(struct lavaInfo *lavaInfo, struct requestInformation
   return COGLINK_SUCCESS;
 }
 
-void coglink_getPlayersCleanup(struct requestInformation *res) {
+void coglink_getPlayersCleanup(struct coglink_requestInformation *res) {
   free(res->body);
 }
 
-int coglink_playSong(struct lavaInfo *lavaInfo, char *track, u64snowflake guildId) {
+int coglink_playSong(struct coglink_lavaInfo *lavaInfo, char *track, u64snowflake guildId) {
   if (lavaInfo->plugins && lavaInfo->plugins->events->onPlayRequest[0]) {
     if (lavaInfo->plugins->security->allowReadIOPoller) {
       for (int i = 0;i <+ lavaInfo->plugins->amount;i++) {
@@ -334,7 +334,7 @@ int coglink_playSong(struct lavaInfo *lavaInfo, char *track, u64snowflake guildI
         if (pluginResultCode != COGLINK_PROCEED) return pluginResultCode;
       }
     } else {
-      struct lavaInfo *lavaInfoPlugin = lavaInfo;
+      struct coglink_lavaInfo *lavaInfoPlugin = lavaInfo;
       lavaInfoPlugin->io_poller = NULL;
 
       for (int i = 0;i <+ lavaInfo->plugins->amount;i++) {
@@ -362,7 +362,7 @@ int coglink_playSong(struct lavaInfo *lavaInfo, char *track, u64snowflake guildI
                                             });
 }
 
-void coglink_destroyPlayer(struct lavaInfo *lavaInfo, u64snowflake guildId) {
+void coglink_destroyPlayer(struct coglink_lavaInfo *lavaInfo, u64snowflake guildId) {
   char reqPath[64];
   int pathLen = snprintf(reqPath, sizeof(reqPath), "/sessions/%s/players/%"PRIu64"", lavaInfo->node->sessionId, guildId);
 
@@ -374,7 +374,7 @@ void coglink_destroyPlayer(struct lavaInfo *lavaInfo, u64snowflake guildId) {
                                             });
 }
 
-void coglink_stopPlayer(struct lavaInfo *lavaInfo, u64snowflake guildId) {
+void coglink_stopPlayer(struct coglink_lavaInfo *lavaInfo, u64snowflake guildId) {
   char reqPath[64];
   int pathLen = snprintf(reqPath, sizeof(reqPath), "/sessions/%s/players/%"PRIu64"", lavaInfo->node->sessionId, guildId);
 
@@ -388,7 +388,7 @@ void coglink_stopPlayer(struct lavaInfo *lavaInfo, u64snowflake guildId) {
                                             });
 }
 
-void coglink_pausePlayer(struct lavaInfo *lavaInfo, u64snowflake guildId, char *pause) {
+void coglink_pausePlayer(struct coglink_lavaInfo *lavaInfo, u64snowflake guildId, char *pause) {
   char reqPath[64];
   int pathLen = snprintf(reqPath, sizeof(reqPath), "/sessions/%s/players/%"PRIu64"", lavaInfo->node->sessionId, guildId);
 
@@ -405,7 +405,7 @@ void coglink_pausePlayer(struct lavaInfo *lavaInfo, u64snowflake guildId, char *
                                             });
 }
 
-void coglink_seekTrack(struct lavaInfo *lavaInfo, u64snowflake guildId, char *position) {
+void coglink_seekTrack(struct coglink_lavaInfo *lavaInfo, u64snowflake guildId, char *position) {
   char reqPath[64];
   int pathLen = snprintf(reqPath, sizeof(reqPath), "/sessions/%s/players/%"PRIu64"", lavaInfo->node->sessionId, guildId);
 
@@ -422,7 +422,7 @@ void coglink_seekTrack(struct lavaInfo *lavaInfo, u64snowflake guildId, char *po
                                             });
 }
 
-void coglink_setPlayerVolume(struct lavaInfo *lavaInfo, u64snowflake guildId, char *volume) {
+void coglink_setPlayerVolume(struct coglink_lavaInfo *lavaInfo, u64snowflake guildId, char *volume) {
   char reqPath[64];
   int pathLen = snprintf(reqPath, sizeof(reqPath), "/sessions/%s/players/%"PRIu64"", lavaInfo->node->sessionId, guildId);
 
@@ -439,7 +439,7 @@ void coglink_setPlayerVolume(struct lavaInfo *lavaInfo, u64snowflake guildId, ch
                                             });
 }
 
-void coglink_setEffect(struct lavaInfo *lavaInfo, u64snowflake guildId, int effect, char *value) {
+void coglink_setEffect(struct coglink_lavaInfo *lavaInfo, u64snowflake guildId, int effect, char *value) {
   char payload[512 + 128], effectStr[11] = "VOLUME";
   switch (effect) {
     case COGLINK_FILTER_VOLUME: {

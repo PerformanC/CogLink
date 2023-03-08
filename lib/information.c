@@ -8,8 +8,8 @@
 #include <coglink/definitions.h>
 #include <coglink/information.h>
 
-int coglink_getLavalinkVersion(struct lavaInfo *lavaInfo, char **version) {
-  struct requestInformation res;
+int coglink_getLavalinkVersion(struct coglink_lavaInfo *lavaInfo, char **version) {
+  struct coglink_requestInformation res;
 
   int status = __coglink_performRequest(lavaInfo, &res, &(struct __coglink_requestConfig) {
                                                           .requestType = __COGLINK_GET_REQ,
@@ -26,7 +26,7 @@ int coglink_getLavalinkVersion(struct lavaInfo *lavaInfo, char **version) {
   return COGLINK_SUCCESS;
 }
 
-int coglink_getLavalinkInfo(struct lavaInfo *lavaInfo, struct requestInformation *res) {
+int coglink_getLavalinkInfo(struct coglink_lavaInfo *lavaInfo, struct coglink_requestInformation *res) {
   return __coglink_performRequest(lavaInfo, res, &(struct __coglink_requestConfig) {
                                                     .requestType = __COGLINK_GET_REQ,
                                                     .path = "/info",
@@ -36,7 +36,7 @@ int coglink_getLavalinkInfo(struct lavaInfo *lavaInfo, struct requestInformation
                                                   });
 }
 
-int coglink_parseLavalinkInfo(struct lavaInfo *lavaInfo, struct requestInformation *res, struct lavalinkInfo *lavalinkInfoStruct) {
+int coglink_parseLavalinkInfo(struct coglink_lavaInfo *lavaInfo, struct coglink_requestInformation *res, struct coglink_lavalinkInfo *lavalinkInfoStruct) {
   jsmn_parser parser;
   jsmntok_t tokens[64];
 
@@ -133,11 +133,11 @@ int coglink_parseLavalinkInfo(struct lavaInfo *lavaInfo, struct requestInformati
   return COGLINK_SUCCESS;
 }
 
-void coglink_getLavalinkInfoCleanup(struct requestInformation *res) {
+void coglink_getLavalinkInfoCleanup(struct coglink_requestInformation *res) {
   free(res->body);
 }
 
-int coglink_getLavalinkStats(struct lavaInfo *lavaInfo, struct requestInformation *res) {
+int coglink_getLavalinkStats(struct coglink_lavaInfo *lavaInfo, struct coglink_requestInformation *res) {
   return __coglink_performRequest(lavaInfo, res, &(struct __coglink_requestConfig) {
                                                     .requestType = __COGLINK_GET_REQ,
                                                     .path = "/stats",
@@ -147,7 +147,7 @@ int coglink_getLavalinkStats(struct lavaInfo *lavaInfo, struct requestInformatio
                                                   });
 }
 
-int coglink_parseLavalinkStats(struct lavaInfo *lavaInfo, struct requestInformation *res, struct lavalinkStats *lavalinkStatsStruct) {
+int coglink_parseLavalinkStats(struct coglink_lavaInfo *lavaInfo, struct coglink_requestInformation *res, struct coglink_lavalinkStats *lavalinkStatsStruct) {
   jsmn_parser parser;
   jsmntok_t tokens[32];
 
@@ -226,6 +226,6 @@ int coglink_parseLavalinkStats(struct lavaInfo *lavaInfo, struct requestInformat
   return COGLINK_SUCCESS;
 }
 
-void coglink_getLavalinkStatsCleanup(struct requestInformation *res) {
+void coglink_getLavalinkStatsCleanup(struct coglink_requestInformation *res) {
   free(res->body);
 }

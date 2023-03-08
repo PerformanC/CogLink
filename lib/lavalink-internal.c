@@ -10,7 +10,7 @@
 
 size_t __coglink_WriteMemoryCallback(void *data, size_t size, size_t nmemb, void *userp) {
   size_t writeSize = size * nmemb;
-  struct requestInformation *mem = userp;
+  struct coglink_requestInformation *mem = userp;
 
   char *ptr = realloc(mem->body, mem->size + writeSize + 1);
   if (!ptr) {
@@ -31,7 +31,7 @@ size_t __coglink_WriteMemoryCallbackNoSave(void *data, size_t size, size_t nmemb
   return nmemb;
 }
 
-int __coglink_checkCurlCommand(struct lavaInfo *lavaInfo, CURL *curl, CURLcode cRes, char *pos, int additionalDebugging, int getResponse, struct requestInformation *res) {
+int __coglink_checkCurlCommand(struct coglink_lavaInfo *lavaInfo, CURL *curl, CURLcode cRes, char *pos, int additionalDebugging, int getResponse, struct coglink_requestInformation *res) {
   if (cRes != CURLE_OK) {
     if (lavaInfo->debugging->allDebugging || additionalDebugging || lavaInfo->debugging->curlErrorsDebugging) log_fatal("[coglink:libcurl] curl_easy_setopt [%s] failed: %s\n", pos, curl_easy_strerror(cRes));
 
@@ -44,7 +44,7 @@ int __coglink_checkCurlCommand(struct lavaInfo *lavaInfo, CURL *curl, CURLcode c
   return COGLINK_SUCCESS;
 }
 
-int __coglink_performRequest(struct lavaInfo *lavaInfo, struct requestInformation *res, struct __coglink_requestConfig *config) {
+int __coglink_performRequest(struct coglink_lavaInfo *lavaInfo, struct coglink_requestInformation *res, struct __coglink_requestConfig *config) {
   if (!config->usedCURL) curl_global_init(CURL_GLOBAL_ALL);
 
   CURL *curl = config->usedCURL;
@@ -168,7 +168,7 @@ int __coglink_performRequest(struct lavaInfo *lavaInfo, struct requestInformatio
   return COGLINK_SUCCESS;
 }
 
-int __coglink_checkParse(struct lavaInfo *lavaInfo, jsmnf_pair *field, char *fieldName) {
+int __coglink_checkParse(struct coglink_lavaInfo *lavaInfo, jsmnf_pair *field, char *fieldName) {
   if (!field) {
     if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->checkParseErrorsDebugging) log_error("[coglink:jsmn-find] Failed to find %s field.", fieldName);
     return COGLINK_JSMNF_ERROR_FIND;
@@ -189,6 +189,6 @@ void __coglink_randomString(char *dest, size_t length) {
 
 int __coglink_IOPoller(struct io_poller *io, CURLM *multi, void *user_data) {
   (void) io; (void) multi;
-  struct lavaInfo *lavaInfo = user_data;
+  struct coglink_lavaInfo *lavaInfo = user_data;
   return !ws_multi_socket_run(lavaInfo->ws, &lavaInfo->tstamp) ? COGLINK_WAIT : COGLINK_SUCCESS;
 }

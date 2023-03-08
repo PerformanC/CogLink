@@ -6,8 +6,8 @@
 #include <concord/jsmn.h>
 #include <concord/jsmn-find.h>
 
-struct lavaInfo;
-struct requestInformation;
+struct coglink_lavaInfo;
+struct coglink_requestInformation;
 struct io_poller;
 
 #define __COGLINK_GET_REQ 0
@@ -28,9 +28,9 @@ struct __coglink_requestConfig {
   CURL *usedCURL;
 };
 
-int __coglink_performRequest(struct lavaInfo *lavaInfo, struct requestInformation *res, struct __coglink_requestConfig *config);
+int __coglink_performRequest(struct coglink_lavaInfo *lavaInfo, struct coglink_requestInformation *res, struct __coglink_requestConfig *config);
 
-int __coglink_checkParse(struct lavaInfo *lavaInfo, jsmnf_pair *field, char *fieldName);
+int __coglink_checkParse(struct coglink_lavaInfo *lavaInfo, jsmnf_pair *field, char *fieldName);
 
 void __coglink_randomString(char *dest, size_t length);
 

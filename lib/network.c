@@ -9,7 +9,7 @@
 #include <coglink/definitions.h>
 #include <coglink/network.h>
 
-int coglink_getRouterPlanner(struct lavaInfo *lavaInfo, struct requestInformation *res) {
+int coglink_getRouterPlanner(struct coglink_lavaInfo *lavaInfo, struct coglink_requestInformation *res) {
   return __coglink_performRequest(lavaInfo, res, &(struct __coglink_requestConfig) {
                                                     .requestType = __COGLINK_GET_REQ,
                                                     .path = "/routeplanner/status",
@@ -19,7 +19,7 @@ int coglink_getRouterPlanner(struct lavaInfo *lavaInfo, struct requestInformatio
                                                   });
 }
 
-int coglink_parseRouterPlanner(struct lavaInfo *lavaInfo, struct requestInformation *res, char *ipPosition, struct lavalinkRouter *lavalinkRouterStruct) {
+int coglink_parseRouterPlanner(struct coglink_lavaInfo *lavaInfo, struct coglink_requestInformation *res, char *ipPosition, struct coglink_lavalinkRouter *lavalinkRouterStruct) {
   jsmn_parser parser;
   jsmntok_t tokens[128];
 
@@ -143,11 +143,11 @@ int coglink_parseRouterPlanner(struct lavaInfo *lavaInfo, struct requestInformat
   return COGLINK_SUCCESS;
 }
 
-void coglink_getRouterPlannerCleanup(struct requestInformation *res) {
+void coglink_getRouterPlannerCleanup(struct coglink_requestInformation *res) {
   free(res->body);
 }
 
-int coglink_freeFailingAddress(struct lavaInfo *lavaInfo, char *ip) {
+int coglink_freeFailingAddress(struct coglink_lavaInfo *lavaInfo, char *ip) {
   char payload[16];
   int payloadLen = snprintf(payload, sizeof(payload), "{\"address\":\"%s\"}", ip);
 
@@ -161,7 +161,7 @@ int coglink_freeFailingAddress(struct lavaInfo *lavaInfo, char *ip) {
                                                   });
 }
 
-int coglink_freeFailingAllAddresses(struct lavaInfo *lavaInfo) {
+int coglink_freeFailingAllAddresses(struct coglink_lavaInfo *lavaInfo) {
   return __coglink_performRequest(lavaInfo,  NULL, &(struct __coglink_requestConfig) {
                                                     .requestType = __COGLINK_POST_REQ,
                                                     .path = "/routeplanner/free/all",
