@@ -37,7 +37,7 @@ struct coglink_lavalinkRouter {
  * @param res Structure with the information of the request.
  * @returns COGLINK_SUCCESS / ERROR
  */
-int coglink_getRouterPlanner(struct coglink_lavaInfo *lavaInfo, struct coglink_requestInformation *res);
+int coglink_getRouterPlanner(struct coglink_lavaInfo *lavaInfo, u64snowflake guildId, struct coglink_requestInformation *res);
 
 /**
  * Parses the response body of coglink_getRouterPlanner function.
@@ -61,13 +61,13 @@ void coglink_getRouterPlannerCleanup(struct coglink_requestInformation *res);
  * @param ip IP that will be removed from failing address list.
  * @returns COGLINK_SUCCESS / ERROR
  */
-int coglink_freeFailingAddress(struct coglink_lavaInfo *lavaInfo, char *ip);
+int coglink_freeFailingAddress(struct coglink_lavaInfo *lavaInfo, u64snowflake guildId, char *ip);
 
 /**
  * Removes all IPs from failing address list.
  * @param lavaInfo Structure with important informations of the Lavalink.
  * @returns COGLINK_SUCCESS / ERROR
  */
-int coglink_freeFailingAllAddresses(struct coglink_lavaInfo *lavaInfo);
+int coglink_freeFailingAllAddresses(struct coglink_lavaInfo *lavaInfo, u64snowflake guildId);
 
 #endif

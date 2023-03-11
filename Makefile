@@ -7,11 +7,12 @@ DOCS_DIR = ../CoglinDocs
 
 CFLAGS := -Wall -Wextra -Wpedantic
 LDFLAGS := -std=gnu99 -I/usr/local/include
+LFLAGS := -lcurl -ldiscord
 
 all:
 	@ sudo mkdir -p $(INCLUDEDIR)
 	sudo cp include/* $(INCLUDEDIR)
-	$(CC) -c $(CFLAGS) $(LDFLAGS) -O3 -fpic lib/*.c
+	$(CC) lib/*.c -c -fPIC $(CFLAGS) -O3 $(LDFLAGS) $(LFLAGS)
 	ar qv libcoglink.a *.o
 	rm -rf *.o
 
@@ -24,7 +25,7 @@ gen_docs:
 debug:
 	@ sudo mkdir -p $(INCLUDEDIR)
 	sudo cp include/* $(INCLUDEDIR)
-	$(CC) -c $(CFLAGS) $(LDFLAGS) -g -fpic lib/*.c
+	$(CC) lib/*.c -c -fPIC $(CFLAGS) -g $(LDFLAGS) $(LFLAGS)
 	ar qv libcoglink.a *.o
 	rm -rf *.o
 

@@ -9,14 +9,16 @@
 #include <coglink/definitions.h>
 #include <coglink/network.h>
 
-int coglink_getRouterPlanner(struct coglink_lavaInfo *lavaInfo, struct coglink_requestInformation *res) {
-  return __coglink_performRequest(lavaInfo, res, &(struct __coglink_requestConfig) {
-                                                    .requestType = __COGLINK_GET_REQ,
-                                                    .path = "/routeplanner/status",
-                                                    .pathLength = 21,
-                                                    .useVPath = true,
-                                                    .getResponse = true
-                                                  });
+int coglink_getRouterPlanner(struct coglink_lavaInfo *lavaInfo, u64snowflake guildId, struct coglink_requestInformation *res) {
+  int node = _coglink_findPlayerNode(guildId);
+
+  return _coglink_performRequest(lavaInfo, &lavaInfo->nodes[node], res, 
+                                 &(struct __coglink_requestConfig) {
+                                   .requestType = __COGLINK_GET_REQ,
+                                   .path = "/routeplanner/status",
+                                   .pathLength = 21,
+                                   .getResponse = 1
+                                 });
 }
 
 int coglink_parseRouterPlanner(struct coglink_lavaInfo *lavaInfo, struct coglink_requestInformation *res, char *ipPosition, struct coglink_lavalinkRouter *lavalinkRouterStruct) {
@@ -45,7 +47,7 @@ int coglink_parseRouterPlanner(struct coglink_lavaInfo *lavaInfo, struct coglink
   if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseSuccessDebugging || lavaInfo->debugging->jsmnfSuccessDebugging) log_debug("[coglink:jsmn-find] Successfully loaded jsmn-find.");
 
   jsmnf_pair *class = jsmnf_find(pairs, res->body, "class", sizeof("class") - 1);
-  if (__coglink_checkParse(lavaInfo, class, "class") != COGLINK_PROCEED) return COGLINK_JSMNF_ERROR_FIND;
+  if (_coglink_checkParse(lavaInfo, class, "class") != COGLINK_PROCEED) return COGLINK_JSMNF_ERROR_FIND;
 
   snprintf(lavalinkRouterStruct->class, sizeof(lavalinkRouterStruct->class), "%.*s", (int)class->v.len, res->body + class->v.pos);
 
@@ -147,25 +149,30 @@ void coglink_getRouterPlannerCleanup(struct coglink_requestInformation *res) {
   free(res->body);
 }
 
-int coglink_freeFailingAddress(struct coglink_lavaInfo *lavaInfo, char *ip) {
+int coglink_freeFailingAddress(struct coglink_lavaInfo *lavaInfo, u64snowflake guildId, char *ip) {
+  int node = _coglink_findPlayerNode(guildId);
+
   char payload[16];
   int payloadLen = snprintf(payload, sizeof(payload), "{\"address\":\"%s\"}", ip);
 
-  return __coglink_performRequest(lavaInfo, NULL, &(struct __coglink_requestConfig) {
-                                                    .requestType = __COGLINK_POST_REQ,
-                                                    .path = "/routeplanner/free/address",
-                                                    .pathLength = 27,
-                                                    .useVPath = true,
-                                                    .body = payload,
-                                                    .bodySize = payloadLen
-                                                  });
+  return _coglink_performRequest(lavaInfo, &lavaInfo->nodes[node], NULL, 
+                                 &(struct __coglink_requestConfig) {
+                                   .requestType = __COGLINK_POST_REQ,
+                                   .path = "/routeplanner/free/address",
+                                   .pathLength = 27,
+                                   .body = payload,
+                                   .bodySize = payloadLen
+                                 });
 }
 
-int coglink_freeFailingAllAddresses(struct coglink_lavaInfo *lavaInfo) {
-  return __coglink_performRequest(lavaInfo,  NULL, &(struct __coglink_requestConfig) {
-                                                    .requestType = __COGLINK_POST_REQ,
-                                                    .path = "/routeplanner/free/all",
-                                                    .pathLength = 23,
-                                                    .useVPath = true
-                                                  });
+int coglink_freeFailingAllAddresses(struct coglink_lavaInfo *lavaInfo, u64snowflake guildId) {
+  int node = _coglink_findPlayerNode(guildId);
+
+  return _coglink_performRequest(lavaInfo, &lavaInfo->nodes[node], NULL,
+                                  &(struct __coglink_requestConfig) {
+                                    .requestType = __COGLINK_POST_REQ,
+                                    .path = "/routeplanner/free/all",
+                                    .pathLength = 23,
+                                    .useVPath = 1
+                                  });
 }

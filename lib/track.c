@@ -10,30 +10,30 @@
 #include <coglink/track.h>
 
 int coglink_searchSong(struct coglink_lavaInfo *lavaInfo, char *song, struct coglink_requestInformation *res) {
+  int node = _coglink_selectBestNode(lavaInfo);
+
   if (lavaInfo->plugins && lavaInfo->plugins->events->onSearchRequest[0]) {
-    if (lavaInfo->plugins->security->allowReadIOPoller) {
-      for (int i = 0;i <+ lavaInfo->plugins->amount;i++) {
-        if (!lavaInfo->plugins->events->onSearchRequest[i]) break;
+    for (int i = 0;i <+ lavaInfo->plugins->amount;i++) {
+      if (!lavaInfo->plugins->events->onSearchRequest[i]) break;
 
-        int pluginResultCode = lavaInfo->plugins->events->onSearchRequest[i](lavaInfo, song, &res);
-        if (pluginResultCode != COGLINK_PROCEED) return pluginResultCode;
-      }
-    } else {
-      struct coglink_lavaInfo *lavaInfoPlugin = lavaInfo;
-      lavaInfoPlugin->io_poller = NULL;
-
-      for (int i = 0;i <+ lavaInfo->plugins->amount;i++) {
-        if (!lavaInfo->plugins->events->onSearchRequest[i]) break;
-
-        int pluginResultCode = lavaInfo->plugins->events->onSearchRequest[i](lavaInfoPlugin, song, &res);
-        if (pluginResultCode != COGLINK_PROCEED) return pluginResultCode;
-      }
+      int pluginResultCode = lavaInfo->plugins->events->onSearchRequest[i](lavaInfo, song, res);
+      if (pluginResultCode != COGLINK_PROCEED) return pluginResultCode;
     }
   }
 
-  curl_global_init(CURL_GLOBAL_ALL);
+  if (curl_global_init(CURL_GLOBAL_ALL) != CURLE_OK) {
+    if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->curlErrorsDebugging) log_fatal("[coglink:libcurl] Something went wrong while initializing libcurl (global).");
+    return COGLINK_ERROR;
+  }
 
   CURL *curl = curl_easy_init();
+
+  if (!curl) {
+    if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->curlErrorsDebugging) log_fatal("[coglink:libcurl] Error while initializing libcurl.");
+    curl_global_cleanup();
+    return COGLINK_ERROR;
+  }
+
   char *songEncoded = curl_easy_escape(curl, song, strlen(song) + 1);
 
   char reqPath[2000 + 33];
@@ -44,54 +44,44 @@ int coglink_searchSong(struct coglink_lavaInfo *lavaInfo, char *song, struct cog
 
   curl_free(songEncoded);
 
-  return __coglink_performRequest(lavaInfo, res, &(struct __coglink_requestConfig) {
-                                                    .requestType = __COGLINK_GET_REQ,
-                                                    .additionalDebuggingSuccess = lavaInfo->debugging->searchSongSuccessDebugging,
-                                                    .additionalDebuggingError = lavaInfo->debugging->searchSongErrorsDebugging,
-                                                    .path = reqPath,
-                                                    .pathLength = strlen(reqPath),
-                                                    .useVPath = true,
-                                                    .getResponse = true,
-                                                    .usedCURL = curl
-                                                  });
+  return _coglink_performRequest(lavaInfo, &lavaInfo->nodes[node], res, 
+                                 &(struct __coglink_requestConfig) {
+                                   .requestType = __COGLINK_GET_REQ,
+                                   .additionalDebuggingSuccess = lavaInfo->debugging->searchSongSuccessDebugging,
+                                   .additionalDebuggingError = lavaInfo->debugging->searchSongErrorsDebugging,
+                                   .path = reqPath,
+                                   .pathLength = strlen(reqPath),
+                                   .getResponse = 1,
+                                   .usedCURL = curl
+                                 });
 }
 
 void coglink_searchSongCleanup(struct coglink_requestInformation *res) {
   free(res->body);
 }
 
-int coglink_decodeTrack(struct coglink_lavaInfo *lavaInfo, char *track, struct coglink_requestInformation *res) {
+int coglink_decodeTrack(struct coglink_lavaInfo *lavaInfo, char *encodedTrack, struct coglink_requestInformation *res) {
+  int node = _coglink_selectBestNode(lavaInfo);
+
   if (lavaInfo->plugins && lavaInfo->plugins->events->onDecodeTrackRequest[0]) {
-    if (lavaInfo->plugins->security->allowReadIOPoller) {
-      for (int i = 0;i <+ lavaInfo->plugins->amount;i++) {
-        if (!lavaInfo->plugins->events->onDecodeTrackRequest[i]) break;
+    for (int i = 0;i <+ lavaInfo->plugins->amount;i++) {
+      if (!lavaInfo->plugins->events->onDecodeTrackRequest[i]) break;
 
-        int pluginResultCode = lavaInfo->plugins->events->onDecodeTrackRequest[i](lavaInfo, track, &res);
-        if (pluginResultCode != COGLINK_PROCEED) return pluginResultCode;
-      }
-    } else {
-      struct coglink_lavaInfo *lavaInfoPlugin = lavaInfo;
-      lavaInfoPlugin->io_poller = NULL;
-
-      for (int i = 0;i <+ lavaInfo->plugins->amount;i++) {
-        if (!lavaInfo->plugins->events->onDecodeTrackRequest[i]) break;
-
-        int pluginResultCode = lavaInfo->plugins->events->onDecodeTrackRequest[i](lavaInfoPlugin, track, &res);
-        if (pluginResultCode != COGLINK_PROCEED) return pluginResultCode;
-      }
+      int pluginResultCode = lavaInfo->plugins->events->onDecodeTrackRequest[i](lavaInfo, encodedTrack, res);
+      if (pluginResultCode != COGLINK_PROCEED) return pluginResultCode;
     }
   }
 
   char reqPath[512 + 26];
-  int pathLen = snprintf(reqPath, sizeof(reqPath), "/decodetrack?encodedTrack=%s", track);
+  int pathLen = snprintf(reqPath, sizeof(reqPath), "/decodetrack?encodedTrack=%s", encodedTrack);
 
-  return __coglink_performRequest(lavaInfo, res, &(struct __coglink_requestConfig) {
-                                                    .requestType = __COGLINK_GET_REQ,
-                                                    .path = reqPath,
-                                                    .pathLength = pathLen,
-                                                    .useVPath = true,
-                                                    .getResponse = true
-                                                  });
+  return _coglink_performRequest(lavaInfo, &lavaInfo->nodes[node], res,
+                                 &(struct __coglink_requestConfig) {
+                                   .requestType = __COGLINK_GET_REQ,
+                                   .path = reqPath,
+                                   .pathLength = pathLen,
+                                   .getResponse = 1
+                                 });
 }
 
 int coglink_initParseTrack(struct coglink_lavaInfo *lavaInfo, struct coglink_parsedTrackStruct *cStruct, struct coglink_requestInformation *res) {
@@ -123,23 +113,11 @@ int coglink_initParseTrack(struct coglink_lavaInfo *lavaInfo, struct coglink_par
 
 int coglink_parseDecodeTrack(struct coglink_lavaInfo *lavaInfo, struct coglink_parsedTrackStruct *pStruct, struct coglink_requestInformation *res, struct coglink_parsedTrack *parsedTrackStruct) {
   if (lavaInfo->plugins && lavaInfo->plugins->events->onDecodeTrackParseRequest[0]) {
-    if (lavaInfo->plugins->security->allowReadIOPoller) {
-      for (int i = 0;i <+ lavaInfo->plugins->amount;i++) {
-        if (!lavaInfo->plugins->events->onDecodeTrackParseRequest[i]) break;
+    for (int i = 0;i <+ lavaInfo->plugins->amount;i++) {
+      if (!lavaInfo->plugins->events->onDecodeTrackParseRequest[i]) break;
 
-        int pluginResultCode = lavaInfo->plugins->events->onDecodeTrackParseRequest[i](lavaInfo, &res, &parsedTrackStruct);
-        if (pluginResultCode != COGLINK_PROCEED) return pluginResultCode;
-      }
-    } else {
-      struct coglink_lavaInfo *lavaInfoPlugin = lavaInfo;
-      lavaInfoPlugin->io_poller = NULL;
-
-      for (int i = 0;i <+ lavaInfo->plugins->amount;i++) {
-        if (!lavaInfo->plugins->events->onDecodeTrackParseRequest[i]) break;
-
-        int pluginResultCode = lavaInfo->plugins->events->onDecodeTrackParseRequest[i](lavaInfoPlugin, &res, &parsedTrackStruct);
-        if (pluginResultCode != COGLINK_PROCEED) return pluginResultCode;
-      }
+      int pluginResultCode = lavaInfo->plugins->events->onDecodeTrackParseRequest[i](lavaInfo, res, parsedTrackStruct);
+      if (pluginResultCode != COGLINK_PROCEED) return pluginResultCode;
     }
   }
 
@@ -203,62 +181,41 @@ void coglink_decodeTrackCleanup(struct coglink_requestInformation *res) {
 }
 
 int coglink_decodeTracks(struct coglink_lavaInfo *lavaInfo, char *trackArray, long trackArrayLength, struct coglink_requestInformation *res) {
+  int node = _coglink_selectBestNode(lavaInfo);
+
   if (lavaInfo->plugins && lavaInfo->plugins->events->onDecodeTracksRequest[0]) {
-    if (lavaInfo->plugins->security->allowReadIOPoller) {
-      for (int i = 0;i <+ lavaInfo->plugins->amount;i++) {
-        if (!lavaInfo->plugins->events->onDecodeTracksRequest[i]) break;
+    for (int i = 0;i <+ lavaInfo->plugins->amount;i++) {
+      if (!lavaInfo->plugins->events->onDecodeTracksRequest[i]) break;
 
-        int pluginResultCode = lavaInfo->plugins->events->onDecodeTracksRequest[i](lavaInfo, trackArray, trackArrayLength, &res);
-        if (pluginResultCode != COGLINK_PROCEED) return pluginResultCode;
-      }
-    } else {
-      struct coglink_lavaInfo *lavaInfoPlugin = lavaInfo;
-      lavaInfoPlugin->io_poller = NULL;
-
-      for (int i = 0;i <+ lavaInfo->plugins->amount;i++) {
-        if (!lavaInfo->plugins->events->onDecodeTracksRequest[i]) break;
-
-        int pluginResultCode = lavaInfo->plugins->events->onDecodeTracksRequest[i](lavaInfoPlugin, trackArray, trackArrayLength, &res);
-        if (pluginResultCode != COGLINK_PROCEED) return pluginResultCode;
-      }
+      int pluginResultCode = lavaInfo->plugins->events->onDecodeTracksRequest[i](lavaInfo, trackArray, trackArrayLength, res);
+      if (pluginResultCode != COGLINK_PROCEED) return pluginResultCode;
     }
   }
 
-  return __coglink_performRequest(lavaInfo, res, &(struct __coglink_requestConfig) {
-                                                    .requestType = __COGLINK_POST_REQ,
-                                                    .path = "/decodetracks",
-                                                    .pathLength = 14,
-                                                    .useVPath = true,
-                                                    .body = trackArray,
-                                                    .bodySize = strlen(trackArray),
-                                                    .getResponse = true
-                                                  });
+  return _coglink_performRequest(lavaInfo, &lavaInfo->nodes[node], res,
+                                 &(struct __coglink_requestConfig) {
+                                   .requestType = __COGLINK_POST_REQ,
+                                   .path = "/decodetracks",
+                                   .pathLength = 14,
+                                   .useVPath = 1,
+                                   .body = trackArray,
+                                   .bodySize = strlen(trackArray),
+                                   .getResponse = 1
+                                 });
 }
 
 int coglink_parseDecodeTracks(struct coglink_lavaInfo *lavaInfo, struct coglink_parsedTrackStruct *pStruct, struct coglink_requestInformation *res, char *songPos, struct coglink_parsedTrack *parsedTrackStruct) {
   if (lavaInfo->plugins && lavaInfo->plugins->events->onDecodeTracksParseRequest[0]) {
-    if (lavaInfo->plugins->security->allowReadIOPoller) {
-      for (int i = 0;i <+ lavaInfo->plugins->amount;i++) {
-        if (!lavaInfo->plugins->events->onDecodeTracksParseRequest[i]) break;
+    for (int i = 0;i <+ lavaInfo->plugins->amount;i++) {
+      if (!lavaInfo->plugins->events->onDecodeTracksParseRequest[i]) break;
 
-        int pluginResultCode = lavaInfo->plugins->events->onDecodeTracksParseRequest[i](lavaInfo, &res, songPos, &parsedTrackStruct);
-        if (pluginResultCode != COGLINK_PROCEED) return pluginResultCode;
-      }
-    } else {
-      struct coglink_lavaInfo *lavaInfoPlugin = lavaInfo;
-      lavaInfoPlugin->io_poller = NULL;
-
-      for (int i = 0;i <+ lavaInfo->plugins->amount;i++) {
-        if (!lavaInfo->plugins->events->onDecodeTracksParseRequest[i]) break;
-
-        int pluginResultCode = lavaInfo->plugins->events->onDecodeTracksParseRequest[i](lavaInfoPlugin, &res, songPos, &parsedTrackStruct);
-        if (pluginResultCode != COGLINK_PROCEED) return pluginResultCode;
-      }
+      int pluginResultCode = lavaInfo->plugins->events->onDecodeTracksParseRequest[i](lavaInfo, res, songPos, parsedTrackStruct);
+      if (pluginResultCode != COGLINK_PROCEED) return pluginResultCode;
     }
   }
 
-  char *path[] = { songPos, "track", NULL };
-  jsmnf_pair *track = jsmnf_find_path(pStruct->pairs, res->body, path, 2);
+  char *path[] = { songPos, "encoded", NULL };
+  jsmnf_pair *encoded = jsmnf_find_path(pStruct->pairs, res->body, path, 2);
 
   path[1] = "info";
   path[2] = "identifier";
@@ -294,12 +251,12 @@ int coglink_parseDecodeTracks(struct coglink_lavaInfo *lavaInfo, struct coglink_
   path[2] = "sourceName";
   jsmnf_pair *sourceName = jsmnf_find_path(pStruct->pairs, res->body, path, 3);
 
-  if (!track || !identifier || !isSeekable || !author || !length || !isStream || !position || !title || !uri || !sourceName) {
-    if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseTrackErrorsDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_fatal("[coglink:jsmnf-find] Error while trying to find %s field.", !track ? "track" : !identifier ? "identifier": !isSeekable ? "isSeekable" : !author ? "author" : !length ? "length" : !isStream ? "isStream" : !position ? "position" : !title ? "title" : !uri ? "uri" : !sourceName ? "sourceName" : "???");
+  if (!encoded || !identifier || !isSeekable || !author || !length || !isStream || !position || !title || !uri || !sourceName) {
+    if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseTrackErrorsDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_fatal("[coglink:jsmnf-find] Error while trying to find %s field.", !encoded ? "encoded" : !identifier ? "identifier": !isSeekable ? "isSeekable" : !author ? "author" : !length ? "length" : !isStream ? "isStream" : !position ? "position" : !title ? "title" : !uri ? "uri" : !sourceName ? "sourceName" : "???");
     return COGLINK_JSMNF_ERROR_FIND;
   }
 
-  snprintf(parsedTrackStruct->track, sizeof(parsedTrackStruct->track), "%.*s", (int)track->v.len, res->body + track->v.pos);
+  snprintf(parsedTrackStruct->encoded, sizeof(parsedTrackStruct->encoded), "%.*s", (int)encoded->v.len, res->body + encoded->v.pos);
   snprintf(parsedTrackStruct->identifier, sizeof(parsedTrackStruct->identifier), "%.*s", (int)identifier->v.len, res->body + identifier->v.pos);
   snprintf(parsedTrackStruct->isSeekable, sizeof(parsedTrackStruct->isSeekable), "%.*s", (int)isSeekable->v.len, res->body + isSeekable->v.pos);
   snprintf(parsedTrackStruct->author, sizeof(parsedTrackStruct->author), "%.*s", (int)author->v.len, res->body + author->v.pos);
@@ -312,14 +269,14 @@ int coglink_parseDecodeTracks(struct coglink_lavaInfo *lavaInfo, struct coglink_
   if (artworkUrl) snprintf(parsedTrackStruct->artworkUrl, sizeof(parsedTrackStruct->artworkUrl), "%.*s", (int)artworkUrl->v.len, res->body + artworkUrl->v.pos);
   snprintf(parsedTrackStruct->sourceName, sizeof(parsedTrackStruct->sourceName), "%.*s", (int)sourceName->v.len, res->body + sourceName->v.pos);
 
-  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseTrackSuccessDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_debug("[coglink:jsmn-find] Parsed song search json, results:\n> track: %s\n> identifier: %s\n> isSeekable: %s\n> author: %s\n> length: %s\n> isStream: %s\n> position: %s\n> title: %s\n> uri: %s\n> sourceName: %s", parsedTrackStruct->track, parsedTrackStruct->identifier, parsedTrackStruct->isSeekable, parsedTrackStruct->author, parsedTrackStruct->length, parsedTrackStruct->isStream, parsedTrackStruct->position, parsedTrackStruct->title, parsedTrackStruct->uri, parsedTrackStruct->sourceName);
+  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseTrackSuccessDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_debug("[coglink:jsmn-find] Parsed song search json, results:\n> encoded: %s\n> identifier: %s\n> isSeekable: %s\n> author: %s\n> length: %s\n> isStream: %s\n> position: %s\n> title: %s\n> uri: %s\n> sourceName: %s", parsedTrackStruct->encoded, parsedTrackStruct->identifier, parsedTrackStruct->isSeekable, parsedTrackStruct->author, parsedTrackStruct->length, parsedTrackStruct->isStream, parsedTrackStruct->position, parsedTrackStruct->title, parsedTrackStruct->uri, parsedTrackStruct->sourceName);
 
   return COGLINK_SUCCESS;
 }
 
 int coglink_parseLoadtype(struct coglink_lavaInfo *lavaInfo, struct coglink_parsedTrackStruct *pStruct, struct coglink_requestInformation *res, int *loadTypeValue) {
   jsmnf_pair *loadType = jsmnf_find(pStruct->pairs, res->body, "loadType", sizeof("loadType") - 1);
-  if (__coglink_checkParse(lavaInfo, loadType, "loadType") != COGLINK_PROCEED) return COGLINK_JSMNF_ERROR_FIND;
+  if (_coglink_checkParse(lavaInfo, loadType, "loadType") != COGLINK_PROCEED) return COGLINK_JSMNF_ERROR_FIND;
 
   char LoadType[16];
   snprintf(LoadType, sizeof(LoadType), "%.*s", (int)loadType->v.len, res->body + loadType->v.pos);
@@ -352,7 +309,7 @@ int coglink_parseLoadtype(struct coglink_lavaInfo *lavaInfo, struct coglink_pars
 
 int coglink_parseTrack(struct coglink_lavaInfo *lavaInfo, struct coglink_parsedTrackStruct *pStruct, struct coglink_requestInformation *res, char *songPos, struct coglink_parsedTrack *parsedTrackStruct) {
   char *path[] = { "tracks", songPos, "encoded", NULL };
-  jsmnf_pair *track = jsmnf_find_path(pStruct->pairs, res->body, path, 3);
+  jsmnf_pair *encoded = jsmnf_find_path(pStruct->pairs, res->body, path, 3);
 
   path[2] = "info";
   path[3] = "identifier";
@@ -388,12 +345,12 @@ int coglink_parseTrack(struct coglink_lavaInfo *lavaInfo, struct coglink_parsedT
   path[3] = "sourceName";
   jsmnf_pair *sourceName = jsmnf_find_path(pStruct->pairs, res->body, path, 4);
 
-  if (!track || !identifier || !isSeekable || !author || !length || !isStream || !position || !title || !uri || !sourceName) {
-    if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseTrackErrorsDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_fatal("[coglink:jsmnf-find] Error while trying to find %s field.", !track ? "track" : !identifier ? "identifier": !isSeekable ? "isSeekable" : !author ? "author" : !length ? "length" : !isStream ? "isStream" : !position ? "position" : !title ? "title" : !uri ? "uri" : "sourceName");
+  if (!encoded || !identifier || !isSeekable || !author || !length || !isStream || !position || !title || !uri || !sourceName) {
+    if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseTrackErrorsDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_fatal("[coglink:jsmnf-find] Error while trying to find %s field.", !encoded ? "encoded" : !identifier ? "identifier": !isSeekable ? "isSeekable" : !author ? "author" : !length ? "length" : !isStream ? "isStream" : !position ? "position" : !title ? "title" : !uri ? "uri" : "sourceName");
     return COGLINK_JSMNF_ERROR_FIND;
   }
 
-  snprintf(parsedTrackStruct->track, sizeof(parsedTrackStruct->track), "%.*s", (int)track->v.len, res->body + track->v.pos);
+  snprintf(parsedTrackStruct->encoded, sizeof(parsedTrackStruct->encoded), "%.*s", (int)encoded->v.len, res->body + encoded->v.pos);
   snprintf(parsedTrackStruct->identifier, sizeof(parsedTrackStruct->identifier), "%.*s", (int)identifier->v.len, res->body + identifier->v.pos);
   snprintf(parsedTrackStruct->isSeekable, sizeof(parsedTrackStruct->isSeekable), "%.*s", (int)isSeekable->v.len, res->body + isSeekable->v.pos);
   snprintf(parsedTrackStruct->author, sizeof(parsedTrackStruct->author), "%.*s", (int)author->v.len, res->body + author->v.pos);
@@ -406,7 +363,7 @@ int coglink_parseTrack(struct coglink_lavaInfo *lavaInfo, struct coglink_parsedT
   if (artworkUrl) snprintf(parsedTrackStruct->artworkUrl, sizeof(parsedTrackStruct->artworkUrl), "%.*s", (int)artworkUrl->v.len, res->body + artworkUrl->v.pos);
   snprintf(parsedTrackStruct->sourceName, sizeof(parsedTrackStruct->sourceName), "%.*s", (int)sourceName->v.len, res->body + sourceName->v.pos);
 
-  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseTrackSuccessDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_debug("[coglink:jsmn-find] Parsed song search json, results:\n> track: %s\n> identifier: %s\n> isSeekable: %s\n> author: %s\n> length: %s\n> isStream: %s\n> position: %s\n> title: %s\n> uri: %s\n> sourceName: %s", parsedTrackStruct->track, parsedTrackStruct->identifier, parsedTrackStruct->isSeekable, parsedTrackStruct->author, parsedTrackStruct->length, parsedTrackStruct->isStream, parsedTrackStruct->position, parsedTrackStruct->title, parsedTrackStruct->uri, parsedTrackStruct->sourceName);
+  if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseTrackSuccessDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_debug("[coglink:jsmn-find] Parsed song search json, results:\n> encoded: %s\n> identifier: %s\n> isSeekable: %s\n> author: %s\n> length: %s\n> isStream: %s\n> position: %s\n> title: %s\n> uri: %s\n> sourceName: %s", parsedTrackStruct->encoded, parsedTrackStruct->identifier, parsedTrackStruct->isSeekable, parsedTrackStruct->author, parsedTrackStruct->length, parsedTrackStruct->isStream, parsedTrackStruct->position, parsedTrackStruct->title, parsedTrackStruct->uri, parsedTrackStruct->sourceName);
 
   return COGLINK_SUCCESS;
 }

@@ -36,7 +36,7 @@ struct coglink_lavalinkInfo {
  * @param version String with Lavalink version.
  * @returns COGLINK_SUCCESS / ERROR
  */
-int coglink_getLavalinkVersion(struct coglink_lavaInfo *lavaInfo, char **version);
+int coglink_getLavalinkVersion(struct coglink_lavaInfo *lavaInfo, u64snowflake guildId, char **version);
 
 /**
  * Retrieves the informations of the Lavalink node Lavalink.jar.
@@ -44,7 +44,7 @@ int coglink_getLavalinkVersion(struct coglink_lavaInfo *lavaInfo, char **version
  * @param res Structure with the information of the request.
  * @returns COGLINK_SUCCESS / ERROR
  */
-int coglink_getLavalinkInfo(struct coglink_lavaInfo *lavaInfo, struct coglink_requestInformation *res);
+int coglink_getLavalinkInfo(struct coglink_lavaInfo *lavaInfo, u64snowflake guildId, struct coglink_requestInformation *res);
 
 /**
  * Parses the response body of coglink_getLavalinkInfo function.
@@ -67,7 +67,7 @@ void coglink_getLavalinkInfoCleanup(struct coglink_requestInformation *res);
  * @param res Structure with the information of the request.
  * @returns COGLINK_SUCCESS / ERROR
  */
-int coglink_getLavalinkStats(struct coglink_lavaInfo *lavaInfo, struct coglink_requestInformation *res);
+int coglink_getLavalinkStats(struct coglink_lavaInfo *lavaInfo, u64snowflake guildId, struct coglink_requestInformation *res);
 
 /**
  * Parses the response body of coglink_getLavalinkStats function.

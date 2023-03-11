@@ -8,15 +8,19 @@
 #include <coglink/definitions.h>
 #include <coglink/information.h>
 
-int coglink_getLavalinkVersion(struct coglink_lavaInfo *lavaInfo, char **version) {
+int coglink_getLavalinkVersion(struct coglink_lavaInfo *lavaInfo, u64snowflake guildId, char **version) {
+  int node = _coglink_findPlayerNode(guildId);
+
   struct coglink_requestInformation res;
 
-  int status = __coglink_performRequest(lavaInfo, &res, &(struct __coglink_requestConfig) {
-                                                          .requestType = __COGLINK_GET_REQ,
-                                                          .path = "/version",
-                                                          .pathLength = 8,
-                                                          .getResponse = true
-                                                        });
+  int status = _coglink_performRequest(lavaInfo, &lavaInfo->nodes[node], &res, 
+                                       &(struct __coglink_requestConfig) {
+                                         .requestType = __COGLINK_GET_REQ,
+                                         .path = "/version",
+                                         .pathLength = 8,
+                                         .getResponse = 1,
+                                         .useVPath = 0
+                                       });
   if (status != COGLINK_SUCCESS) return status;
 
   *version = res.body;
@@ -26,14 +30,16 @@ int coglink_getLavalinkVersion(struct coglink_lavaInfo *lavaInfo, char **version
   return COGLINK_SUCCESS;
 }
 
-int coglink_getLavalinkInfo(struct coglink_lavaInfo *lavaInfo, struct coglink_requestInformation *res) {
-  return __coglink_performRequest(lavaInfo, res, &(struct __coglink_requestConfig) {
-                                                    .requestType = __COGLINK_GET_REQ,
-                                                    .path = "/info",
-                                                    .pathLength = 6,
-                                                    .useVPath = true,
-                                                    .getResponse = true
-                                                  });
+int coglink_getLavalinkInfo(struct coglink_lavaInfo *lavaInfo, u64snowflake guildId, struct coglink_requestInformation *res) {
+  int node = _coglink_findPlayerNode(guildId);
+
+  return _coglink_performRequest(lavaInfo, &lavaInfo->nodes[node], res, 
+                                 &(struct __coglink_requestConfig) {
+                                   .requestType = __COGLINK_GET_REQ,
+                                   .path = "/info",
+                                   .pathLength = 6,
+                                   .getResponse = 1
+                                 });
 }
 
 int coglink_parseLavalinkInfo(struct coglink_lavaInfo *lavaInfo, struct coglink_requestInformation *res, struct coglink_lavalinkInfo *lavalinkInfoStruct) {
@@ -99,19 +105,19 @@ int coglink_parseLavalinkInfo(struct coglink_lavaInfo *lavaInfo, struct coglink_
   }
 
   jsmnf_pair *jvm = jsmnf_find(pairs, res->body, "jvm", sizeof("jvm") - 1);
-  if (__coglink_checkParse(lavaInfo, jvm, "jvm")) return COGLINK_JSMNF_ERROR_FIND;
+  if (_coglink_checkParse(lavaInfo, jvm, "jvm")) return COGLINK_JSMNF_ERROR_FIND;
 
   jsmnf_pair *lavaplayer = jsmnf_find(pairs, res->body, "lavaplayer", sizeof("lavaplayer") - 1);
-  if (__coglink_checkParse(lavaInfo, lavaplayer, "lavaplayer")) return COGLINK_JSMNF_ERROR_FIND;
+  if (_coglink_checkParse(lavaInfo, lavaplayer, "lavaplayer")) return COGLINK_JSMNF_ERROR_FIND;
 
   jsmnf_pair *sourceManagers = jsmnf_find(pairs, res->body, "sourceManagers", sizeof("sourceManagers") - 1);
-  if (__coglink_checkParse(lavaInfo, sourceManagers, "sourceManagers")) return COGLINK_JSMNF_ERROR_FIND;
+  if (_coglink_checkParse(lavaInfo, sourceManagers, "sourceManagers")) return COGLINK_JSMNF_ERROR_FIND;
 
   jsmnf_pair *filters = jsmnf_find(pairs, res->body, "filters", sizeof("filters") - 1);
-  if (__coglink_checkParse(lavaInfo, filters, "filters")) return COGLINK_JSMNF_ERROR_FIND;
+  if (_coglink_checkParse(lavaInfo, filters, "filters")) return COGLINK_JSMNF_ERROR_FIND;
 
   jsmnf_pair *plugins = jsmnf_find(pairs, res->body, "plugins", sizeof("plugins") - 1);
-  if (__coglink_checkParse(lavaInfo, plugins, "plugins")) return COGLINK_JSMNF_ERROR_FIND;
+  if (_coglink_checkParse(lavaInfo, plugins, "plugins")) return COGLINK_JSMNF_ERROR_FIND;
 
   snprintf(lavalinkInfoStruct->version->semver, sizeof(lavalinkInfoStruct->version->semver), "%.*s", (int)semver->v.len, res->body + semver->v.pos);
   snprintf(lavalinkInfoStruct->version->major, sizeof(lavalinkInfoStruct->version->major), "%.*s", (int)major->v.len, res->body + major->v.pos);
@@ -137,14 +143,16 @@ void coglink_getLavalinkInfoCleanup(struct coglink_requestInformation *res) {
   free(res->body);
 }
 
-int coglink_getLavalinkStats(struct coglink_lavaInfo *lavaInfo, struct coglink_requestInformation *res) {
-  return __coglink_performRequest(lavaInfo, res, &(struct __coglink_requestConfig) {
-                                                    .requestType = __COGLINK_GET_REQ,
-                                                    .path = "/stats",
-                                                    .pathLength = 6,
-                                                    .useVPath = true,
-                                                    .getResponse = true
-                                                  });
+int coglink_getLavalinkStats(struct coglink_lavaInfo *lavaInfo, u64snowflake guildId, struct coglink_requestInformation *res) {
+  int node = _coglink_findPlayerNode(guildId);
+
+  return _coglink_performRequest(lavaInfo, &lavaInfo->nodes[node], res,
+                                 &(struct __coglink_requestConfig) {
+                                   .requestType = __COGLINK_GET_REQ,
+                                   .path = "/stats",
+                                   .pathLength = 6,
+                                   .getResponse = 1
+                                 });
 }
 
 int coglink_parseLavalinkStats(struct coglink_lavaInfo *lavaInfo, struct coglink_requestInformation *res, struct coglink_lavalinkStats *lavalinkStatsStruct) {
@@ -173,42 +181,42 @@ int coglink_parseLavalinkStats(struct coglink_lavaInfo *lavaInfo, struct coglink
   if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseSuccessDebugging || lavaInfo->debugging->jsmnfSuccessDebugging) log_debug("[coglink:jsmn-find] Successfully loaded jsmn-find.");
  
   jsmnf_pair *players = jsmnf_find(pairs, res->body, "players", sizeof("players") - 1);
-  if (__coglink_checkParse(lavaInfo, players, "players") != COGLINK_PROCEED) return COGLINK_JSMNF_ERROR_FIND;
+  if (_coglink_checkParse(lavaInfo, players, "players") != COGLINK_PROCEED) return COGLINK_JSMNF_ERROR_FIND;
 
   jsmnf_pair *playingPlayers = jsmnf_find(pairs, res->body, "playingPlayers", sizeof("playingPlayers") - 1);
-  if (__coglink_checkParse(lavaInfo, playingPlayers, "playingPlayers") != COGLINK_PROCEED) return COGLINK_JSMNF_ERROR_FIND;
+  if (_coglink_checkParse(lavaInfo, playingPlayers, "playingPlayers") != COGLINK_PROCEED) return COGLINK_JSMNF_ERROR_FIND;
 
   jsmnf_pair *uptime = jsmnf_find(pairs, res->body, "uptime", sizeof("uptime") - 1);
-  if (__coglink_checkParse(lavaInfo, uptime, "uptime") != COGLINK_PROCEED) return COGLINK_JSMNF_ERROR_FIND;
+  if (_coglink_checkParse(lavaInfo, uptime, "uptime") != COGLINK_PROCEED) return COGLINK_JSMNF_ERROR_FIND;
 
   char *path[] = { "memory", "free" };
   jsmnf_pair *lavaFree = jsmnf_find_path(pairs, res->body, path, 2);
-  if (__coglink_checkParse(lavaInfo, lavaFree, "lavaFree") != COGLINK_PROCEED) return COGLINK_JSMNF_ERROR_FIND;
+  if (_coglink_checkParse(lavaInfo, lavaFree, "lavaFree") != COGLINK_PROCEED) return COGLINK_JSMNF_ERROR_FIND;
 
   path[1] = "used";
   jsmnf_pair *used = jsmnf_find_path(pairs, res->body, path, 2);
-  if (__coglink_checkParse(lavaInfo, used, "used") != COGLINK_PROCEED) return COGLINK_JSMNF_ERROR_FIND;
+  if (_coglink_checkParse(lavaInfo, used, "used") != COGLINK_PROCEED) return COGLINK_JSMNF_ERROR_FIND;
 
   path[1] = "allocated";
   jsmnf_pair *allocated = jsmnf_find_path(pairs, res->body, path, 2);
-  if (__coglink_checkParse(lavaInfo, allocated, "allocated") != COGLINK_PROCEED) return COGLINK_JSMNF_ERROR_FIND;
+  if (_coglink_checkParse(lavaInfo, allocated, "allocated") != COGLINK_PROCEED) return COGLINK_JSMNF_ERROR_FIND;
 
   path[1] = "reservable";
   jsmnf_pair *reservable = jsmnf_find_path(pairs, res->body, path, 2);
-  if (__coglink_checkParse(lavaInfo, reservable, "reservable") != COGLINK_PROCEED) return COGLINK_JSMNF_ERROR_FIND;
+  if (_coglink_checkParse(lavaInfo, reservable, "reservable") != COGLINK_PROCEED) return COGLINK_JSMNF_ERROR_FIND;
 
   path[0] = "cpu";
   path[1] = "cores";
   jsmnf_pair *cores = jsmnf_find_path(pairs, res->body, path, 2);
-  if (__coglink_checkParse(lavaInfo, cores, "cores") != COGLINK_PROCEED) return COGLINK_JSMNF_ERROR_FIND;
+  if (_coglink_checkParse(lavaInfo, cores, "cores") != COGLINK_PROCEED) return COGLINK_JSMNF_ERROR_FIND;
 
   path[1] = "systemLoad";
   jsmnf_pair *systemLoad = jsmnf_find_path(pairs, res->body, path, 2);
-  if (__coglink_checkParse(lavaInfo, systemLoad, "systemLoad") != COGLINK_PROCEED) return COGLINK_JSMNF_ERROR_FIND;
+  if (_coglink_checkParse(lavaInfo, systemLoad, "systemLoad") != COGLINK_PROCEED) return COGLINK_JSMNF_ERROR_FIND;
 
   path[1] = "lavalinkLoad";
   jsmnf_pair *lavalinkLoad = jsmnf_find_path(pairs, res->body, path, 2);
-  if (__coglink_checkParse(lavaInfo, lavalinkLoad, "lavalinkLoad") != COGLINK_PROCEED) return COGLINK_JSMNF_ERROR_FIND;
+  if (_coglink_checkParse(lavaInfo, lavalinkLoad, "lavalinkLoad") != COGLINK_PROCEED) return COGLINK_JSMNF_ERROR_FIND;
 
   snprintf(lavalinkStatsStruct->players, sizeof(lavalinkStatsStruct->players), "%.*s", (int)players->v.len, res->body + players->v.pos);
   snprintf(lavalinkStatsStruct->playingPlayers, sizeof(lavalinkStatsStruct->playingPlayers), "%.*s", (int)playingPlayers->v.len, res->body + playingPlayers->v.pos);

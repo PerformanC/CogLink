@@ -38,9 +38,9 @@
 #define COGLINK_GAIN_LENGTH 128
 
 #define COGLINK_DISCORD_TOKEN_LENGTH 17
-#define COGLINK_VOICE_ID_LENGTH 32
-#define COGLINK_GUILD_ID_LENGTH 32
-#define COGLINK_USER_ID_LENGTH 32
+#define COGLINK_VOICE_ID_LENGTH 20
+#define COGLINK_GUILD_ID_LENGTH 20
+#define COGLINK_USER_ID_LENGTH 20
 #define COGLINK_SESSION_ID_LENGTH 128
 #define COGLINK_TRUE_FALSE_LENGTH 8
 
@@ -99,5 +99,8 @@
 
 /** Macro for defination of when TableC does not find anything related to the key. */
 #define COGLINK_TABLEC_NOT_FOUND -11
+
+/** Macro for defination of when there is no nodes avaible. */
+#define COGLINK_NO_NODES -12
 
 #endif

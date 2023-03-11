@@ -88,12 +88,19 @@ struct coglink_playerInfo {
 };
 
 /**
+ * Creates a player for the specified guild.
+ * @param lavaInfo Structure with important informations of the Lavalink.
+ * @param guildId Id of the guild.
+ */
+int coglink_createPlayer(struct coglink_lavaInfo *lavaInfo, u64snowflake guildId);
+
+/**
  * Retrieves the players.
  * @param lavaInfo Structure with important informations of the Lavalink.
  * @param res Structure with the information of the request.
  * @returns COGLINK_SUCCESS / ERROR
  */
-int coglink_getPlayers(struct coglink_lavaInfo *lavaInfo, struct coglink_requestInformation *res);
+int coglink_getPlayers(struct coglink_lavaInfo *lavaInfo, u64snowflake guildId, struct coglink_requestInformation *res);
 
 /**
  * Parses the response body of the function coglink_getPlayers.
