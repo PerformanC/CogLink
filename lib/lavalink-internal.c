@@ -246,15 +246,15 @@ struct coglink_parsedTrack _coglink_buildTrackStruct(struct coglink_lavaInfo *la
   path[2] = "uri";
   jsmnf_pair *uri = jsmnf_find_path(pairs, text, path, 3);
 
-  path[2] = "sourceName";
-  jsmnf_pair *sourceName = jsmnf_find_path(pairs, text, path, 3);
-  if (_coglink_checkParse(lavaInfo, sourceName, "sourceName") != COGLINK_PROCEED) return (struct coglink_parsedTrack) { 0 };
-
   path[2] = "artworkUrl";
   jsmnf_pair *artworkUrl = jsmnf_find_path(pairs, text, path, 3);
 
   path[2] = "isrc";
   jsmnf_pair *isrc = jsmnf_find_path(pairs, text, path, 3);
+
+  path[2] = "sourceName";
+  jsmnf_pair *sourceName = jsmnf_find_path(pairs, text, path, 3);
+  if (_coglink_checkParse(lavaInfo, sourceName, "sourceName") != COGLINK_PROCEED) return (struct coglink_parsedTrack) { 0 };
 
   struct coglink_parsedTrack parsedTrack;
 
@@ -267,9 +267,9 @@ struct coglink_parsedTrack _coglink_buildTrackStruct(struct coglink_lavaInfo *la
   snprintf(parsedTrack.position, sizeof(parsedTrack.position), "%.*s", (int)position->v.len, text + position->v.pos);
   snprintf(parsedTrack.title, sizeof(parsedTrack.title), "%.*s", (int)title->v.len, text + title->v.pos);
   if (_coglink_checkParse(lavaInfo, uri, "uri") == COGLINK_PROCEED) snprintf(parsedTrack.uri, sizeof(parsedTrack.uri), "%.*s", (int)uri->v.len, text + uri->v.pos);
-  snprintf(parsedTrack.sourceName, sizeof(parsedTrack.sourceName), "%.*s", (int)sourceName->v.len, text + sourceName->v.pos);
   if (_coglink_checkParse(lavaInfo, artworkUrl, "artworkUrl") == COGLINK_PROCEED) snprintf(parsedTrack.artworkUrl, sizeof(parsedTrack.artworkUrl), "%.*s", (int)artworkUrl->v.len, text + artworkUrl->v.pos);
   if (_coglink_checkParse(lavaInfo, isrc, "isrc") == COGLINK_PROCEED) snprintf(parsedTrack.isrc, sizeof(parsedTrack.isrc), "%.*s", (int)isrc->v.len, text + isrc->v.pos);
+  snprintf(parsedTrack.sourceName, sizeof(parsedTrack.sourceName), "%.*s", (int)sourceName->v.len, text + sourceName->v.pos);
 
   return parsedTrack;
 }

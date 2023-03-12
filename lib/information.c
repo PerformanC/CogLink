@@ -69,40 +69,38 @@ int coglink_parseLavalinkInfo(struct coglink_lavaInfo *lavaInfo, struct coglink_
   
   char *path[] = { "version", "semver" };
   jsmnf_pair *semver = jsmnf_find_path(pairs, res->body, path, 2);
+  if (_coglink_checkParse(lavaInfo, semver, "semver") != COGLINK_SUCCESS) return COGLINK_JSMNF_ERROR_FIND;
 
   path[1] = "major";
   jsmnf_pair *major = jsmnf_find_path(pairs, res->body, path, 2);
+  if (_coglink_checkParse(lavaInfo, major, "major") != COGLINK_SUCCESS) return COGLINK_JSMNF_ERROR_FIND;
 
   path[1] = "minor";
   jsmnf_pair *minor = jsmnf_find_path(pairs, res->body, path, 2);
+  if (_coglink_checkParse(lavaInfo, minor, "minor") != COGLINK_SUCCESS) return COGLINK_JSMNF_ERROR_FIND;
 
   path[1] = "patch";
   jsmnf_pair *patch = jsmnf_find_path(pairs, res->body, path, 2);
+  if (_coglink_checkParse(lavaInfo, patch, "patch") != COGLINK_SUCCESS) return COGLINK_JSMNF_ERROR_FIND;
 
   path[1] = "preRelease";
   jsmnf_pair *preRelease = jsmnf_find_path(pairs, res->body, path, 2);
-
-  if (!major || !minor || !patch) {
-    if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseErrorsDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_error("[coglink:jsmnf-find] Error while trying to find %s field.", !semver ? "semver" : !major ? "major" : !minor ? "minor" : "patch");
-    return COGLINK_JSMNF_ERROR_FIND;
-  }
+  if (_coglink_checkParse(lavaInfo, preRelease, "preRelease") != COGLINK_SUCCESS) return COGLINK_JSMNF_ERROR_FIND;
 
   jsmnf_pair *buildTime = jsmnf_find(pairs, res->body, "buildTime", sizeof("buildTime") - 1);
 
   path[0] = "git";
   path[1] = "branch";
   jsmnf_pair *branch = jsmnf_find_path(pairs, res->body, path, 2);
+  if (_coglink_checkParse(lavaInfo, branch, "branch") != COGLINK_SUCCESS) return COGLINK_JSMNF_ERROR_FIND;
 
   path[1] = "commit";
   jsmnf_pair *commit = jsmnf_find_path(pairs, res->body, path, 2);
+  if (_coglink_checkParse(lavaInfo, commit, "commit") != COGLINK_SUCCESS) return COGLINK_JSMNF_ERROR_FIND;
 
   path[1] = "commitTime";
   jsmnf_pair *commitTime = jsmnf_find_path(pairs, res->body, path, 2);
-
-  if (!buildTime || !branch || !commit || !commitTime) {
-    if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseErrorsDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_error("[coglink:jsmnf-find] Error while trying to find %s field.", !buildTime ? "buildTime" : !branch ? "branch" : !commit ? "commit" : "commitTime");
-    return COGLINK_JSMNF_ERROR_FIND;
-  }
+  if (_coglink_checkParse(lavaInfo, commitTime, "commitTime") != COGLINK_SUCCESS) return COGLINK_JSMNF_ERROR_FIND;
 
   jsmnf_pair *jvm = jsmnf_find(pairs, res->body, "jvm", sizeof("jvm") - 1);
   if (_coglink_checkParse(lavaInfo, jvm, "jvm")) return COGLINK_JSMNF_ERROR_FIND;

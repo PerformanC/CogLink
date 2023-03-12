@@ -55,23 +55,25 @@ int coglink_parseRouterPlanner(struct coglink_lavaInfo *lavaInfo, struct coglink
 
   char *path[] = { "details", "ipBlock", "type", NULL };
   jsmnf_pair *type = jsmnf_find_path(pairs, res->body, path, 3);
+  if (_coglink_checkParse(lavaInfo, type, "type") != COGLINK_PROCEED) return COGLINK_JSMNF_ERROR_FIND;
 
   path[2] = "size";
   jsmnf_pair *size = jsmnf_find_path(pairs, res->body, path, 3);
+  if (_coglink_checkParse(lavaInfo, size, "size") != COGLINK_PROCEED) return COGLINK_JSMNF_ERROR_FIND;
 
   path[1] = "failingAddresses";
   path[2] = ipPosition;
   path[3] = "address";
   jsmnf_pair *address = jsmnf_find_path(pairs, res->body, path, 4);
+  if (_coglink_checkParse(lavaInfo, address, "address") != COGLINK_PROCEED) return COGLINK_JSMNF_ERROR_FIND;
 
   path[3] = "failingTimestamp";
   jsmnf_pair *failingTimestamp = jsmnf_find_path(pairs, res->body, path, 4);
+  if (_coglink_checkParse(lavaInfo, failingTimestamp, "failingTimestamp") != COGLINK_PROCEED) return COGLINK_JSMNF_ERROR_FIND;
 
   path[3] = "failingTime";
   jsmnf_pair *failingTime = jsmnf_find_path(pairs, res->body, path, 4);
-
-  path[3] = NULL;
-  path[2] = NULL;
+  if (_coglink_checkParse(lavaInfo, failingTime, "failingTime") != COGLINK_PROCEED) return COGLINK_JSMNF_ERROR_FIND;
 
   if (!type || !size || !address || !failingTimestamp || !failingTime) {
     if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseErrorsDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_fatal("[coglink:jsmnf-find] Error while trying to find %s field.", !type ? "type" : !size ? "size" : !address ? "address" : !failingTimestamp ? "failingTimestamp" : !failingTime ? "failingTime" : "???");
@@ -81,17 +83,15 @@ int coglink_parseRouterPlanner(struct coglink_lavaInfo *lavaInfo, struct coglink
   if (lavalinkRouterStruct->class[0] == 'R') {
     path[1] = "rotateIndex";
     jsmnf_pair *rotateIndex = jsmnf_find_path(pairs, res->body, path, 2);
+    if (_coglink_checkParse(lavaInfo, rotateIndex, "rotateIndex") != COGLINK_SUCCESS) return COGLINK_JSMNF_ERROR_FIND;
 
     path[1] = "ipIndex";
     jsmnf_pair *ipIndex = jsmnf_find_path(pairs, res->body, path, 2);
+    if (_coglink_checkParse(lavaInfo, ipIndex, "ipIndex") != COGLINK_SUCCESS) return COGLINK_JSMNF_ERROR_FIND;
 
     path[1] = "currentAddress";
     jsmnf_pair *currentAddress = jsmnf_find_path(pairs, res->body, path, 2);
-
-    if (!rotateIndex || !ipIndex || !currentAddress) {
-      if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseErrorsDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_fatal("[coglink:jsmnf-find] Error while trying to find %s field.", !rotateIndex ? "rotateIndex" : !ipIndex ? "ipIndex" : !currentAddress ? "currentAddress" : "???");
-      return COGLINK_JSMNF_ERROR_FIND;
-    }
+    if (_coglink_checkParse(lavaInfo, currentAddress, "currentAddress") != COGLINK_SUCCESS) return COGLINK_JSMNF_ERROR_FIND;
 
     snprintf(lavalinkRouterStruct->details->ipBlock->type, sizeof(lavalinkRouterStruct->details->ipBlock->type), "%.*s", (int)type->v.len, res->body + type->v.pos);
     snprintf(lavalinkRouterStruct->details->ipBlock->size, sizeof(lavalinkRouterStruct->details->ipBlock->size), "%.*s", (int)size->v.len, res->body + size->v.pos);
@@ -105,11 +105,7 @@ int coglink_parseRouterPlanner(struct coglink_lavaInfo *lavaInfo, struct coglink
   } else if (lavalinkRouterStruct->class[0] == 'N') {
     path[1] = "currentAddressIndex";
     jsmnf_pair *currentAddressIndex = jsmnf_find_path(pairs, res->body, path, 2);
-
-    if (!currentAddressIndex) {
-      if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseErrorsDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_fatal("[coglink:jsmnf-find] Error while trying to find currentAddressIndex field.");
-      return COGLINK_JSMNF_ERROR_FIND;
-    }
+    if (_coglink_checkParse(lavaInfo, currentAddressIndex, "currentAddressIndex") != COGLINK_SUCCESS) return COGLINK_JSMNF_ERROR_FIND;
 
     snprintf(lavalinkRouterStruct->details->ipBlock->type, sizeof(lavalinkRouterStruct->details->ipBlock->type), "%.*s", (int)type->v.len, res->body + type->v.pos);
     snprintf(lavalinkRouterStruct->details->ipBlock->size, sizeof(lavalinkRouterStruct->details->ipBlock->size), "%.*s", (int)size->v.len, res->body + size->v.pos);

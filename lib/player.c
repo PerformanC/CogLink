@@ -72,34 +72,48 @@ int coglink_parseGetPlayers(struct coglink_lavaInfo *lavaInfo, struct coglink_re
   path[2] = "encoded";
   jsmnf_pair *encoded = jsmnf_find_path(pairs, res->body, path, 2);
 
-  if (encoded) {
+  if (_coglink_checkParse(lavaInfo, encoded, "encoded") == COGLINK_SUCCESS) {
     path[2] = "info";
     path[3] = "identifier";
     jsmnf_pair *identifier = jsmnf_find_path(pairs, res->body, path, 4);
+    if (_coglink_checkParse(lavaInfo, identifier, "identifier") != COGLINK_SUCCESS) return COGLINK_JSMNF_ERROR_PARSE;
 
     path[3] = "isSeekable";
     jsmnf_pair *isSeekable = jsmnf_find_path(pairs, res->body, path, 4);
+    if (_coglink_checkParse(lavaInfo, isSeekable, "isSeekable") != COGLINK_SUCCESS) return COGLINK_JSMNF_ERROR_PARSE;
 
     path[3] = "author";
     jsmnf_pair *author = jsmnf_find_path(pairs, res->body, path, 4);
+    if (_coglink_checkParse(lavaInfo, author, "author") != COGLINK_SUCCESS) return COGLINK_JSMNF_ERROR_PARSE;
 
     path[3] = "length";
     jsmnf_pair *length = jsmnf_find_path(pairs, res->body, path, 4);
+    if (_coglink_checkParse(lavaInfo, length, "length") != COGLINK_SUCCESS) return COGLINK_JSMNF_ERROR_PARSE;
 
     path[3] = "isStream";
     jsmnf_pair *isStream = jsmnf_find_path(pairs, res->body, path, 4);
+    if (_coglink_checkParse(lavaInfo, isStream, "isStream") != COGLINK_SUCCESS) return COGLINK_JSMNF_ERROR_PARSE;
 
     path[3] = "position";
     jsmnf_pair *position = jsmnf_find_path(pairs, res->body, path, 4);
+    if (_coglink_checkParse(lavaInfo, position, "position") != COGLINK_SUCCESS) return COGLINK_JSMNF_ERROR_PARSE;
 
     path[3] = "title";
     jsmnf_pair *title = jsmnf_find_path(pairs, res->body, path, 4);
+    if (_coglink_checkParse(lavaInfo, title, "title") != COGLINK_SUCCESS) return COGLINK_JSMNF_ERROR_PARSE;
 
     path[3] = "uri";
     jsmnf_pair *uri = jsmnf_find_path(pairs, res->body, path, 4);
 
+    path[3] = "artworkUrl";
+    jsmnf_pair *artworkUrl = jsmnf_find_path(pairs, res->body, path, 4);
+
+    path[3] = "isrc";
+    jsmnf_pair *isrc = jsmnf_find_path(pairs, res->body, path, 4);
+
     path[3] = "sourceName";
     jsmnf_pair *sourceName = jsmnf_find_path(pairs, res->body, path, 4);
+    if (_coglink_checkParse(lavaInfo, sourceName, "sourceName") != COGLINK_SUCCESS) return COGLINK_JSMNF_ERROR_PARSE;
 
     snprintf(playerInfoStruct->track->encoded, sizeof(playerInfoStruct->track->encoded), "%.*s", (int)encoded->v.len, res->body + encoded->v.pos);
     snprintf(playerInfoStruct->track->info->identifier, sizeof(playerInfoStruct->track->info->identifier), "%.*s", (int)identifier->v.len, res->body + identifier->v.pos);
@@ -109,7 +123,9 @@ int coglink_parseGetPlayers(struct coglink_lavaInfo *lavaInfo, struct coglink_re
     snprintf(playerInfoStruct->track->info->isStream, sizeof(playerInfoStruct->track->info->isStream), "%.*s", (int)isStream->v.len, res->body + isStream->v.pos);
     snprintf(playerInfoStruct->track->info->position, sizeof(playerInfoStruct->track->info->position), "%.*s", (int)position->v.len, res->body + position->v.pos);
     snprintf(playerInfoStruct->track->info->title, sizeof(playerInfoStruct->track->info->title), "%.*s", (int)title->v.len, res->body + title->v.pos);
-    snprintf(playerInfoStruct->track->info->uri, sizeof(playerInfoStruct->track->info->uri), "%.*s", (int)uri->v.len, res->body + uri->v.pos);
+    if (_coglink_checkParse(lavaInfo, uri, "uri") == COGLINK_SUCCESS) snprintf(playerInfoStruct->track->info->uri, sizeof(playerInfoStruct->track->info->uri), "%.*s", (int)uri->v.len, res->body + uri->v.pos);
+    if (_coglink_checkParse(lavaInfo, artworkUrl, "artworkUrl") == COGLINK_SUCCESS) snprintf(playerInfoStruct->track->info->artworkUrl, sizeof(playerInfoStruct->track->info->artworkUrl), "%.*s", (int)artworkUrl->v.len, res->body + artworkUrl->v.pos);
+    if (_coglink_checkParse(lavaInfo, isrc, "isrc") == COGLINK_SUCCESS) snprintf(playerInfoStruct->track->info->isrc, sizeof(playerInfoStruct->track->info->isrc), "%.*s", (int)isrc->v.len, res->body + isrc->v.pos);
     snprintf(playerInfoStruct->track->info->sourceName, sizeof(playerInfoStruct->track->info->sourceName), "%.*s", (int)sourceName->v.len, res->body + sourceName->v.pos);
   }
 
