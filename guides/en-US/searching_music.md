@@ -15,7 +15,7 @@ Coglink was made with performance in mind, if it was parsing the whole JSON, it 
 Follow the example above of the `coglink_searchSong` function:
 
 ```c
-struct requestInformation res;
+struct coglink_requestInformation res;
 
 int resStatus = coglink_searchSong(&lavaInfo, "Very ordinary life", &res);
 
@@ -27,7 +27,7 @@ log_debug("Body response of Lavalink: %s", res.body);
     
 /* ... */
 
-coglink_searchCleanup(res);
+coglink_searchSongCleanup(res);
 ```
 
 Done, it will print the response of the Lavalink search request, but in case it fails, it will return the int value of what happened wrong.

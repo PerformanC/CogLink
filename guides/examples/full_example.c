@@ -9,69 +9,72 @@
 #include <coglink/information.h>
 #include <coglink/player.h>
 #include <coglink/definitions.h>
-#include <coglinl/plugins.h>
+#include <coglink/plugins.h>
 #include <coglink/track.h>
-
-#define VOICE_ID 123456789012345678
-int onRaw(struct lavaInfo *lavaInfo, const char *text, size_t length) {
-  log_info("RECEIVED FROM LAVALINK: %s", text);
-  return COGLINK_PROCEED; // Let's allow coglink handle it, here, we say to Coglink that it can proceed handling it.
-}
+#include <coglink/network.h>
 
 void on_ready(struct discord *client, const struct discord_ready *bot) {
+  (void)client;
+
   log_trace("[DISCORD_GATEWAY] Logged in as %s#%s!", bot->user->username, bot->user->discriminator);
 }
 
-void onConnect(void) {
-  log_info("[COGLINK] Lavalink connected");
+int onRaw(struct coglink_lavaInfo *lavaInfo, const char *text, size_t length) {
+  (void)lavaInfo, (void)length;
+  log_debug("[COGLINK] On Raw event: %s", text);
+  return COGLINK_PROCEED; // Let's allow coglink handle it, here, we say to Coglink that it can proceed handling it.
+}
+
+void onConnect(char *sessionId) {
+  log_info("[COGLINK] Lavalink connected [%s]", sessionId);
 }
 
 void onClose(enum ws_close_reason wscode, const char *reason) {
   log_info("[COGLINK] Lavalink closed. [%d/%s]", wscode, reason);
 }
 
-void onTrackStart(char *track, u64snowflake guildId) {
-  log_info("[COGLINK] Track started. [%s/%"PRIu64"]", track, guildId);
+void onTrackStart(char *guildId, struct coglink_parsedTrack *track) {
+  log_info("[COGLINK] Track started. [%s/%s]", guildId, track->title);
 }
 
-void onTrackEnd(char *reason, char *track, u64snowflake guildId) {
-  log_info("[COGLINK] Track ended. [%s/%s/%"PRIu64"]", reason, track, guildId);
+void onTrackEnd(char *guildId, struct coglink_parsedTrack *track, char *reason) {
+  log_info("[COGLINK] Track ended. [%s/%s/%s]", guildId, track->title, reason);
 }
 
-void onTrackException(char *track, char *message, char *severity, char *cause, u64snowflake guildId) {
-  log_error("[COGLINK] Track exception. [%s/%s/%s/%s/%"PRIu64"]", track, message, severity, cause, guildId);
+void onTrackException(char *guildId, struct coglink_parsedTrack *track, char *message, char *severity, char *cause) {
+  log_error("[COGLINK] Track exception. [%s/%s/%s/%s/%s]", guildId, track->title, message, severity, cause);
 }
 
-void onTrackStuck(char *track, int thresholdMs, u64snowflake guildId) {
-  log_error("[COGLINK] Track stuck. [%s/%d/%"PRIu64"]", track, thresholdMs, guildId);
+void onTrackStuck(char *guildId, char *thresholdMs, struct coglink_parsedTrack *track) {
+  log_error("[COGLINK] Track stuck. [%s/%d/%s]", guildId, thresholdMs, track->title);
 }
 
-void onWebSocketClosed(int code, char *reason, int byRemote, u64snowflake guildId) {
-  log_error("[COGLINK] Websocket closed. [%d/%s/%d/%"PRIu64"]", code, reason, byRemote, guildId);
+void onWebSocketClosed(char *guildId, char *code, char *reason, int byRemote) {
+  log_error("[COGLINK] Websocket closed. [%s/%s/%s/%d]", guildId, code, reason, byRemote);
 }
 
-void onUnknownEvent(char *type, const char *text, u64snowflake guildId) {
-  log_error("[COGLINK] Unknown event. [%s/%s/%"PRIu64"]", type, text, guildId);
+void onUnknownEvent(char *guildId, char *type, const char *text) {
+  log_error("[COGLINK] Unknown event. [%s/%s/%s]", guildId, type, text);
 }
 
-void onStats(struct lavalinkStats *stats) {
+void onStats(struct coglink_lavalinkStats *stats) {
   printf("InfoMemory:\n  > Free: %s\n  > Used: %s\n  > Reservable: %s\n", stats->memory->free, stats->memory->used, stats->memory->reservable);
   printf("InfoCPU:\n  > Cores: %s\n  > SystemLoad: %s\n  > LavalinkLoad: %s\n", stats->cpu->cores, stats->cpu->systemLoad, stats->cpu->lavalinkLoad);
   if (stats->frameStats) printf("InfoFrameStats:\n  > Sent: %s\n  > Nulled: %s\n  > Deficit: %s\n", stats->frameStats->sent, stats->frameStats->nulled, stats->frameStats->deficit);
   printf("PlayingPlayers: %s\nPlayers: %s\nUptime: %s\n", stats->playingPlayers, stats->players, stats->uptime);
 }
 
-void onPlayerUpdate(float time, int position, int connected, int ping, u64snowflake guildId) {
-  printf("TIME: %f/ POSITION: %d/ CONNECTED: %d/ PING: %d/ GUILDID: %"PRIu64"\n", time, position, connected, ping, guildId);
+void onPlayerUpdate(char *guildId, char *time, char *position, int connected, char *ping) {
+  log_trace("[COGLINK] GuildId: %s\n Time: %s\n Position: %d\n Connected: %s\n Ping: %s", guildId, time, position, connected, ping);
 }
 
 void onUnknownOp(char *op, const char *text) {
   log_error("[COGLINK] Unknown OP. [%s/%s]", op, text);
 }
 
-struct lavaInfo lavaInfo = {
+struct coglink_lavaInfo lavaInfo = {
   .events = 
-    &(struct lavalinkEvents) {
+    &(struct coglink_lavalinkEvents) {
       .onRaw = &onRaw,
 
       .onConnect = &onConnect,
@@ -87,11 +90,15 @@ struct lavaInfo lavaInfo = {
       .onStats = &onStats,
       .onPlayerUpdate = &onPlayerUpdate,
       .onUnknownOp = &onUnknownOp
+  },
+  .debugging = 
+    &(struct coglink_coglinkDebugging) {
+      .allDebugging = true
     },
-    .debugging = 
-      &(struct coglinkDebugging) {
-        .allDebugging = true
-      }
+  .shards = "1",
+  .botId = "123456789012345678",
+  .allowResuming = 0,
+  .allowCachingVoiceChannelIds = 1
 };
 
 void on_message(struct discord *client, const struct discord_message *message) {
@@ -126,27 +133,30 @@ void on_message(struct discord *client, const struct discord_message *message) {
       return;
     }
 
-    struct requestInformation res;
+    struct coglink_requestInformation res;
     coglink_searchSong(&lavaInfo, songName, &res);
 
-    int loadType;
+    struct coglink_parsedTrackStruct parsedStruct;
+    coglink_initParseTrack(&lavaInfo, &parsedStruct, &res);
 
-    coglink_parseLoadtype(&lavaInfo, &res, &loadType);
+    int loadType;
+    coglink_parseLoadtype(&lavaInfo, &parsedStruct, &res, &loadType);
 
     switch(loadType) {
       case COGLINK_LOADTYPE_SEARCH_RESULT: {
-        struct parsedTrack *song;
-        coglink_parseTrack(&lavaInfo, &res, "0", &song);
-        coglink_playSong(&lavaInfo, song->track, message->guild_id);
+        struct coglink_parsedTrack song;
 
-        char Message[256];
-        sprintf(Message, "Now playing `%s` from `%s`", song->title, song->author);
+        coglink_parseTrack(&lavaInfo, &parsedStruct, &res, "0", &song);
+        coglink_playSong(&lavaInfo, song.encoded, message->guild_id);
+
+        char description[256];
+        snprintf(description, sizeof(description), "Now playing `%s` from `%s`", song.title, song.author);
 
         struct discord_embed embed[] = {
           {
-            .title = song->title,
-            .url = song->uri,
-            .description = Message,
+            .title = song.title,
+            .url = song.uri,
+            .description = description,
             .footer =
               &(struct discord_embed_footer){
                 .text = "Powered by Coglink and Concord",
@@ -223,9 +233,9 @@ void on_message(struct discord *client, const struct discord_message *message) {
       }
     }
 
-    coglink_joinVoiceChannel(&lavaInfo, client, VOICE_ID, message->guild_id);
+    coglink_joinUserVoiceChannel(&lavaInfo, client, message->author->id, message->guild_id);
 
-    coglink_searchCleanup(res);
+    coglink_searchSongCleanup(&res);
   }
   if (0 == strcmp(".stop", message->content)) {
     coglink_stopPlayer(&lavaInfo, message->guild_id);
@@ -247,39 +257,49 @@ void on_message(struct discord *client, const struct discord_message *message) {
     coglink_setPlayerVolume(&lavaInfo, message->guild_id, volume);
   }
   if (0 == strcmp(message->content, ".8d")) {
-    coglink_setEffect(&lavaInfo, message->guild_id, FILTER_ROTATION, "0.2");
+    coglink_setEffect(&lavaInfo, message->guild_id, COGLINK_FILTER_ROTATION, "0.2");
   }
   if (0 == strcmp(".destroy", message->content)) {
     coglink_destroyPlayer(&lavaInfo, message->guild_id);
   }
   if (0 == strcmp(".closeNode", message->content)) {
-    coglink_disconnectNode(&lavaInfo);
+    coglink_disconnectNode(&lavaInfo, 0);
   }
-  if (0 == strcmp(".getplugins", message->content)) {
-    struct requestInformation res;
+  if (0 == strcmp(".getinfo", message->content)) {
+    struct coglink_requestInformation res;
 
-    coglink_getPlugins(&lavaInfo, &res);
+    coglink_getLavalinkInfo(&lavaInfo, message->guild_id, &res);
+
+    log_debug("[COGLING] Lavalink Info: %s", res.body);
   }
   if (0 == strcmp(".getrouter", message->content)) {
-    struct requestInformation res;
+    struct coglink_requestInformation res;
 
-    coglink_getRouterPlanner(&lavaInfo, &res);
+    coglink_getRouterPlanner(&lavaInfo, message->guild_id, &res);
+
+    log_debug("[COGLING] Router planner: %s", res.body);
   }
 }
 
 int main(void) {
   struct discord *client = discord_config_init("config.json");
 
-  struct lavaNode params = {
-    .name = "Node1",
-    .hostname = "Node hostname",
-    .password = "youshallnotpass",
-    .shards = "1",
-    .botId = "123456789012345678",
-    .ssl = 0
+  struct coglink_lavalinkNode nodes[] = {
+    {
+      .name = "Node1",
+      .hostname = "Node hostname:port if exists",
+      .password = "youshallnotpass",
+      .ssl = 0
+    }
   };
 
-  coglink_connectNode(&lavaInfo, client, &params);
+  struct coglink_lavalinkNodes nodeArray = {
+    .nodes = nodes,
+    .size = 1
+  };
+
+  struct coglink_nodeInfo nodeInfos[1];
+  coglink_connectNode(&lavaInfo, client, &nodeArray, nodeInfos);
 
   /* Or to set events, you can also use */
   // coglink_setEvents(&lavaInfo, &lavaInfo->events);
@@ -292,5 +312,5 @@ int main(void) {
 
   discord_run(client);
 
-  coglink_connectNodeCleanup(&lavaInfo);
+  coglink_connectNodeCleanup(&lavaInfo, client);
 }

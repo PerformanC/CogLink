@@ -150,7 +150,7 @@ int _coglink_performRequest(struct coglink_lavaInfo *lavaInfo, struct coglink_no
 
   cRes = curl_easy_perform(curl);
   if (cRes != CURLE_OK) {
-    if (lavaInfo->debugging->allDebugging || config->additionalDebuggingError || lavaInfo->debugging->curlErrorsDebugging) log_fatal("[coglink:libcurl] curl_easy_perform failed: %s\n", curl_easy_strerror(cRes));
+    if (lavaInfo->debugging->allDebugging || config->additionalDebuggingError || lavaInfo->debugging->curlErrorsDebugging) log_fatal("[coglink:libcurl] curl_easy_perform failed: %s", curl_easy_strerror(cRes));
 
     curl_easy_cleanup(curl);
     curl_slist_free_all(chunk);

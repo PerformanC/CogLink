@@ -27,7 +27,7 @@ The file `definitions.h` of Coglink offers you a bunch of macros to be used, one
 See the example below:
 
 ```c
-coglink_setEffect(&lavaInfo, message->guild_id, FILTER_REMOVE, NULL);
+coglink_setEffect(&lavaInfo, message->guild_id, COGLINK_FILTER_REMOVE, NULL);
 ```
 
 And done! You will have the effect remove, in case you have added one.
