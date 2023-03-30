@@ -377,8 +377,7 @@ void onTextEvent(void *data, struct websockets *ws, struct ws_info *info, const 
       snprintf(Ping, sizeof(Ping), "%.*s", (int)ping->v.len, text + ping->v.pos);
       snprintf(Connected, sizeof(Connected), "%.*s", (int)connected->v.len, text + connected->v.pos);
 
-      if (Position[0] != '0') lavaInfo->events->onPlayerUpdate(guildId, Time, Position, (Connected[0] == 't' ? 1 : 0), Ping);
-      else lavaInfo->events->onPlayerUpdate(guildId, Time, 0, (Connected[0] == 't' ? 1 : 0), 0);
+      lavaInfo->events->onPlayerUpdate(guildId, Time, 0, (Connected[0] == 't' ? 1 : 0), 0);
       break;
     }
     default: {
