@@ -318,50 +318,50 @@ int coglink_parseLoadtype(struct coglink_lavaInfo *lavaInfo, struct coglink_pars
 }
 
 int coglink_parseTrack(struct coglink_lavaInfo *lavaInfo, struct coglink_parsedTrackStruct *pStruct, struct coglink_requestInformation *res, char *songPos, struct coglink_parsedTrack *parsedTrackStruct) {
-  char *path[] = { "data", "tracks", songPos, "encoded", NULL };
-  jsmnf_pair *encoded = jsmnf_find_path(pStruct->pairs, res->body, path, 4);
+  char *path[] = { "data", songPos, "encoded", NULL };
+  jsmnf_pair *encoded = jsmnf_find_path(pStruct->pairs, res->body, path, 3);
   if (_coglink_checkParse(lavaInfo, encoded, "encoded") != COGLINK_PROCEED) return COGLINK_JSMNF_ERROR_FIND;
 
-  path[3] = "info";
-  path[4] = "identifier";
-  jsmnf_pair *identifier = jsmnf_find_path(pStruct->pairs, res->body, path, 5);
+  path[2] = "info";
+  path[3] = "identifier";
+  jsmnf_pair *identifier = jsmnf_find_path(pStruct->pairs, res->body, path, 4);
   if (_coglink_checkParse(lavaInfo, identifier, "identifier") != COGLINK_PROCEED) return COGLINK_JSMNF_ERROR_FIND;
 
-  path[4] = "isSeekable";
-  jsmnf_pair *isSeekable = jsmnf_find_path(pStruct->pairs, res->body, path, 5);
+  path[3] = "isSeekable";
+  jsmnf_pair *isSeekable = jsmnf_find_path(pStruct->pairs, res->body, path, 4);
   if (_coglink_checkParse(lavaInfo, isSeekable, "isSeekable") != COGLINK_PROCEED) return COGLINK_JSMNF_ERROR_FIND;
 
-  path[4] = "author";
-  jsmnf_pair *author = jsmnf_find_path(pStruct->pairs, res->body, path, 5);
+  path[3] = "author";
+  jsmnf_pair *author = jsmnf_find_path(pStruct->pairs, res->body, path, 4);
   if (_coglink_checkParse(lavaInfo, author, "author") != COGLINK_PROCEED) return COGLINK_JSMNF_ERROR_FIND;
 
-  path[4] = "length";
-  jsmnf_pair *length = jsmnf_find_path(pStruct->pairs, res->body, path, 5);
+  path[3] = "length";
+  jsmnf_pair *length = jsmnf_find_path(pStruct->pairs, res->body, path, 4);
   if (_coglink_checkParse(lavaInfo, length, "length") != COGLINK_PROCEED) return COGLINK_JSMNF_ERROR_FIND;
 
-  path[4] = "isStream";
-  jsmnf_pair *isStream = jsmnf_find_path(pStruct->pairs, res->body, path, 5);
+  path[3] = "isStream";
+  jsmnf_pair *isStream = jsmnf_find_path(pStruct->pairs, res->body, path, 4);
   if (_coglink_checkParse(lavaInfo, isStream, "isStream") != COGLINK_PROCEED) return COGLINK_JSMNF_ERROR_FIND;
 
-  path[4] = "position";
-  jsmnf_pair *position = jsmnf_find_path(pStruct->pairs, res->body, path, 5);
+  path[3] = "position";
+  jsmnf_pair *position = jsmnf_find_path(pStruct->pairs, res->body, path, 4);
   if (_coglink_checkParse(lavaInfo, position, "position") != COGLINK_PROCEED) return COGLINK_JSMNF_ERROR_FIND;
 
-  path[4] = "title";
-  jsmnf_pair *title = jsmnf_find_path(pStruct->pairs, res->body, path, 5);
+  path[3] = "title";
+  jsmnf_pair *title = jsmnf_find_path(pStruct->pairs, res->body, path, 4);
   if (_coglink_checkParse(lavaInfo, title, "title") != COGLINK_PROCEED) return COGLINK_JSMNF_ERROR_FIND;
 
-  path[4] = "uri";
-  jsmnf_pair *uri = jsmnf_find_path(pStruct->pairs, res->body, path, 5);
+  path[3] = "uri";
+  jsmnf_pair *uri = jsmnf_find_path(pStruct->pairs, res->body, path, 4);
 
-  path[4] = "artworkUrl";
-  jsmnf_pair *artworkUrl = jsmnf_find_path(pStruct->pairs, res->body, path, 5);
+  path[3] = "artworkUrl";
+  jsmnf_pair *artworkUrl = jsmnf_find_path(pStruct->pairs, res->body, path, 4);
 
-  path[4] = "isrc";
-  jsmnf_pair *isrc = jsmnf_find_path(pStruct->pairs, res->body, path, 5);
+  path[3] = "isrc";
+  jsmnf_pair *isrc = jsmnf_find_path(pStruct->pairs, res->body, path, 4);
 
-  path[4] = "sourceName";
-  jsmnf_pair *sourceName = jsmnf_find_path(pStruct->pairs, res->body, path, 5);
+  path[3] = "sourceName";
+  jsmnf_pair *sourceName = jsmnf_find_path(pStruct->pairs, res->body, path, 4);
   if (_coglink_checkParse(lavaInfo, sourceName, "sourceName") != COGLINK_PROCEED) return COGLINK_JSMNF_ERROR_FIND;
 
   snprintf(parsedTrackStruct->encoded, sizeof(parsedTrackStruct->encoded), "%.*s", (int)encoded->v.len, res->body + encoded->v.pos);
@@ -383,7 +383,7 @@ int coglink_parseTrack(struct coglink_lavaInfo *lavaInfo, struct coglink_parsedT
 }
 
 int coglink_parsePlaylist(struct coglink_lavaInfo *lavaInfo, struct coglink_parsedTrackStruct *pStruct, struct coglink_requestInformation *res, struct coglink_parsedPlaylist *parsedPlaylistStruct) {
-  char *path[] = { "data", "playlistInfo", "name" };
+  char *path[] = { "data", "info", "name" };
   jsmnf_pair *name = jsmnf_find_path(pStruct->pairs, res->body, path, 3);
   if (_coglink_checkParse(lavaInfo, name, "name") != COGLINK_PROCEED) return COGLINK_JSMNF_ERROR_FIND;
 
@@ -400,12 +400,12 @@ int coglink_parsePlaylist(struct coglink_lavaInfo *lavaInfo, struct coglink_pars
 }
 
 int coglink_parseError(struct coglink_lavaInfo *lavaInfo, struct coglink_parsedTrackStruct *pStruct, struct coglink_requestInformation *res, struct coglink_parsedError *parsedErrorStruct) {
-  char *path[] = { "data", "exception", "message" };
-  jsmnf_pair *message = jsmnf_find_path(pStruct->pairs, res->body, path, 3);
+  char *path[] = { "data", "message" };
+  jsmnf_pair *message = jsmnf_find_path(pStruct->pairs, res->body, path, 2);
   if (_coglink_checkParse(lavaInfo, message, "message") == COGLINK_ERROR) return COGLINK_JSMNF_ERROR_FIND;
 
-  path[2] = "severity";
-  jsmnf_pair *severity = jsmnf_find_path(pStruct->pairs, res->body, path, 3);
+  path[1] = "severity";
+  jsmnf_pair *severity = jsmnf_find_path(pStruct->pairs, res->body, path, 2);
   if (_coglink_checkParse(lavaInfo, severity, "severity") == COGLINK_ERROR) return COGLINK_JSMNF_ERROR_FIND;
 
   snprintf(parsedErrorStruct->message, sizeof(parsedErrorStruct->message), "%.*s", (int)message->v.len, res->body + message->v.pos);
