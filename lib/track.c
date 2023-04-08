@@ -294,20 +294,18 @@ int coglink_parseLoadtype(struct coglink_lavaInfo *lavaInfo, struct coglink_pars
   snprintf(LoadType, sizeof(LoadType), "%.*s", (int)loadType->v.len, res->body + loadType->v.pos);
 
   switch(LoadType[0]) {
-    case 'T':
+    case 't':
       *loadTypeValue = COGLINK_LOADTYPE_TRACK_LOADED;
       break;
-    case 'P':
+    case 'p':
       *loadTypeValue = COGLINK_LOADTYPE_PLAYLIST_LOADED;
       break;
-    case 'S':
+    case 's':
       *loadTypeValue = COGLINK_LOADTYPE_SEARCH_RESULT;
       break;
-    case 'N':
-      *loadTypeValue = COGLINK_LOADTYPE_NO_MATCHES;
-      break;
-    case 'L':
-      *loadTypeValue = COGLINK_LOADTYPE_LOAD_FAILED;
+    case 'e':
+      if (LoadType[1] == 'm') *loadTypeValue = COGLINK_LOADTYPE_EMPTY;
+      else *loadTypeValue = COGLINK_LOADTYPE_LOAD_FAILED;
       break;
     default:
       if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->parseLoadtypeErrorsDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_error("[coglink:jsmn-find] Failed to recognize loadType.");

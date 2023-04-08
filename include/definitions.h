@@ -57,7 +57,7 @@
 #define COGLINK_WAIT 103
 
 /** Macro for defininition of when Lavalink did not found any match to query. */
-#define COGLINK_LOADTYPE_NO_MATCHES 5
+#define COGLINK_LOADTYPE_EMPTY 5
 /** Macro for defininition of when **Lavalink** failed to load result. */
 #define COGLINK_LOADTYPE_LOAD_FAILED 4
 /** Macro for defininition of when Lavalink returned the search resukt. */
