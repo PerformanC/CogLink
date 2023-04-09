@@ -34,6 +34,7 @@ struct coglink_lavalinkRouter {
 /**
  * Retrieves the Lavalink router planner.
  * @param lavaInfo Structure with important informations of the Lavalink.
+ * @param guildId ID of the guild.
  * @param res Structure with the information of the request.
  * @returns COGLINK_SUCCESS / ERROR
  */
@@ -58,6 +59,7 @@ void coglink_getRouterPlannerCleanup(struct coglink_requestInformation *res);
 /**
  * Removes an IP from failing address list.
  * @param lavaInfo Structure with important informations of the Lavalink.
+ * @param guildId ID of the guild.
  * @param ip IP that will be removed from failing address list.
  * @returns COGLINK_SUCCESS / ERROR
  */
@@ -66,6 +68,7 @@ int coglink_freeFailingAddress(struct coglink_lavaInfo *lavaInfo, u64snowflake g
 /**
  * Removes all IPs from failing address list.
  * @param lavaInfo Structure with important informations of the Lavalink.
+ * @param guildId ID of the guild.
  * @returns COGLINK_SUCCESS / ERROR
  */
 int coglink_freeFailingAllAddresses(struct coglink_lavaInfo *lavaInfo, u64snowflake guildId);

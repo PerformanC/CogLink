@@ -36,7 +36,7 @@ int coglink_decodeTrack(struct coglink_lavaInfo *lavaInfo, char *track, struct c
 /**
  * Initializes the structure that will be used to parse the response body of any function that used it.
  * @param lavaInfo Structure with important informations of the Lavalink.
- * @param cStruct Structure that will be filled with the pairs.
+ * @param pStruct Structure that will be filled with the pairs.
  * @param res Structure with the information of the request.
  * @returns COGLINK_SUCCESS / ERROR
  */
@@ -45,6 +45,7 @@ int coglink_initParseTrack(struct coglink_lavaInfo *lavaInfo, struct coglink_par
 /**
  * Parses the response body of the function coglink_decodeTrack.
  * @param lavaInfo Structure with important informations of the Lavalink.
+ * @param pStruct Structure that is filled with the pairs.
  * @param res Structure with the information of the request.
  * @param parsedTrackStruct Structure with the parsed information.
  * @returns COGLINK_SUCCESS / ERROR

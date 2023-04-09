@@ -188,13 +188,14 @@ void coglink_freeNodeInfo(struct coglink_lavaInfo *lavaInfo);
 /**
  * Closes the WebSocket connection with the Lavalink node.
  * @param lavaInfo Structure with important informations of the Lavalink.
+ * @param nodePos Position of the node in the nodes array.
  */
 void coglink_disconnectNode(struct coglink_lavaInfo *lavaInfo, int nodePos);
 
 /**
  * Sets the Lavalink events when not including it directly into lavaInfo structure.
  * @param lavaInfo Structure with important informations of the Lavalink.
- * @param coglink_lavalinkEvents Lavalink event's structure with all pointers to the functions that will be executed when the event it emitted.
+ * @param lavalinkEvents Lavalink event's structure with all pointers to the functions that will be executed when the event it emitted.
  */
 void coglink_setEvents(struct coglink_lavaInfo *lavaInfo, struct coglink_lavalinkEvents *lavalinkEvents);
 
@@ -209,10 +210,10 @@ void coglink_connectNodeCleanup(struct coglink_lavaInfo *lavaInfo, struct discor
  * Creates a WebSocket connecting with the Lavalink node.
  * @param lavaInfo Structure with important informations of the Lavalink.
  * @param client Concord's client stucture generated with discord_init.
- * @param nodesBuf Structure buffer to be used internally for store the nodes informations.
  * @param nodesArr Structure with all Lavalink nodes information.
+ * @param nodesBuf Structure buffer to be used internally for store the nodes informations.
  * @returns COGLINK_SUCCESS
  */
-int coglink_connectNode(struct coglink_lavaInfo *lavaInfo, struct discord *client, struct coglink_lavalinkNodes *nodeArr, struct coglink_nodeInfo nodesBuf[]);
+int coglink_connectNode(struct coglink_lavaInfo *lavaInfo, struct discord *client, struct coglink_lavalinkNodes *nodesArr, struct coglink_nodeInfo nodesBuf[]);
 
 #endif

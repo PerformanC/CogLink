@@ -640,7 +640,7 @@ void coglink_connectNodeCleanup(struct coglink_lavaInfo *lavaInfo, struct discor
   coglink_freeNodeInfo(lavaInfo);
 }
 
-int coglink_connectNode(struct coglink_lavaInfo *lavaInfo, struct discord *client, struct coglink_lavalinkNodes *nodeArr, struct coglink_nodeInfo nodesBuf[]) {
+int coglink_connectNode(struct coglink_lavaInfo *lavaInfo, struct discord *client, struct coglink_lavalinkNodes *nodesArr, struct coglink_nodeInfo nodesBuf[]) {
   tablec_init(&coglink_hashtable, 128);
 
   discord_set_data(client, lavaInfo);
@@ -652,14 +652,14 @@ int coglink_connectNode(struct coglink_lavaInfo *lavaInfo, struct discord *clien
   }
 
   int i = -1;
-  while (i++ <= nodeArr->size - 2) {
+  while (i++ <= nodesArr->size - 2) {
     char hostname[128 + 21];
 
-    if (nodeArr->nodes[i].ssl) snprintf(hostname, sizeof(hostname), "wss://%s/v4/websocket", nodeArr->nodes[i].hostname);
-    else snprintf(hostname, sizeof(hostname), "ws://%s/v4/websocket", nodeArr->nodes[i].hostname);
+    if (nodesArr->nodes[i].ssl) snprintf(hostname, sizeof(hostname), "wss://%s/v4/websocket", nodesArr->nodes[i].hostname);
+    else snprintf(hostname, sizeof(hostname), "ws://%s/v4/websocket", nodesArr->nodes[i].hostname);
 
     struct coglink_nodeInfo *nodeInfo = malloc(sizeof(struct coglink_nodeInfo));
-    nodeInfo->node = nodeArr->nodes[i];
+    nodeInfo->node = nodesArr->nodes[i];
     nodeInfo->mhandle = curl_multi_init();
     nodeInfo->tstamp = (uint64_t)0;
 
@@ -677,7 +677,7 @@ int coglink_connectNode(struct coglink_lavaInfo *lavaInfo, struct discord *clien
     ws_start(nodeInfo->ws);
 
     if (lavaInfo->allowResuming && lavaInfo->nodes != NULL) ws_add_header(nodeInfo->ws, "Session-Id", lavaInfo->nodes[i].sessionId);
-    ws_add_header(nodeInfo->ws, "Authorization", nodeArr->nodes[i].password);
+    ws_add_header(nodeInfo->ws, "Authorization", nodesArr->nodes[i].password);
     ws_add_header(nodeInfo->ws, "Num-Shards", lavaInfo->shards);
     ws_add_header(nodeInfo->ws, "User-Id", lavaInfo->botId);
     ws_add_header(nodeInfo->ws, "Client-Name", "Coglink");
@@ -690,7 +690,7 @@ int coglink_connectNode(struct coglink_lavaInfo *lavaInfo, struct discord *clien
   }
 
   lavaInfo->nodes = nodesBuf;
-  lavaInfo->nodeCount = nodeArr->size - 2;
+  lavaInfo->nodeCount = nodesArr->size - 2;
 
   return COGLINK_SUCCESS;
 }
