@@ -91,7 +91,9 @@ For usage, you can see the `guides/example` folder, with a really good example o
 
 ## Documentation
 
-We don't have documentation, but you can take on the guides and see what is the need since there will have everything briefly explained.
+We have a Doxygen made documentation, you can see it [here](https://performanc.github.io/CoglinDocs/).
+
+Instead of using the website, you can manually built the documentation by using the `make gen_docs` command, but be sure that you have Doxygen installed.
 
 ## Coglink plugins
 
@@ -125,7 +127,7 @@ Done, now when the function coglink_searchSong is executed, this will be execute
 
 None, sadly, but if you made a plugin for Coglink, please send a PR adding in the line below the format: `[Plugin name](Github repo of the Library) by YourGitHubusername`
 
-If you also want to make a plugin for it, but needs either help of more features, please call me on [Cwift's/Coglink's Discord server](https://discord.gg/uPveNfTuCJ), I'll be really happy to help ya! ^^
+If you also want to make a plugin for it, but needs either help of more features, please call me on PerformanC's [Discord server](https://discord.gg/uPveNfTuCJ), we'll be really happy to help ya! ^^
 
 ## What is the reason for the creation of Coglink?
 
