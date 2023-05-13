@@ -71,8 +71,6 @@ void onTextEvent(void *data, struct websockets *ws, struct ws_info *info, const 
 
   int node = lavaInfo->nodeId;
 
-  printf("%s\n", text);
-
   if (lavaInfo->plugins && lavaInfo->plugins->events->onLavalinkPacketReceived[0]) {
     if (lavaInfo->plugins->security->allowReadWebsocket) {
       for (int i = 0;i <= lavaInfo->plugins->amount;i++) {

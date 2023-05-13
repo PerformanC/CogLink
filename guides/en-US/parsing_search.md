@@ -6,8 +6,6 @@ Parsing the search request is important since it will allow you to get the song 
 
 ## Parsing
 
-WARNING: **THIS GUIDE WAS MADE FOR PARSING TRACKS.**
-
 To parse the song search JSON, we will be using the `coglink_parseSearch` function, which will fill the last parameter with the information of the music you requested for it to parse.
 
 For example, you will mostly want it to parse the first song, so follow the example above to parse the first song:

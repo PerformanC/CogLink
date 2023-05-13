@@ -36,7 +36,7 @@ coglink_connectNode(&lavaInfo, client, &nodeArray, nodeInfos);
 
 // Depois do discord_run
 
-coglink_connectNodeCleanup(&lavaInfo);
+coglink_connectNodeCleanup(&lavaInfo, client);
 ```
 
 Pronto, agora você já vai estar conectando à sua Lavalink sem problemas, caso não, olhe as fields das estruturas e o firewall das duas máquinas.

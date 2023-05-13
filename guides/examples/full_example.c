@@ -179,7 +179,7 @@ void on_message(struct discord *client, const struct discord_message *message) {
         discord_create_message(client, message->channel_id, &params, NULL);
         break;
       }
-      case COGLINK_LOADTYPE_NO_MATCHES: {
+      case COGLINK_LOADTYPE_EMPTY: {
         struct discord_embed embed[] = {
           {
             .description = "Hmmm... Lavalink was unable to find that music. :/",

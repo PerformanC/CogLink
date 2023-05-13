@@ -38,7 +38,6 @@ struct coglink_pluginEventsInternal {
 };
 
 struct coglink_pluginSecurity {
-  _Bool allowReadIOPoller;
   _Bool allowReadWebsocket;
   _Bool allowReadBotToken;
   _Bool allowReadConcordWebsocket;

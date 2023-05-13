@@ -6,8 +6,6 @@ Dar parse no search é algo muito importate, já que permite você pegar o nome 
 
 ## Parsing
 
-AVISO: **ESTA GUIDE FOI FEITA PENSANDO NO PARSING DE TRACKS.**
-
 Para dar parse, você vai precisar usar a função `coglink_parseSearch`, que vai preencher o último parâmetro com as informações da música que tu pediu para dar parse.
 
 Por exemplo, você vai provavelmente querer dar parse na primeira música, não é? Então siga o exemplo abaixo para fazer isso:

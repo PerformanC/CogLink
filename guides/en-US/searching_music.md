@@ -27,7 +27,7 @@ log_debug("Body response of Lavalink: %s", res.body);
     
 /* ... */
 
-coglink_searchSongCleanup(res);
+coglink_searchSongCleanup(&res);
 ```
 
 Done, it will print the response of the Lavalink search request, but in case it fails, it will return the int value of what happened wrong.

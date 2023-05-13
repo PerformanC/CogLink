@@ -30,6 +30,6 @@ See the example below:
 coglink_setEffect(&lavaInfo, message->guild_id, COGLINK_FILTER_REMOVE, NULL);
 ```
 
-And done! You will have the effect remove, in case you have added one.
+And done! You will have the effect removed, in case you have added one.
 
 * *Guide made by*: @ThePedroo
