@@ -13,13 +13,9 @@ struct lavaInfo lavaInfo = {
   .debug = 0
 };
 
-void on_cycle(struct discord *client) {
-  coglink_wsLoop(&lavaInfo);
-}
-
 ...
 
-struct lavaNode params = {
+struct lavalinkNode params = {
     .name = "Node 1",
     .hostname = "localhost:2333",
     .password = "você_não_deve_passar",
@@ -32,13 +28,9 @@ coglink_connectNode(&lavaInfo, &params);
 
 ...
 
-discord_set_on_cycle(client, &on_cycle);
-
-...
-
 // Depois do discord_run
 
-coglink_connectNodeCleanup(&lavaInfo);
+coglink_connectNodeCleanup(&lavaInfo, client);
 ```
 
 Pronto, agora você já vai estar conectando à sua Lavalink sem problemas, caso não, olhe as fields das estruturas e o firewall das duas máquinas.

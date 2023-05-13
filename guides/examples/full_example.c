@@ -7,9 +7,10 @@
 
 #include <coglink/lavalink.h>
 #include <coglink/information.h>
+#include <coglink/network.h>
 #include <coglink/player.h>
 #include <coglink/definitions.h>
-#include <coglinl/plugins.h>
+#include <coglink/plugins.h>
 #include <coglink/track.h>
 
 #define VOICE_ID 123456789012345678
@@ -225,7 +226,7 @@ void on_message(struct discord *client, const struct discord_message *message) {
 
     coglink_joinVoiceChannel(&lavaInfo, client, VOICE_ID, message->guild_id);
 
-    coglink_searchCleanup(res);
+    coglink_searchSongCleanup(&res);
   }
   if (0 == strcmp(".stop", message->content)) {
     coglink_stopPlayer(&lavaInfo, message->guild_id);
@@ -258,7 +259,7 @@ void on_message(struct discord *client, const struct discord_message *message) {
   if (0 == strcmp(".getplugins", message->content)) {
     struct requestInformation res;
 
-    coglink_getPlugins(&lavaInfo, &res);
+    coglink_getLavalinkInfo(&lavaInfo, &res);
   }
   if (0 == strcmp(".getrouter", message->content)) {
     struct requestInformation res;
@@ -270,7 +271,7 @@ void on_message(struct discord *client, const struct discord_message *message) {
 int main(void) {
   struct discord *client = discord_config_init("config.json");
 
-  struct lavaNode params = {
+  struct lavalinkNode params = {
     .name = "Node1",
     .hostname = "Node hostname",
     .password = "youshallnotpass",
@@ -292,5 +293,5 @@ int main(void) {
 
   discord_run(client);
 
-  coglink_connectNodeCleanup(&lavaInfo);
+  coglink_connectNodeCleanup(&lavaInfo, client);
 }
