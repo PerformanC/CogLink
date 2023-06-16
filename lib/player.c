@@ -404,8 +404,8 @@ void coglink_stopPlayer(struct coglink_lavaInfo *lavaInfo, u64snowflake guildId)
                             .requestType = __COGLINK_PATCH_REQ,
                             .path = reqPath,
                             .pathLength = pathLen,
-                            .body = "{\"encodedTrack\":\"null\"}",
-                            .bodySize = 23
+                            .body = "{\"encodedTrack\":null}",
+                            .bodySize = 21
                           });
 }
 
