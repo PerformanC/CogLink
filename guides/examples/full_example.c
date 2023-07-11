@@ -7,6 +7,7 @@
 
 #include <coglink/lavalink.h>
 #include <coglink/information.h>
+#include <coglink/network.h>
 #include <coglink/player.h>
 #include <coglink/definitions.h>
 #include <coglink/plugins.h>
