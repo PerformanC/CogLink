@@ -15,7 +15,7 @@ O Coglink foi feito pensando em performance, se fosse para dar parse no JSON int
 Olhe o exemplo abaixo da função `coglink_searchSong` sendo usada:
 
 ```c
-struct requestInformation res;
+struct coglink_requestInformation res;
 
 int resStatus = coglink_searchSong(&lavaInfo, "Very ordinary life", &res);
 

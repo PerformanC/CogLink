@@ -6,8 +6,9 @@
 #include <concord/jsmn.h>
 #include <concord/jsmn-find.h>
 
-struct lavaInfo;
-struct requestInformation;
+struct coglink_lavaInfo;
+struct coglink_requestInformation;
+struct coglink_nodeInfo;
 struct io_poller;
 
 #define __COGLINK_GET_REQ 0
@@ -17,23 +18,27 @@ struct io_poller;
 
 struct __coglink_requestConfig {
   int requestType;
-  _Bool additionalDebuggingSuccess;
-  _Bool additionalDebuggingError;
+  int additionalDebuggingSuccess;
+  int additionalDebuggingError;
   char *path;
   int pathLength;
-  _Bool useV3Path;
+  int useVPath;
   char *body;
   long bodySize;
-  _Bool getResponse;
+  int getResponse;
   CURL *usedCURL;
 };
 
-int __coglink_performRequest(struct lavaInfo *lavaInfo, struct requestInformation *res, struct __coglink_requestConfig *config);
+int _coglink_performRequest(struct coglink_lavaInfo *lavaInfo, struct coglink_nodeInfo *nodeInfo, struct coglink_requestInformation *res, struct __coglink_requestConfig *config);
 
-int __coglink_checkParse(struct lavaInfo *lavaInfo, jsmnf_pair *field, char *fieldName);
+int _coglink_checkParse(struct coglink_lavaInfo *lavaInfo, jsmnf_pair *field, char *fieldName);
 
-void __coglink_randomString(char *dest, size_t length);
+int _coglink_selectBestNode(struct coglink_lavaInfo *lavaInfo);
 
-int __coglink_IOPoller(struct io_poller *io, CURLM *multi, void *user_data);
+int _coglink_findNode(struct coglink_lavaInfo *lavaInfo, char *hostname);
+
+int _coglink_IOPoller(struct io_poller *io, CURLM *multi, void *user_data);
+
+struct coglink_parsedTrack _coglink_buildTrackStruct(struct coglink_lavaInfo *lavaInfo, jsmnf_pair pairs[], const char *text);
 
 #endif

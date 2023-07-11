@@ -8,23 +8,25 @@ Coglink, the C Lavalink client, with the most performance above all Lavalink wra
 
 ## About
 
-Coglink is a C99 Lavalink wrapper/client, which has full coverage of Lavalink API, allowing easy, but still low-level control of Lavalink.
+Coglink is a C99 Lavalink client, which has full coverage of Lavalink API, allowing easy low-level control of LavaLink.
 
-Made with performance, security and stability in mind, so you can run anywhere you want to, with an incredible minimum of 10MB usage of RAM, allowing it to run in really low-end devices with no issues.
+Made to be portable, Coglink is the least resource-consuming client, allowing you to run easily anywhere. (It can use less than 10MB of RAM)
 
 ## Why?
 
-Using Coglink is an awesome option, it's portable, light-weight and blazing fast (:rocket:). You can easily execute any Lavalink feature, without big codes, but still with a good code.
+One of the main purposes of Coglink is to be the most performant LavaLink client, while still being light-weight and portable, especially with a low overhead.
 
-Portability is one of the best characteristics of Coglink, if your protogen has enough RAM to run it, it will run! You will only require few libraries, which most of them are already installed in most systems.
+In comparison with other NodeJs clients, even against FastLink, Coglink is way more portable, which makes it a good option for big bots, which needs to have the least resource consumption possible.
 
-C Lavalink client? Stability? Yep, no joke! Stability is something we are not worrying about, Coglink is well-developed, and with one of its first missings to be stable, if you report a bug, it will be fixed fastly.
+Coglink is from PerformanC, and our missions is to make our softwares stable enough that it could survive months without issues, and while this is hard for a big project, we are trying to make it possible, which for now, it's working.
 
-Coglink was made with few libraries, but all of them are secure and stable, you shouldn't be worrying about this, worry about writing good code, because security is something already found here.
+Performance, stability and portability, that's what Coglink is about.
 
 ## Stability
 
-This branch is considered **stable**, and all functions are working properly and have been tested, what so ever Lavalink v3.7 is still not complete, breaking changes on Lavalink may come, but will rapidly be fixed in newer commits of Coglink, it's safe to be used on production.
+Stability on this branch cannot be confirmed, LavaLink v4 is still in development with some pending features to be added.
+
+While this branch is more stable than the main, LavaLink is not, so be aware when using this branch.
 
 *If marked, considered stable, if not, bugs may be found.*
 
@@ -48,94 +50,84 @@ This branch is considered **stable**, and all functions are working properly and
 
 ## Compiling
 
-Sadly, Coglink isn't avaible on package managers, but you can compile it yourself, it's easy, don't worry, follow the guide below.
-
 Before starting, you will need to install the required libraries for Coglink, this can be done by the package manager of your OS, you will need to install the mentioned libraries below:
 
 ```text
 make clang git
 ```
 
+**Warning**: Remember that their names can change depending on your OS.
+
 After installing the libraries, you will need to [compile Concord](https://github.com/Cogmasters/concord).
 
-Then, you will need to clone the Coglink's repo, this can be done by git.
+After compiling Concord, you can proceed with the installation of Coglink, first, we will need to clone the repository:
 
 ```console
-$ git clone https://github.com/ThePedroo/Coglink
+$ git clone https://github.com/PerformanC/Coglink
 ```
 
-After that, you can simply use make to compile Concord.
+When the repository is cloned, enter in the folder and run the `make` command, this will generate the header files, which will be used to compile Coglink, and after it, install into the system.
 
 ```console
 # cd Coglink && make && make install
 ```
 
-The `make` command will first move the header files to `/usr/local/include/coglink`, then it will compile the C files and "group" them into the `libcoglink.a` file, after all of this, `make install` will move `libcoglink.a` to `/usr/local/lib`, so you can use -lcoglink to use Coglink.
+**Warning**: When compiling your bot, remember to use the `-lcoglink` flag.
 
 ## Using
 
-Using Coglink is deadly easy, but before using its functions, you will need to import the header files, see which header files you will use for your bot below.
+See below the purpose of Coglink header files:
 
 ```c
 #include <coglink/lavalink.h> // Websocket related Coglink functions
-#include <coglink/definitions.h> // The definitions of defines like COGLINK_SUCCESS
-#include <coglink/rest-lavalink.h> // Functions from Coglink that uses Lavalink rest API
+#include <coglink/definitions.h> // File with the definitions of macros, like COGLINK_SUCCESS
+#include <coglink/information.h> // Functions which get information from Lavalink
+#include <coglink/network.h> // Functions related to network, like the router planner
 #include <coglink/player.h> // The functions related to the music player
-#include <coglink/miscellaneous.h> // Other functions, like decode track, get router planner and etc
-#include <coglink/plugins.h> // For add plugin support
+#include <coglink/plugins.h> // For the use of plugins
+#include <coglink/track.h> // Functions related to tracks, like decoding, searching, etc
 ```
 
-After including it, you can proceed using Coglink functions, and to compile don't forget to include the flag `-lcoglink` so you can use it.
-
-For usage, you can see the `guides/example` folder, with a really good example of Coglink usage.
+As for the usage, you can see the `guides/example` folder, with a complete example of Coglink usage.
 
 ## Documentation
 
-We don't have documentation, but you can take on the guides and see what is the need since there will have everything briefly explained.
+You can see [here](https://performanc.github.io/CoglinDocs/) the documentation for Coglink, made with Doxygen.
+
+In case you want to build the documentation yourself, you can use the `make gen_docs` command, but be sure that you have Doxygen installed.
 
 ## Coglink plugins
 
-In Coglink, the creation of plugins to it is possible, that is allowed to change some structs members so it can add more features to Coglink, made by the community, to the community, here are some security measures we take to avoid plugins somehow be malicious:
+For most functions, Coglink allows plugins to interfere with it, allowing the community to add more features to Coglink, without the need to modify the source code, but for the protection of the users, Coglink has some security measures to avoid malicious plugins.
 
-### Plugins are not allowed to change the members of the struct `lavaInfo`/`client`
+The security measures are:
 
-To avoid the plugins changing the security settings of Coglink, Coglink copies the `lavaInfo` struct instead of passing the pointer of it, making it impossible to change the settings. And this happens with the `client` struct as well, to avoid changing values that might cause problems.
+- Plugins are not allowed to change the members of the struct `lavaInfo`/`client`
+- Concord's client struct has hidden members (OPTIONAL)
+- Plugins are not allowed to read neither the bot token nor the Concord websocket struct by default.
 
-### Concord's client struct has hidden members (OPTIONAL)
+### Setting up a plugin
 
-To avoid the plugin to have access to the Concord IO poller, websocket or even the bot token, Coglink removes those members in a copy of the `client` struct and then sends it to the plugin, so it won't have access to the private information, but warning, some plugins may need that information, you can easily allow plugins to access a type of `client` struct member by either changing the value of the `lavaInfo->plugins->security->...`, that in this case will be `allowReadIOPoller`, `allowReadBotToken` or `allowReadConcordWebsocket`.
-
-## Setting up a plugin
-
-Plugins can't straight ahead work in Coglink, you need to pass the functions to Coglink from the plugin, so it can execute when some coglink function is executed, see the function below that does this:
+Plugins can't straight ahead work in Coglink, you need to pass the functions to Coglink from the plugin, so it can execute when some function from Coglink is used, see the function below that allow this to happen:
 
 ```c
 #include <coglink/plugins.h>
+#include "somePlugin.h"
 
-struct pluginEvents event = {
+struct coglink_pluginEvents event = {
   .onSearchRequest = &functionToBeExecuted
 }
 
 coglink_setPluginEvents(&lavaInfo, &event);
 ```
 
-Done, now when the function coglink_searchSong is executed, this will be executed first before Coglink runs it.
+Done, now when the function coglink_searchSong is executed, this will be executed first before Coglink processes it.
+
+**Warning**: The first plugins have the priority, so if you want to make a plugin that will be executed first, you will need to set it first.
 
 ## Plugin list
 
-None, sadly, but if you made a plugin for Coglink, please send a PR adding in the line below the format: `[Plugin name](Github repo of the Library) by YourGitHubusername`
-
-If you also want to make a plugin for it, but needs either help of more features, please call me on [Cwift's/Coglink's Discord server](https://discord.gg/uPveNfTuCJ), I'll be really happy to help ya! ^^
-
-## What is the reason for the creation of Coglink?
-
-Coglink was made to retribute to someone all the help he gave to me, and I'm really thankful for his help, which made me able to create this library, without him, I wouldn't be here.
-
-Concord is also a good library, that **I** consider the best Discord library ever made, but it doesn't have really good attention, and neither support for cool things, like Lavalink, that requires "advanced" knowledge of either Lavalink, Concord WebSocket, and libcurl, that we all know some people are not able to do all this work, so here Coglink is, help them make a stable code.
-
-Coglink was inspired in Concord, its stability and performance are something that everyone would dream to have in all Discord wrappers, but most of them don't, and being realistic, none of them have, Coglink is a library with all of this in mind, to be perfect to use with Concord, an unbeatable duo.
-
-And also, because of my country, Brazil, so it can have more recognition of so many good things it comes from here, like Lua, that most of the softwares that were created here, don't have recognition of its importance and time used to create it, and are extremely underrated.
+For now, there are no plugins for Coglink, but if you want to make one, you can see the [Setting up a plugin](#setting-up-a-plugin) section, and after it, you can add it to the list below.
 
 ## Support
 
@@ -143,21 +135,20 @@ In case of any issue using it (except bugs, that should be reported on GitHub Is
 
 ## Credits
 
-Even though I am the single maintainer of Coglink, many people contributed to it, thanks [Cogmaster](https://discord.gg/YcaK3puy49)'s guild members for this. And special thanks to `müller#1001`, without you, I wouldn't be here. :)
+Although Coglink is made only by one person, many people contributed to it, thanks [Cogmaster](https://discord.gg/YcaK3puy49) members for this. And special thanks to `müller#1001`, without you, we wouldn't be here.
 
 Some people that helped on Coglink related things:
-  * müller
-  * HackerSmacker
-  * Goo
 
-Thank you all for the help! ^^
+- müller
+- HackerSmacker
+- Goo
+
+Thanks you all for the help! ^^
 
 ## Dependencies
 
-* `libcurl` >= 7.56.1
-* `Concord (master/dev)` 2.2.0
-* `jsmn-find` latest (included on Concord 2.2.0)
-* `jsmn` latest (included on Concord 2.2.0)
-* `tablec` v2.0.0 (built-in into Coglink)
-
-*Tested on:* Ubuntu 22.04.1 x64, Arch Linux x64, Termux Aarch64 (Android 12), Termux armv7 (Android 9), Void Linux latest x64, FreeBSD 13.1 x64, Alpine Linux v3.17 x64
+- `libcurl` >= 7.56.1
+- `Concord (master/dev)` 2.2.0
+- `jsmn-find` latest (included on Concord 2.2.0)
+- `jsmn` latest (included on Concord 2.2.0)
+- `tablec` v2.2.3 (Open-addressing)

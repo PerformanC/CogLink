@@ -15,16 +15,22 @@ struct lavaInfo lavaInfo = {
 
 ...
 
-struct lavalinkNode params = {
-    .name = "Node 1",
-    .hostname = "localhost:2333",
-    .password = "você_não_deve_passar",
-    .shards = "1",
-    .botId = "1234567898765431",
+struct coglink_lavalinkNode nodes[] = {
+  {
+    .name = "Node1",
+    .hostname = "Hostname do node:port caso exista",
+    .password = "você não deve passar",
     .ssl = 0
+  }
 };
 
-coglink_connectNode(&lavaInfo, &params);
+struct coglink_lavalinkNodes nodeArray = {
+  .nodes = nodes,
+  .size = 1
+};
+
+struct coglink_nodeInfo nodeInfos[1];
+coglink_connectNode(&lavaInfo, client, &nodeArray, nodeInfos);
 
 ...
 
@@ -40,7 +46,7 @@ Pronto, agora você já vai estar conectando à sua Lavalink sem problemas, caso
 Para você fechar a conexão WebSocket com a Lavalink, você pode usar a função `coglink_disconnectNode`, olhe o exemplo a baixo:
 
 ```c
-coglink_closeNode(&lavaInfo);
+coglink_disconnectNode(&lavaInfo, 0);
 ```
 
 Sim, é fácil assim, e pronto, a conexão WebSocket com a Lavalink já vai estar fechada.

@@ -6,25 +6,19 @@ Dar parse no search é algo muito importate, já que permite você pegar o nome 
 
 ## Parsing
 
-AVISO: **ESTA GUIDE FOI FEITA PENSANDO NO PARSING DE TRACKS.**
-
 Para dar parse, você vai precisar usar a função `coglink_parseSearch`, que vai preencher o último parâmetro com as informações da música que tu pediu para dar parse.
 
 Por exemplo, você vai provavelmente querer dar parse na primeira música, não é? Então siga o exemplo abaixo para fazer isso:
 
 ```c
+struct coglink_parsedTrackStruct parsedStruct;
+coglink_initParseTrack(&lavaInfo, &parsedStruct, &res);
+
 struct parsedTrack song;
+int parseRes = coglink_parseTrack(&lavaInfo, &parsedStruct, &res, "0", &song);
 
-/*
-  O segundo parâmetro, res, deveria ser o struct requestInformation que você pegou da função coglink_searchSong.
-  O terceiro parâmetro, songPos, deve ser a posição da música que você quer dar parse, se você quiser a primeira, então coloque 0.
-  O último parâmetro, a livraria vai preencher com as informações da música solicitada.
-*/
-int parseRes = coglink_parseTrack(&lavaInfo, &res, "0", &song);
-
-if (parseRes != 0) {
+if (parseRes != 0)
   log_fatal("Erro dando parse: %d", parseRes);
-}
 
 log_info("Nome da música: %s", song->name);
 ```
@@ -40,13 +34,12 @@ struct parsedTrack song;
 
 for (int i = 0; i < 10; i++) {
   char iString[16];
-  snprintf(isString, sizeof(isString), "%d", i); 
+  snprintf(iString, sizeof(iString), "%d", i); 
 
-  int parseRes = coglink_parseTrack(&lavaInfo, &res, isString, &song);
+  int parseRes = coglink_parseTrack(&lavaInfo, &parsedStruct, &res, iString, &song);
 
-  if (parseRes != 0) {
+  if (parseRes != 0)
     log_fatal("Erro dando parse na música: %d", parseRes);
-  }
 
   log_info("Nome da música: %s", song->name);
 }

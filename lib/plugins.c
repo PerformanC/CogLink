@@ -2,7 +2,7 @@
 #include <coglink/lavalink.h>
 #include <coglink/plugins.h>
 
-void coglink_setPluginEvents(struct lavaInfo *lavaInfo, struct pluginEvents *pluginEvents) {
+void coglink_setPluginEvents(struct coglink_lavaInfo *lavaInfo, struct coglink_pluginEvents *pluginEvents) {
   if (pluginEvents->onSearchRequest) lavaInfo->plugins->events->onSearchRequest[lavaInfo->plugins->amount] = pluginEvents->onSearchRequest;
   if (pluginEvents->onPlayRequest) lavaInfo->plugins->events->onPlayRequest[lavaInfo->plugins->amount] = pluginEvents->onPlayRequest;
   if (pluginEvents->onLavalinkPacketReceived) lavaInfo->plugins->events->onLavalinkPacketReceived[lavaInfo->plugins->amount] = pluginEvents->onLavalinkPacketReceived;

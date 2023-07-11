@@ -9,20 +9,32 @@
 #include <coglink/definitions.h>
 #include <coglink/player.h>
 
-int coglink_getPlayers(struct lavaInfo *lavaInfo, struct requestInformation *res) {
-  char reqPath[35];
-  snprintf(reqPath, sizeof(reqPath), "/sessions/%s/players", lavaInfo->node->sessionId);
+int coglink_createPlayer(struct coglink_lavaInfo *lavaInfo, u64snowflake guildId) {
+  int node = _coglink_selectBestNode(lavaInfo);
 
-  return __coglink_performRequest(lavaInfo, res, &(struct __coglink_requestConfig) {
-                                                    .requestType = __COGLINK_GET_REQ,
-                                                    .path = reqPath,
-                                                    .pathLength = sizeof(reqPath),
-                                                    .useV3Path = true,
-                                                    .getResponse = true
-                                                  });
+  if (node == -1) return COGLINK_NO_NODES;
+
+  _coglink_createPlayer(guildId, node);
+
+  return node;
 }
 
-int coglink_parseGetPlayers(struct lavaInfo *lavaInfo, struct requestInformation *res, char *pos, struct playerInfo **playerInfoStruct) {
+int coglink_getPlayers(struct coglink_lavaInfo *lavaInfo, u64snowflake guildId, struct coglink_requestInformation *res) {
+  int node = _coglink_findPlayerNode(guildId);
+
+  char reqPath[35];
+  int pathLen = snprintf(reqPath, sizeof(reqPath), "/sessions/%s/players", lavaInfo->nodes[node].sessionId);
+
+  return _coglink_performRequest(lavaInfo, &lavaInfo->nodes[node], res, 
+                                 &(struct __coglink_requestConfig) {
+                                   .requestType = __COGLINK_GET_REQ,
+                                   .path = reqPath,
+                                   .pathLength = pathLen,
+                                   .getResponse = 1
+                                 });
+}
+
+int coglink_parseGetPlayers(struct coglink_lavaInfo *lavaInfo, struct coglink_requestInformation *res, char *pos, struct coglink_playerInfo *playerInfoStruct) {
   if (res->body[0] == '[' && res->body[1] == ']') return COGLINK_NO_PLAYERS;
 
   jsmn_parser parser;
@@ -51,157 +63,105 @@ int coglink_parseGetPlayers(struct lavaInfo *lavaInfo, struct requestInformation
 
   char *path[] = { pos, "guildId", NULL, NULL, NULL };
 
-  *playerInfoStruct = &(struct playerInfo) {
-    .guildId = NULL,
-    .track = &(struct playerInfoTrack) {
-      .encoded = NULL,
-      .info = &(struct parsedTrack) {
-        .identifier = NULL,
-        .isSeekable = NULL,
-        .author = NULL,
-        .length = NULL,
-        .isStream = NULL,
-        .position = NULL,
-        .title = NULL,
-        .uri = NULL,
-        .sourceName = NULL
-      }
-    },
-    .volume = NULL,
-    .paused = NULL,
-    .voice = &(struct playerInfoVoice) {
-       .token = NULL,
-       .endpoint = NULL,
-       .sessionId = NULL,
-       .connected = NULL,
-       .ping = NULL
-    },
-    .filters = &(struct playerInfoFilters) {
-      .volume = NULL,
-      .equalizer = &(struct equalizerStruct) {
-        .bands = NULL,
-        .gain = NULL
-      },
-      .karaoke = &(struct karaokeStruct) {
-        .level = NULL,
-        .monoLevel = NULL,
-        .filterBand = NULL,
-        .filterWidth = NULL
-      },
-      .timescale = &(struct timescaleStruct) {
-        .speed = NULL,
-        .pitch = NULL,
-        .rate = NULL
-      },
-      .tremolo = &(struct frequencyDepthStruct) {
-        .frequency = NULL,
-        .depth = NULL
-      },
-      .vibrato = &(struct frequencyDepthStruct) {
-        .frequency = NULL,
-        .depth = NULL
-      },
-      .rotation = NULL,
-      .distortion = &(struct distortionStruct) {
-        .sinOffset = NULL,
-        .sinScale = NULL,
-        .cosOffset = NULL,
-        .cosScale = NULL,
-        .tanOffset = NULL,
-        .tanScale = NULL,
-        .offset = NULL,
-        .scale = NULL
-      },
-      .channelMix = &(struct channelMixStruct) {
-        .leftToLeft = NULL,
-        .leftToRight = NULL,
-        .rightToLeft = NULL,
-        .rightToRight = NULL
-      },
-      .lowPass = NULL
-    }
-  };
-
-  /* TODO: &(struct ...) -> (changes abaixo)*/
-
   jsmnf_pair *guildId = jsmnf_find_path(pairs, res->body, path, 2);
   
-  char GuildId[GUILD_ID_LENGTH];
+  char GuildId[COGLINK_GUILD_ID_LENGTH];
   snprintf(GuildId, sizeof(GuildId), "%.*s", (int)guildId->v.len, res->body + guildId->v.pos);
 
   path[1] = "track";
   path[2] = "encoded";
-  jsmnf_pair *track = jsmnf_find_path(pairs, res->body, path, 2);
+  jsmnf_pair *encoded = jsmnf_find_path(pairs, res->body, path, 2);
 
-  if (track) {
+  if (_coglink_checkParse(lavaInfo, encoded, "encoded") == COGLINK_SUCCESS) {
     path[2] = "info";
     path[3] = "identifier";
     jsmnf_pair *identifier = jsmnf_find_path(pairs, res->body, path, 4);
+    if (_coglink_checkParse(lavaInfo, identifier, "identifier") != COGLINK_SUCCESS) return COGLINK_JSMNF_ERROR_PARSE;
 
     path[3] = "isSeekable";
     jsmnf_pair *isSeekable = jsmnf_find_path(pairs, res->body, path, 4);
+    if (_coglink_checkParse(lavaInfo, isSeekable, "isSeekable") != COGLINK_SUCCESS) return COGLINK_JSMNF_ERROR_PARSE;
 
     path[3] = "author";
     jsmnf_pair *author = jsmnf_find_path(pairs, res->body, path, 4);
+    if (_coglink_checkParse(lavaInfo, author, "author") != COGLINK_SUCCESS) return COGLINK_JSMNF_ERROR_PARSE;
 
     path[3] = "length";
     jsmnf_pair *length = jsmnf_find_path(pairs, res->body, path, 4);
+    if (_coglink_checkParse(lavaInfo, length, "length") != COGLINK_SUCCESS) return COGLINK_JSMNF_ERROR_PARSE;
 
     path[3] = "isStream";
     jsmnf_pair *isStream = jsmnf_find_path(pairs, res->body, path, 4);
+    if (_coglink_checkParse(lavaInfo, isStream, "isStream") != COGLINK_SUCCESS) return COGLINK_JSMNF_ERROR_PARSE;
 
     path[3] = "position";
     jsmnf_pair *position = jsmnf_find_path(pairs, res->body, path, 4);
+    if (_coglink_checkParse(lavaInfo, position, "position") != COGLINK_SUCCESS) return COGLINK_JSMNF_ERROR_PARSE;
 
     path[3] = "title";
     jsmnf_pair *title = jsmnf_find_path(pairs, res->body, path, 4);
+    if (_coglink_checkParse(lavaInfo, title, "title") != COGLINK_SUCCESS) return COGLINK_JSMNF_ERROR_PARSE;
 
     path[3] = "uri";
     jsmnf_pair *uri = jsmnf_find_path(pairs, res->body, path, 4);
 
+    path[3] = "artworkUrl";
+    jsmnf_pair *artworkUrl = jsmnf_find_path(pairs, res->body, path, 4);
+
+    path[3] = "isrc";
+    jsmnf_pair *isrc = jsmnf_find_path(pairs, res->body, path, 4);
+
     path[3] = "sourceName";
     jsmnf_pair *sourceName = jsmnf_find_path(pairs, res->body, path, 4);
+    if (_coglink_checkParse(lavaInfo, sourceName, "sourceName") != COGLINK_SUCCESS) return COGLINK_JSMNF_ERROR_PARSE;
 
-    char Track[TRACK_LENGTH], Identifier[IDENTIFIER_LENGTH], IsSeekable[TRUE_FALSE_LENGTH], Author[AUTHOR_NAME_LENGTH], Length[VIDEO_LENGTH], IsStream[TRUE_FALSE_LENGTH], Position[VIDEO_LENGTH], Title[TRACK_TITLE_LENGTH], Uri[URL_LENGTH], SourceName[SOURCENAME_LENGTH];
-
-    snprintf(Track, sizeof(Track), "%.*s", (int)track->v.len, res->body + track->v.pos);
-    snprintf(Identifier, sizeof(Identifier), "%.*s", (int)identifier->v.len, res->body + identifier->v.pos);
-    snprintf(IsSeekable, sizeof(IsSeekable), "%.*s", (int)isSeekable->v.len, res->body + isSeekable->v.pos);
-    snprintf(Author, sizeof(Author), "%.*s", (int)author->v.len, res->body + author->v.pos);
-    snprintf(Length, sizeof(Length), "%.*s", (int)length->v.len, res->body + length->v.pos);
-    snprintf(IsStream, sizeof(IsStream), "%.*s", (int)isStream->v.len, res->body + isStream->v.pos);
-    snprintf(Position, sizeof(Position), "%.*s", (int)position->v.len, res->body + position->v.pos);
-    snprintf(Title, sizeof(Title), "%.*s", (int)title->v.len, res->body + title->v.pos);
-    snprintf(Uri, sizeof(Uri), "%.*s", (int)uri->v.len, res->body + uri->v.pos);
-    snprintf(SourceName, sizeof(SourceName), "%.*s", (int)sourceName->v.len, res->body + sourceName->v.pos);
-
-    strncpy((*playerInfoStruct)->track->encoded, Track, TRACK_LENGTH);
-    strncpy((*playerInfoStruct)->track->info->identifier, Identifier, IDENTIFIER_LENGTH);
-    strncpy((*playerInfoStruct)->track->info->isSeekable, IsSeekable, TRUE_FALSE_LENGTH);
-    strncpy((*playerInfoStruct)->track->info->author, Author, AUTHOR_NAME_LENGTH);
-    strncpy((*playerInfoStruct)->track->info->length, Length, VIDEO_LENGTH);
-    strncpy((*playerInfoStruct)->track->info->isStream, IsStream, TRUE_FALSE_LENGTH);
-    strncpy((*playerInfoStruct)->track->info->position, Position, VIDEO_LENGTH);
-    strncpy((*playerInfoStruct)->track->info->title, Title, TRACK_TITLE_LENGTH);
-    strncpy((*playerInfoStruct)->track->info->uri, Uri, URL_LENGTH);
-    strncpy((*playerInfoStruct)->track->info->sourceName, SourceName, SOURCENAME_LENGTH);
+    snprintf(playerInfoStruct->track->encoded, sizeof(playerInfoStruct->track->encoded), "%.*s", (int)encoded->v.len, res->body + encoded->v.pos);
+    snprintf(playerInfoStruct->track->info->identifier, sizeof(playerInfoStruct->track->info->identifier), "%.*s", (int)identifier->v.len, res->body + identifier->v.pos);
+    snprintf(playerInfoStruct->track->info->isSeekable, sizeof(playerInfoStruct->track->info->isSeekable), "%.*s", (int)isSeekable->v.len, res->body + isSeekable->v.pos);
+    snprintf(playerInfoStruct->track->info->author, sizeof(playerInfoStruct->track->info->author), "%.*s", (int)author->v.len, res->body + author->v.pos);
+    snprintf(playerInfoStruct->track->info->length, sizeof(playerInfoStruct->track->info->length), "%.*s", (int)length->v.len, res->body + length->v.pos);
+    snprintf(playerInfoStruct->track->info->isStream, sizeof(playerInfoStruct->track->info->isStream), "%.*s", (int)isStream->v.len, res->body + isStream->v.pos);
+    snprintf(playerInfoStruct->track->info->position, sizeof(playerInfoStruct->track->info->position), "%.*s", (int)position->v.len, res->body + position->v.pos);
+    snprintf(playerInfoStruct->track->info->title, sizeof(playerInfoStruct->track->info->title), "%.*s", (int)title->v.len, res->body + title->v.pos);
+    if (_coglink_checkParse(lavaInfo, uri, "uri") == COGLINK_SUCCESS) snprintf(playerInfoStruct->track->info->uri, sizeof(playerInfoStruct->track->info->uri), "%.*s", (int)uri->v.len, res->body + uri->v.pos);
+    if (_coglink_checkParse(lavaInfo, artworkUrl, "artworkUrl") == COGLINK_SUCCESS) snprintf(playerInfoStruct->track->info->artworkUrl, sizeof(playerInfoStruct->track->info->artworkUrl), "%.*s", (int)artworkUrl->v.len, res->body + artworkUrl->v.pos);
+    if (_coglink_checkParse(lavaInfo, isrc, "isrc") == COGLINK_SUCCESS) snprintf(playerInfoStruct->track->info->isrc, sizeof(playerInfoStruct->track->info->isrc), "%.*s", (int)isrc->v.len, res->body + isrc->v.pos);
+    snprintf(playerInfoStruct->track->info->sourceName, sizeof(playerInfoStruct->track->info->sourceName), "%.*s", (int)sourceName->v.len, res->body + sourceName->v.pos);
   }
 
   path[1] = "volume";
   jsmnf_pair *volume = jsmnf_find_path(pairs, res->body, path, 2);
-  if (__coglink_checkParse(lavaInfo, volume, "volume") != COGLINK_PROCEED) return COGLINK_JSMNF_ERROR_FIND;
+  if (_coglink_checkParse(lavaInfo, volume, "volume") != COGLINK_PROCEED) return COGLINK_JSMNF_ERROR_FIND;
 
   path[1] = "paused";
   jsmnf_pair *paused = jsmnf_find_path(pairs, res->body, path, 2);
-  if (__coglink_checkParse(lavaInfo, paused, "paused") != COGLINK_PROCEED) return COGLINK_JSMNF_ERROR_FIND; 
+  if (_coglink_checkParse(lavaInfo, paused, "paused") != COGLINK_PROCEED) return COGLINK_JSMNF_ERROR_FIND; 
 
-  char Volume[VOLUME_LENGTH], Paused[TRUE_FALSE_LENGTH];
+  snprintf(playerInfoStruct->volume, sizeof(playerInfoStruct->volume), "%.*s", (int)volume->v.len, res->body + volume->v.pos);
+  snprintf(playerInfoStruct->paused, sizeof(playerInfoStruct->paused), "%.*s", (int)paused->v.len, res->body + paused->v.pos);
 
-  snprintf(Volume, sizeof(Volume), "%.*s", (int)volume->v.len, res->body + volume->v.pos);
-  snprintf(Paused, sizeof(Paused), "%.*s", (int)paused->v.len, res->body + paused->v.pos);
+  path[1] = "state";
+  path[2] = "time";
+  jsmnf_pair *time = jsmnf_find_path(pairs, res->body, path, 3);
 
-  strncpy((*playerInfoStruct)->volume, Volume, VOLUME_LENGTH);
-  strncpy((*playerInfoStruct)->paused, Paused, TRUE_FALSE_LENGTH);
+  path[2] = "position";
+  jsmnf_pair *position = jsmnf_find_path(pairs, res->body, path, 3);
+
+  path[2] = "connected";
+  jsmnf_pair *connected = jsmnf_find_path(pairs, res->body, path, 3);
+
+  path[2] = "ping";
+  jsmnf_pair *ping = jsmnf_find_path(pairs, res->body, path, 3);
+
+  if (!time || !position || !connected || !ping) {
+    if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_fatal("[coglink:jsmnf-find] Error while trying to find %s field.", !time ? "time" : !position ? "position" : !connected ? "connected" : "ping");
+    return COGLINK_JSMNF_ERROR_FIND;
+  }
+
+  snprintf(playerInfoStruct->state->time, sizeof(playerInfoStruct->state->time), "%.*s", (int)time->v.len, res->body + time->v.pos);
+  snprintf(playerInfoStruct->state->position, sizeof(playerInfoStruct->state->position), "%.*s", (int)position->v.len, res->body + position->v.pos);
+  snprintf(playerInfoStruct->state->connected, sizeof(playerInfoStruct->state->connected), "%.*s", (int)connected->v.len, res->body + connected->v.pos);
+  snprintf(playerInfoStruct->state->ping, sizeof(playerInfoStruct->state->ping), "%.*s", (int)ping->v.len, res->body + ping->v.pos);
 
   path[1] = "voice";
   path[2] = "token";
@@ -213,42 +173,21 @@ int coglink_parseGetPlayers(struct lavaInfo *lavaInfo, struct requestInformation
   path[2] = "sessionId";
   jsmnf_pair *sessionId = jsmnf_find_path(pairs, res->body, path, 3);
 
-  path[2] = "connected";
-  jsmnf_pair *connected = jsmnf_find_path(pairs, res->body, path, 3);
-
-  path[2] = "ping";
-  jsmnf_pair *ping = jsmnf_find_path(pairs, res->body, path, 3);
-
-  if (!token || !endpoint || !sessionId || !connected || !ping) {
-    if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_fatal("[coglink:jsmnf-find] Error while trying to find %s field.", !token ? "token" : !endpoint ? "endpoint": !sessionId ? "sessionId" : !connected ? "connected" : !ping ? "ping" : "???");
+  if (!token || !endpoint || !sessionId) {
+    if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->jsmnfErrorsDebugging) log_fatal("[coglink:jsmnf-find] Error while trying to find %s field.", !token ? "token" : !endpoint ? "endpoint": !sessionId ? "sessionId" : !connected ? "connected" : "ping");
     return COGLINK_JSMNF_ERROR_FIND;
   }
 
-  char Token[TOKEN_LENGTH], Endpoint[ENDPOINT_LENGTH], SessionId[SESSIONID_LENGTH], Connected[TRUE_FALSE_LENGTH], Ping[PING_LENGTH];
-
-  snprintf(Token, sizeof(Token), "%.*s", (int)token->v.len, res->body + token->v.pos);
-  snprintf(Endpoint, sizeof(Endpoint), "%.*s", (int)endpoint->v.len, res->body + endpoint->v.pos);
-  snprintf(SessionId, sizeof(SessionId), "%.*s", (int)sessionId->v.len, res->body + sessionId->v.pos);
-  snprintf(Connected, sizeof(Connected), "%.*s", (int)connected->v.len, res->body + connected->v.pos);
-  snprintf(Ping, sizeof(Ping), "%.*s", (int)ping->v.len, res->body + ping->v.pos);
-
-  strncpy((*playerInfoStruct)->voice->token, Token, TOKEN_LENGTH);
-  strncpy((*playerInfoStruct)->voice->endpoint, Endpoint, ENDPOINT_LENGTH);
-  strncpy((*playerInfoStruct)->voice->sessionId, SessionId, SESSIONID_LENGTH);
-  strncpy((*playerInfoStruct)->voice->connected, Connected, TRUE_FALSE_LENGTH);
-  strncpy((*playerInfoStruct)->voice->ping, Ping, PING_LENGTH);
+  snprintf(playerInfoStruct->voice->token, sizeof(playerInfoStruct->voice->token), "%.*s", (int)token->v.len, res->body + token->v.pos);
+  snprintf(playerInfoStruct->voice->endpoint, sizeof(playerInfoStruct->voice->endpoint), "%.*s", (int)endpoint->v.len, res->body + endpoint->v.pos);
+  snprintf(playerInfoStruct->voice->sessionId, sizeof(playerInfoStruct->voice->sessionId), "%.*s", (int)sessionId->v.len, res->body + sessionId->v.pos);
 
   path[1] = "filters";
   path[2] = "volume";
 
   jsmnf_pair *volumeFilter = jsmnf_find_path(pairs, res->body, path, 3);
-  if (volumeFilter) {
-    char VolumeFilter[VOLUME_LENGTH];
-
-    snprintf(VolumeFilter, sizeof(VolumeFilter), "%.*s", (int)volumeFilter->v.len, res->body + volumeFilter->v.pos);
-
-    strncpy((*playerInfoStruct)->filters->volume, VolumeFilter, VOLUME_LENGTH);
-  }
+  if (volumeFilter) 
+    snprintf(playerInfoStruct->filters->volume, sizeof(playerInfoStruct->filters->volume), "%.*s", (int)volumeFilter->v.len, res->body + volumeFilter->v.pos);
 
   path[2] = "equalizer";
   jsmnf_pair *equalizer = jsmnf_find_path(pairs, res->body, path, 3);
@@ -259,13 +198,8 @@ int coglink_parseGetPlayers(struct lavaInfo *lavaInfo, struct requestInformation
     path[3] = "gain";
     jsmnf_pair *gain = jsmnf_find_path(pairs, res->body, path, 4);
 
-    char Bands[512], Gain[128];
-
-    snprintf(Bands, sizeof(Bands), "%.*s", (int)bands->v.len, res->body + bands->v.pos);
-    snprintf(Gain, sizeof(Gain), "%.*s", (int)gain->v.len, res->body + gain->v.pos);
-
-    strncpy((*playerInfoStruct)->filters->equalizer->bands, Bands, 512);
-    strncpy((*playerInfoStruct)->filters->equalizer->gain, Gain, 128);
+    snprintf(playerInfoStruct->filters->equalizer->bands, sizeof(playerInfoStruct->filters->equalizer->bands), "%.*s", (int)bands->v.len, res->body + bands->v.pos);
+    snprintf(playerInfoStruct->filters->equalizer->gain, sizeof(playerInfoStruct->filters->equalizer->gain), "%.*s", (int)gain->v.len, res->body + gain->v.pos);
   }
 
   path[2] = "karaoke";
@@ -283,17 +217,10 @@ int coglink_parseGetPlayers(struct lavaInfo *lavaInfo, struct requestInformation
     path[3] = "filterWidth";
     jsmnf_pair *filterWidth = jsmnf_find_path(pairs, res->body, path, 4);
 
-    char Level[16], MonoLevel[16], FilterBand[16], FilterWidth[16];
-
-    snprintf(Level, sizeof(Level), "%.*s", (int)level->v.len, res->body + level->v.pos);
-    snprintf(MonoLevel, sizeof(MonoLevel), "%.*s", (int)monoLevel->v.len, res->body + monoLevel->v.pos);
-    snprintf(FilterBand, sizeof(FilterBand), "%.*s", (int)filterBand->v.len, res->body + filterBand->v.pos);
-    snprintf(FilterWidth, sizeof(FilterWidth), "%.*s", (int)filterWidth->v.len, res->body + filterWidth->v.pos);
-
-    strncpy((*playerInfoStruct)->filters->karaoke->level, Level, 16);
-    strncpy((*playerInfoStruct)->filters->karaoke->monoLevel, MonoLevel, 16);
-    strncpy((*playerInfoStruct)->filters->karaoke->filterBand, FilterBand, 16);
-    strncpy((*playerInfoStruct)->filters->karaoke->filterWidth, FilterWidth, 16);
+    snprintf(playerInfoStruct->filters->karaoke->level, sizeof(playerInfoStruct->filters->karaoke->level), "%.*s", (int)level->v.len, res->body + level->v.pos);
+    snprintf(playerInfoStruct->filters->karaoke->monoLevel, sizeof(playerInfoStruct->filters->karaoke->monoLevel), "%.*s", (int)monoLevel->v.len, res->body + monoLevel->v.pos);
+    snprintf(playerInfoStruct->filters->karaoke->filterBand, sizeof(playerInfoStruct->filters->karaoke->filterBand), "%.*s", (int)filterBand->v.len, res->body + filterBand->v.pos);
+    snprintf(playerInfoStruct->filters->karaoke->filterWidth, sizeof(playerInfoStruct->filters->karaoke->filterWidth), "%.*s", (int)filterWidth->v.len, res->body + filterWidth->v.pos);
   }
 
   path[2] = "timescale";
@@ -308,15 +235,9 @@ int coglink_parseGetPlayers(struct lavaInfo *lavaInfo, struct requestInformation
     path[3] = "rate";
     jsmnf_pair *rate = jsmnf_find_path(pairs, res->body, path, 4);
 
-    char Speed[8], Pitch[8], Rate[8];
-
-    snprintf(Speed, sizeof(Speed), "%.*s", (int)speed->v.len, res->body + speed->v.pos);
-    snprintf(Pitch, sizeof(Pitch), "%.*s", (int)pitch->v.len, res->body + pitch->v.pos);
-    snprintf(Rate, sizeof(Rate), "%.*s", (int)rate->v.len, res->body + rate->v.pos);
-
-    strncpy((*playerInfoStruct)->filters->timescale->speed, Speed, 8);
-    strncpy((*playerInfoStruct)->filters->timescale->pitch, Pitch, 8);
-    strncpy((*playerInfoStruct)->filters->timescale->rate, Rate, 8);
+    snprintf(playerInfoStruct->filters->timescale->speed, sizeof(playerInfoStruct->filters->timescale->speed), "%.*s", (int)speed->v.len, res->body + speed->v.pos);
+    snprintf(playerInfoStruct->filters->timescale->pitch, sizeof(playerInfoStruct->filters->timescale->pitch), "%.*s", (int)pitch->v.len, res->body + pitch->v.pos);
+    snprintf(playerInfoStruct->filters->timescale->rate, sizeof(playerInfoStruct->filters->timescale->rate), "%.*s", (int)rate->v.len, res->body + rate->v.pos);
   }
 
   path[2] = "tremolo";
@@ -328,13 +249,8 @@ int coglink_parseGetPlayers(struct lavaInfo *lavaInfo, struct requestInformation
     path[3] = "depth";
     jsmnf_pair *depth = jsmnf_find_path(pairs, res->body, path, 4);
 
-    char Frequency[8], Depth[4];
-
-    snprintf(Frequency, sizeof(Frequency), "%.*s", (int)frequency->v.len, res->body + frequency->v.pos);
-    snprintf(Depth, sizeof(Depth), "%.*s", (int)depth->v.len, res->body + depth->v.pos);
-
-    strncpy((*playerInfoStruct)->filters->tremolo->frequency, Frequency, 8);
-    strncpy((*playerInfoStruct)->filters->tremolo->depth, Depth, 4);
+    snprintf(playerInfoStruct->filters->tremolo->frequency, sizeof(playerInfoStruct->filters->tremolo->frequency), "%.*s", (int)frequency->v.len, res->body + frequency->v.pos);
+    snprintf(playerInfoStruct->filters->tremolo->depth, sizeof(playerInfoStruct->filters->tremolo->depth), "%.*s", (int)depth->v.len, res->body + depth->v.pos);
   }
 
   path[2] = "vibrato";
@@ -346,13 +262,8 @@ int coglink_parseGetPlayers(struct lavaInfo *lavaInfo, struct requestInformation
     path[3] = "depth";
     jsmnf_pair *depth = jsmnf_find_path(pairs, res->body, path, 4);
 
-    char Frequency[4], Depth[4];
-
-    snprintf(Frequency, sizeof(Frequency), "%.*s", (int)frequency->v.len, res->body + frequency->v.pos);
-    snprintf(Depth, sizeof(Depth), "%.*s", (int)depth->v.len, res->body + depth->v.pos);
-
-    strncpy((*playerInfoStruct)->filters->vibrato->frequency, Frequency, 4);
-    strncpy((*playerInfoStruct)->filters->vibrato->depth, Depth, 4);
+    snprintf(playerInfoStruct->filters->vibrato->frequency, sizeof(playerInfoStruct->filters->vibrato->frequency), "%.*s", (int)frequency->v.len, res->body + frequency->v.pos);
+    snprintf(playerInfoStruct->filters->vibrato->depth, sizeof(playerInfoStruct->filters->vibrato->depth), "%.*s", (int)depth->v.len, res->body + depth->v.pos);
   }
 
   path[2] = "rotation";
@@ -361,11 +272,7 @@ int coglink_parseGetPlayers(struct lavaInfo *lavaInfo, struct requestInformation
     path[3] = "rotationHz";
     jsmnf_pair *rotationHz = jsmnf_find_path(pairs, res->body, path, 4);
 
-    char RotationHz[8];
-
-    snprintf(RotationHz, sizeof(RotationHz), "%.*s", (int)rotationHz->v.len, res->body + rotationHz->v.pos);
-
-    strncpy((*playerInfoStruct)->filters->rotation, RotationHz, 8);
+    snprintf(playerInfoStruct->filters->rotation, sizeof(playerInfoStruct->filters->rotation), "%.*s", (int)rotationHz->v.len, res->body + rotationHz->v.pos);
   }
 
   path[2] = "distortion";
@@ -395,25 +302,14 @@ int coglink_parseGetPlayers(struct lavaInfo *lavaInfo, struct requestInformation
     path[3] = "scale";
     jsmnf_pair *scale = jsmnf_find_path(pairs, res->body, path, 4);
 
-    char SinOffset[8], SinScale[8], CosOffset[8], CosScale[8], TanOffset[8], TanScale[8], Offset[8], Scale[8];
-
-    snprintf(SinOffset, sizeof(SinOffset), "%.*s", (int)sinOffset->v.len, res->body + sinOffset->v.pos);
-    snprintf(SinScale, sizeof(SinScale), "%.*s", (int)sinScale->v.len, res->body + sinScale->v.pos);
-    snprintf(CosOffset, sizeof(CosOffset), "%.*s", (int)cosOffset->v.len, res->body + cosOffset->v.pos);
-    snprintf(CosScale, sizeof(CosScale), "%.*s", (int)cosScale->v.len, res->body + cosScale->v.pos);
-    snprintf(TanOffset, sizeof(TanOffset), "%.*s", (int)tanOffset->v.len, res->body + tanOffset->v.pos);
-    snprintf(TanScale, sizeof(TanScale), "%.*s", (int)tanScale->v.len, res->body + tanScale->v.pos);
-    snprintf(Offset, sizeof(Offset), "%.*s", (int)offset->v.len, res->body + offset->v.pos);
-    snprintf(Scale, sizeof(Scale), "%.*s", (int)scale->v.len, res->body + scale->v.pos);
-
-    strncpy((*playerInfoStruct)->filters->distortion->sinOffset, SinOffset, 8);
-    strncpy((*playerInfoStruct)->filters->distortion->sinScale, SinScale, 8);
-    strncpy((*playerInfoStruct)->filters->distortion->cosOffset, CosOffset, 8);
-    strncpy((*playerInfoStruct)->filters->distortion->cosScale, CosScale, 8);
-    strncpy((*playerInfoStruct)->filters->distortion->tanOffset, TanOffset, 8);
-    strncpy((*playerInfoStruct)->filters->distortion->tanScale, TanScale, 8);
-    strncpy((*playerInfoStruct)->filters->distortion->offset, Offset, 8);
-    strncpy((*playerInfoStruct)->filters->distortion->scale, Scale, 8);
+    snprintf(playerInfoStruct->filters->distortion->sinOffset, sizeof(playerInfoStruct->filters->distortion->sinOffset), "%.*s", (int)sinOffset->v.len, res->body + sinOffset->v.pos);
+    snprintf(playerInfoStruct->filters->distortion->sinScale, sizeof(playerInfoStruct->filters->distortion->sinScale), "%.*s", (int)sinScale->v.len, res->body + sinScale->v.pos);
+    snprintf(playerInfoStruct->filters->distortion->cosOffset, sizeof(playerInfoStruct->filters->distortion->cosOffset), "%.*s", (int)cosOffset->v.len, res->body + cosOffset->v.pos);
+    snprintf(playerInfoStruct->filters->distortion->cosScale, sizeof(playerInfoStruct->filters->distortion->cosScale), "%.*s", (int)cosScale->v.len, res->body + cosScale->v.pos);
+    snprintf(playerInfoStruct->filters->distortion->tanOffset, sizeof(playerInfoStruct->filters->distortion->tanOffset), "%.*s", (int)tanOffset->v.len, res->body + tanOffset->v.pos);
+    snprintf(playerInfoStruct->filters->distortion->tanScale, sizeof(playerInfoStruct->filters->distortion->tanScale), "%.*s", (int)tanScale->v.len, res->body + tanScale->v.pos);
+    snprintf(playerInfoStruct->filters->distortion->offset, sizeof(playerInfoStruct->filters->distortion->offset), "%.*s", (int)offset->v.len, res->body + offset->v.pos);
+    snprintf(playerInfoStruct->filters->distortion->scale, sizeof(playerInfoStruct->filters->distortion->scale), "%.*s", (int)scale->v.len, res->body + scale->v.pos);
   }
 
   path[2] = "channelMix";
@@ -431,30 +327,19 @@ int coglink_parseGetPlayers(struct lavaInfo *lavaInfo, struct requestInformation
     path[3] = "rightToRight";
     jsmnf_pair *rightToRight = jsmnf_find_path(pairs, res->body, path, 4);
 
-    char LeftToLeft[4], LeftToRight[4], RightToLeft[4], RightToRight[4];
-
-    snprintf(LeftToLeft, sizeof(LeftToLeft), "%.*s", (int)leftToLeft->v.len, res->body + leftToLeft->v.pos);
-    snprintf(LeftToRight, sizeof(LeftToRight), "%.*s", (int)leftToRight->v.len, res->body + leftToRight->v.pos);
-    snprintf(RightToLeft, sizeof(RightToLeft), "%.*s", (int)rightToLeft->v.len, res->body + rightToLeft->v.pos);
-    snprintf(RightToRight, sizeof(RightToRight), "%.*s", (int)rightToRight->v.len, res->body + rightToRight->v.pos);
-
-    strncpy((*playerInfoStruct)->filters->channelMix->leftToLeft, LeftToLeft, 4);
-    strncpy((*playerInfoStruct)->filters->channelMix->leftToRight, LeftToRight, 4);
-    strncpy((*playerInfoStruct)->filters->channelMix->rightToLeft, RightToLeft, 4);
-    strncpy((*playerInfoStruct)->filters->channelMix->rightToRight, RightToRight, 4);
+    snprintf(playerInfoStruct->filters->channelMix->leftToLeft, sizeof(playerInfoStruct->filters->channelMix->leftToLeft), "%.*s", (int)leftToLeft->v.len, res->body + leftToLeft->v.pos);
+    snprintf(playerInfoStruct->filters->channelMix->leftToRight, sizeof(playerInfoStruct->filters->channelMix->leftToRight), "%.*s", (int)leftToRight->v.len, res->body + leftToRight->v.pos);
+    snprintf(playerInfoStruct->filters->channelMix->rightToLeft, sizeof(playerInfoStruct->filters->channelMix->rightToLeft), "%.*s", (int)rightToLeft->v.len, res->body + rightToLeft->v.pos);
+    snprintf(playerInfoStruct->filters->channelMix->rightToRight, sizeof(playerInfoStruct->filters->channelMix->rightToRight), "%.*s", (int)rightToRight->v.len, res->body + rightToRight->v.pos);
   }
 
   path[2] = "lowPass";
   jsmnf_pair *lowPass = jsmnf_find_path(pairs, res->body, path, 3);
   if (lowPass) {
     path[3] = "smoothing";
-    jsmnf_pair *smoothing = jsmnf_find_path(pairs, res->body, path, 4);
+    jsmnf_pair *lowPass = jsmnf_find_path(pairs, res->body, path, 4);
 
-    char Smoothing[8];
-
-    snprintf(Smoothing, sizeof(Smoothing), "%.*s", (int)smoothing->v.len, res->body + smoothing->v.pos);
-
-    strncpy((*playerInfoStruct)->filters->lowPass, Smoothing, 8);
+    snprintf(playerInfoStruct->filters->lowPass, sizeof(playerInfoStruct->filters->lowPass), "%.*s", (int)lowPass->v.len, res->body + lowPass->v.pos);
   }
 
   if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging) log_debug("[coglink:memory-strncpy] Set the value for struct members of playerInfoStruct.");
@@ -462,182 +347,183 @@ int coglink_parseGetPlayers(struct lavaInfo *lavaInfo, struct requestInformation
   return COGLINK_SUCCESS;
 }
 
-void coglink_getPlayersCleanup(struct requestInformation *res) {
+void coglink_getPlayersCleanup(struct coglink_requestInformation *res) {
   free(res->body);
 }
 
-int coglink_playSong(struct lavaInfo *lavaInfo, char *track, u64snowflake guildId) {
+int coglink_playSong(struct coglink_lavaInfo *lavaInfo, char *encodedTrack, u64snowflake guildId) {
   if (lavaInfo->plugins && lavaInfo->plugins->events->onPlayRequest[0]) {
-    if (lavaInfo->plugins->security->allowReadIOPoller) {
-      for (int i = 0;i <+ lavaInfo->plugins->amount;i++) {
-        if (!lavaInfo->plugins->events->onPlayRequest[i]) break;
+    for (int i = 0;i <+ lavaInfo->plugins->amount;i++) {
+      if (!lavaInfo->plugins->events->onPlayRequest[i]) break;
 
-        int pluginResultCode = lavaInfo->plugins->events->onPlayRequest[i](lavaInfo, track, guildId);
-        if (pluginResultCode != COGLINK_PROCEED) return pluginResultCode;
-      }
-    } else {
-      struct lavaInfo *lavaInfoPlugin = lavaInfo;
-      lavaInfoPlugin->io_poller = NULL;
-
-      for (int i = 0;i <+ lavaInfo->plugins->amount;i++) {
-        if (!lavaInfo->plugins->events->onPlayRequest[i]) break;
-
-        int pluginResultCode = lavaInfo->plugins->events->onPlayRequest[i](lavaInfoPlugin, track, guildId);
-        if (pluginResultCode != COGLINK_PROCEED) return pluginResultCode;
-      }
+      int pluginResultCode = lavaInfo->plugins->events->onPlayRequest[i](lavaInfo, encodedTrack, guildId);
+      if (pluginResultCode != COGLINK_PROCEED) return pluginResultCode;
     }
   }
 
+  int node = _coglink_findPlayerNode(guildId);
+
   char reqPath[64];
-  snprintf(reqPath, sizeof(reqPath), "/sessions/%s/players/%"PRIu64"", lavaInfo->node->sessionId, guildId);
+  int pathLen = snprintf(reqPath, sizeof(reqPath), "/sessions/%s/players/%"PRIu64"", lavaInfo->nodes[node].sessionId, guildId);
 
   char payload[1024];
-  snprintf(payload, sizeof(payload), "{\"encodedTrack\":\"%s\",\"noReplace\":false,\"pause\":false}", track);
+  int payloadLen = snprintf(payload, sizeof(payload), "{\"encodedTrack\":\"%s\"}", encodedTrack);
 
-  return __coglink_performRequest(lavaInfo, NULL, &(struct __coglink_requestConfig) {
-                                              .requestType = __COGLINK_PATCH_REQ,
-                                              .path = reqPath,
-                                              .pathLength = sizeof(reqPath),
-                                              .useV3Path = true,
-                                              .body = payload,
-                                              .bodySize = sizeof(payload)
-                                            });
+  return _coglink_performRequest(lavaInfo, &lavaInfo->nodes[node], NULL, 
+                                 &(struct __coglink_requestConfig) {
+                                   .requestType = __COGLINK_PATCH_REQ,
+                                   .path = reqPath,
+                                   .pathLength = pathLen,
+                                   .body = payload,
+                                   .bodySize = payloadLen
+                                 });
 }
 
-void coglink_destroyPlayer(struct lavaInfo *lavaInfo, u64snowflake guildId) {
-  char reqPath[64];
-  snprintf(reqPath, sizeof(reqPath), "/sessions/%s/players/%"PRIu64"", lavaInfo->node->sessionId, guildId);
+void coglink_destroyPlayer(struct coglink_lavaInfo *lavaInfo, u64snowflake guildId) {
+  int node = _coglink_findPlayerNode(guildId);
 
-  __coglink_performRequest(lavaInfo, NULL, &(struct __coglink_requestConfig) {
-                                              .requestType = __COGLINK_DELETE_REQ,
-                                              .path = reqPath,
-                                              .pathLength = sizeof(reqPath),
-                                              .useV3Path = true
-                                            });
+  char reqPath[64];
+  int pathLen = snprintf(reqPath, sizeof(reqPath), "/sessions/%s/players/%"PRIu64"", lavaInfo->nodes[node].sessionId, guildId);
+
+  _coglink_performRequest(lavaInfo, &lavaInfo->nodes[node], NULL, 
+                          &(struct __coglink_requestConfig) {
+                            .requestType = __COGLINK_DELETE_REQ,
+                            .path = reqPath,
+                            .pathLength = pathLen
+                          });
 }
 
-void coglink_stopPlayer(struct lavaInfo *lavaInfo, u64snowflake guildId) {
-  char reqPath[64];
-  snprintf(reqPath, sizeof(reqPath), "/sessions/%s/players/%"PRIu64"", lavaInfo->node->sessionId, guildId);
+void coglink_stopPlayer(struct coglink_lavaInfo *lavaInfo, u64snowflake guildId) {
+  int node = _coglink_findPlayerNode(guildId);
 
-  __coglink_performRequest(lavaInfo, NULL, &(struct __coglink_requestConfig) {
-                                              .requestType = __COGLINK_PATCH_REQ,
-                                              .path = reqPath,
-                                              .pathLength = sizeof(reqPath),
-                                              .useV3Path = true,
-                                              .body = "{\"encodedTrack\":\"null\"}",
-                                              .bodySize = 32
-                                            });
+  char reqPath[64];
+  int pathLen = snprintf(reqPath, sizeof(reqPath), "/sessions/%s/players/%"PRIu64"", lavaInfo->nodes[node].sessionId, guildId);
+
+  _coglink_performRequest(lavaInfo, &lavaInfo->nodes[node], NULL, 
+                          &(struct __coglink_requestConfig) {
+                            .requestType = __COGLINK_PATCH_REQ,
+                            .path = reqPath,
+                            .pathLength = pathLen,
+                            .body = "{\"encodedTrack\":null}",
+                            .bodySize = 21
+                          });
 }
 
-void coglink_pausePlayer(struct lavaInfo *lavaInfo, u64snowflake guildId, char *pause) {
+void coglink_pausePlayer(struct coglink_lavaInfo *lavaInfo, u64snowflake guildId, char *pause) {
+  int node = _coglink_findPlayerNode(guildId);
+
   char reqPath[64];
-  snprintf(reqPath, sizeof(reqPath), "/sessions/%s/players/%"PRIu64"", lavaInfo->node->sessionId, guildId);
+  int pathLen = snprintf(reqPath, sizeof(reqPath), "/sessions/%s/players/%"PRIu64"", lavaInfo->nodes[node].sessionId, guildId);
 
   char payload[32];
-  snprintf(payload, sizeof(payload), "{\"pause\":%s}", pause);
+  int payloadLen = snprintf(payload, sizeof(payload), "{\"pause\":%s}", pause);
 
-  __coglink_performRequest(lavaInfo, NULL, &(struct __coglink_requestConfig) {
-                                              .requestType = __COGLINK_PATCH_REQ,
-                                              .path = reqPath,
-                                              .pathLength = sizeof(reqPath),
-                                              .useV3Path = true,
-                                              .body = payload,
-                                              .bodySize = sizeof(payload)
-                                            });
+  _coglink_performRequest(lavaInfo, &lavaInfo->nodes[node], NULL, 
+                          &(struct __coglink_requestConfig) {
+                            .requestType = __COGLINK_PATCH_REQ,
+                            .path = reqPath,
+                            .pathLength = pathLen,
+                            .body = payload,
+                            .bodySize = payloadLen
+                          });
 }
 
-void coglink_seekTrack(struct lavaInfo *lavaInfo, u64snowflake guildId, char *position) {
+void coglink_seekTrack(struct coglink_lavaInfo *lavaInfo, u64snowflake guildId, char *position) {
+  int node = _coglink_findPlayerNode(guildId);
+
   char reqPath[64];
-  snprintf(reqPath, sizeof(reqPath), "/sessions/%s/players/%"PRIu64"", lavaInfo->node->sessionId, guildId);
+  int pathLen = snprintf(reqPath, sizeof(reqPath), "/sessions/%s/players/%"PRIu64"", lavaInfo->nodes[node].sessionId, guildId);
 
   char payload[32];
-  snprintf(payload, sizeof(payload), "{\"position\":%s}", position);
+  int payloadLen = snprintf(payload, sizeof(payload), "{\"position\":%s}", position);
 
-  __coglink_performRequest(lavaInfo, NULL, &(struct __coglink_requestConfig) {
-                                              .requestType = __COGLINK_PATCH_REQ,
-                                              .path = reqPath,
-                                              .pathLength = sizeof(reqPath),
-                                              .useV3Path = true,
-                                              .body = payload,
-                                              .bodySize = sizeof(payload)
-                                            });
+  _coglink_performRequest(lavaInfo, &lavaInfo->nodes[node], NULL, 
+                          &(struct __coglink_requestConfig) {
+                            .requestType = __COGLINK_PATCH_REQ,
+                            .path = reqPath,
+                            .pathLength = pathLen,
+                            .body = payload,
+                            .bodySize = payloadLen
+                          });
 }
 
-void coglink_setPlayerVolume(struct lavaInfo *lavaInfo, u64snowflake guildId, char *volume) {
+void coglink_setPlayerVolume(struct coglink_lavaInfo *lavaInfo, u64snowflake guildId, char *volume) {
+  int node = _coglink_findPlayerNode(guildId);
+
   char reqPath[64];
-  snprintf(reqPath, sizeof(reqPath), "/sessions/%s/players/%"PRIu64"", lavaInfo->node->sessionId, guildId);
+  int pathLen = snprintf(reqPath, sizeof(reqPath), "/sessions/%s/players/%"PRIu64"", lavaInfo->nodes[node].sessionId, guildId);
 
   char payload[32];
-  snprintf(payload, sizeof(payload), "{\"volume\":%s}", volume);
+  int payloadLen = snprintf(payload, sizeof(payload), "{\"volume\":%s}", volume);
 
-  __coglink_performRequest(lavaInfo, NULL, &(struct __coglink_requestConfig) {
-                                              .requestType = __COGLINK_PATCH_REQ,
-                                              .path = reqPath,
-                                              .pathLength = sizeof(reqPath),
-                                              .useV3Path = true,
-                                              .body = payload,
-                                              .bodySize = sizeof(payload)
-                                            });
+  _coglink_performRequest(lavaInfo, &lavaInfo->nodes[node], NULL, 
+                          &(struct __coglink_requestConfig) {
+                            .requestType = __COGLINK_PATCH_REQ,
+                            .path = reqPath,
+                            .pathLength = pathLen,
+                            .body = payload,
+                            .bodySize = payloadLen
+                          });
 }
 
-void coglink_setEffect(struct lavaInfo *lavaInfo, u64snowflake guildId, int effect, char *value) {
-  char payload[strnlen(value, 512) + 128];
-  char effectStr[11] = "VOLUME";
+void coglink_setEffect(struct coglink_lavaInfo *lavaInfo, u64snowflake guildId, int effect, char *value) {
+  char payload[512 + 128], effectStr[11] = "VOLUME";
   switch (effect) {
-    case FILTER_VOLUME: {
+    case COGLINK_FILTER_VOLUME: {
       snprintf(effectStr, sizeof(effectStr), "volume");
       break;
     }
-    case FILTER_EQUALIZER: {
+    case COGLINK_FILTER_EQUALIZER: {
       snprintf(effectStr, sizeof(effectStr), "equalizer");
       break;
     }
-    case FILTER_KARAOKE: {
+    case COGLINK_FILTER_KARAOKE: {
       snprintf(effectStr, sizeof(effectStr), "karaoke");
       break;
     }
-    case FILTER_TIMESCALE: {
+    case COGLINK_FILTER_TIMESCALE: {
       snprintf(effectStr, sizeof(effectStr), "timescale");
       break;
     }
-    case FILTER_TREMOLO: {
+    case COGLINK_FILTER_TREMOLO: {
       snprintf(effectStr, sizeof(effectStr), "tremolo");
       break;
     }
-    case FILTER_ROTATION: {
+    case COGLINK_FILTER_ROTATION: {
       snprintf(effectStr, sizeof(effectStr), "rotation");
       break;
     }
-    case FILTER_DISTORTION: {
+    case COGLINK_FILTER_DISTORTION: {
       snprintf(effectStr, sizeof(effectStr), "distortion");
       break;
     }
-    case FILTER_CHANNELMIX: {
+    case COGLINK_FILTER_CHANNELMIX: {
       snprintf(effectStr, sizeof(effectStr), "channelMix");
       break;
     }
-    case FILTER_LOWPASS: {
+    case COGLINK_FILTER_LOWPASS: {
       snprintf(effectStr, sizeof(effectStr), "lowPass");
       break;
     }
-    case FILTER_REMOVE: {
+    case COGLINK_FILTER_REMOVE: {
       break;
     }
   }
 
+  int node = _coglink_findPlayerNode(guildId);
+
   char reqPath[64];
-  snprintf(reqPath, sizeof(reqPath), "/sessions/%s/players/%"PRIu64"", lavaInfo->node->sessionId, guildId);
+  int payloadLen = 0, pathLen = snprintf(reqPath, sizeof(reqPath), "/sessions/%s/players/%"PRIu64"", lavaInfo->nodes[node].sessionId, guildId);
 
-  if (effect != FILTER_REMOVE) snprintf(payload, sizeof(payload), "{\"filters\":{\"%s\":%s}}", effectStr, value);
-  else snprintf(payload, sizeof(payload), "{\"filters\":{}}");
+  if (effect != COGLINK_FILTER_REMOVE) payloadLen = snprintf(payload, sizeof(payload), "{\"filters\":{\"%s\":%s}}", effectStr, value);
+  else payloadLen = snprintf(payload, sizeof(payload), "{\"filters\":{}}");
 
-  __coglink_performRequest(lavaInfo, NULL, &(struct __coglink_requestConfig) {
-                                              .requestType = __COGLINK_PATCH_REQ,
-                                              .path = reqPath,
-                                              .pathLength = sizeof(reqPath),
-                                              .useV3Path = true,
-                                              .body = payload,
-                                              .bodySize = sizeof(payload)
-                                            });
+  _coglink_performRequest(lavaInfo, &lavaInfo->nodes[node], NULL, 
+                          &(struct __coglink_requestConfig) {
+                            .requestType = __COGLINK_PATCH_REQ,
+                            .path = reqPath,
+                            .pathLength = pathLen,
+                            .body = payload,
+                            .bodySize = payloadLen
+                          });
 }

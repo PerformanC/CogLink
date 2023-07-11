@@ -5,46 +5,48 @@
 #ifndef MISCELLANEOUS_H
 #define MISCELLANEOUS_H
 
-struct lavalinkInfoVersion {
-  char *semver;
-  char *major;
-  char *minor;
-  char *patch;
-  char *preRelease;
+struct coglink_lavalinkInfoVersion {
+  char semver[8];
+  char major[4];
+  char minor[4];
+  char patch[4];
+  char preRelease[8];
 };
 
-struct lavalinkInfoGit {
-  char *branch;
-  char *commit;
-  char *commitTime;
+struct coglink_lavalinkInfoGit {
+  char branch[16];
+  char commit[32];
+  char commitTime[16];
 };
 
-struct lavalinkInfo {
-  struct lavalinkInfoVersion *version;
-  char *buildTime;
-  struct lavalinkInfoGit *git;
-  char *jvm;
-  char *lavaplayer;
-  char *sourceManagers;
-  char *filters;
-  char *plugins;
+struct coglink_lavalinkInfo {
+  struct coglink_lavalinkInfoVersion *version;
+  char buildTime[16];
+  struct coglink_lavalinkInfoGit *git;
+  char jvm[8];
+  char lavaplayer[8];
+  char sourceManagers[128];
+  char filters[128];
+  char plugins[128];
 };
 
 /**
  * Retrieves the Lavalink version.
  * @param lavaInfo Structure with important informations of the Lavalink.
+ * @param guildId ID of the guild.
  * @param version String with Lavalink version.
  * @returns COGLINK_SUCCESS / ERROR
  */
-int coglink_getLavalinkVersion(struct lavaInfo *lavaInfo, char **version);
+int coglink_getLavalinkVersion(struct coglink_lavaInfo *lavaInfo, u64snowflake guildId, char **version);
 
 /**
  * Retrieves the informations of the Lavalink node Lavalink.jar.
  * @param lavaInfo Structure with important informations of the Lavalink.
+ * @param guildId ID of the guild.
  * @param res Structure with the information of the request.
  * @returns COGLINK_SUCCESS / ERROR
  */
-int coglink_getLavalinkInfo(struct lavaInfo *lavaInfo, struct requestInformation *res);
+int coglink_getLavalinkInfo(struct coglink_lavaInfo *lavaInfo, u64snowflake guildId, struct coglink_requestInformation *res);
 
 /**
  * Parses the response body of coglink_getLavalinkInfo function.
@@ -53,21 +55,22 @@ int coglink_getLavalinkInfo(struct lavaInfo *lavaInfo, struct requestInformation
  * @param lavalinkInfoStruct Structure with the parsed information.
  * @returns COGLINK_SUCCESS / ERROR
  */
-int coglink_parseLavalinkInfo(struct lavaInfo *lavaInfo, struct requestInformation *res, struct lavalinkInfo **lavalinkInfoStruct);
+int coglink_parseLavalinkInfo(struct coglink_lavaInfo *lavaInfo, struct coglink_requestInformation *res, struct coglink_lavalinkInfo *lavalinkInfoStruct);
 
 /**
  * Frees the allocations generated while performing the function coglink_getLavalinkInfo.
  * @param res Structure with the information of the request.
  */
-void coglink_getLavalinkInfoCleanup(struct requestInformation *res);
+void coglink_getLavalinkInfoCleanup(struct coglink_requestInformation *res);
 
 /**
  * Retrieves the stats of the Lavalink node.
  * @param lavaInfo Structure with important informations of the Lavalink.
+ * @param guildId ID of the guild.
  * @param res Structure with the information of the request.
  * @returns COGLINK_SUCCESS / ERROR
  */
-int coglink_getLavalinkStats(struct lavaInfo *lavaInfo, struct requestInformation *res);
+int coglink_getLavalinkStats(struct coglink_lavaInfo *lavaInfo, u64snowflake guildId, struct coglink_requestInformation *res);
 
 /**
  * Parses the response body of coglink_getLavalinkStats function.
@@ -76,12 +79,12 @@ int coglink_getLavalinkStats(struct lavaInfo *lavaInfo, struct requestInformatio
  * @param lavalinkStatsStruct Structure with the parsed information.
  * @returns COGLINK_SUCCESS / ERROR
  */
-int coglink_parseLavalinkStats(struct lavaInfo *lavaInfo, struct requestInformation *res, struct lavalinkStats **lavalinkStatsStruct);
+int coglink_parseLavalinkStats(struct coglink_lavaInfo *lavaInfo, struct coglink_requestInformation *res, struct coglink_lavalinkStats *lavalinkStatsStruct);
 
 /**
  * Frees the allocations generated while performing the function coglink_getLavalinkStats.
  * @param res Structure with the information of the request.
  */
-void coglink_getLavalinkStatsCleanup(struct requestInformation *res);
+void coglink_getLavalinkStatsCleanup(struct coglink_requestInformation *res);
 
 #endif

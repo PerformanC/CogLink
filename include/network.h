@@ -5,39 +5,40 @@
 #ifndef NETWORK_H
 #define NETWORK_H
 
-struct lavalinkDetailsIpBlock {
-  char *type;
-  char *size;
+struct coglink_lavalinkDetailsIpBlock {
+  char type[16];
+  char size[16];
 };
 
-struct lavalinkDetailsFailingAddress {
-  char *address;
-  char *failingTimestamp;
-  char *failingTime;
+struct coglink_lavalinkDetailsFailingAddress {
+  char address[8];
+  char failingTimestamp[16];
+  char failingTime[16];
 };
 
-struct lavalinkRouterDetails {
-  struct lavalinkDetailsIpBlock *ipBlock;
-  struct lavalinkDetailsFailingAddress *failingAddress;
-  char *blockIndex;
-  char *currentAddressIndex;
-  char *rotateIndex;
-  char *ipIndex;
-  char *currentAddress;
+struct coglink_lavalinkRouterDetails {
+  struct coglink_lavalinkDetailsIpBlock *ipBlock;
+  struct coglink_lavalinkDetailsFailingAddress *failingAddress;
+  char blockIndex[16];
+  char currentAddressIndex[16];
+  char rotateIndex[16];
+  char ipIndex[16];
+  char currentAddress[8];
 };
 
-struct lavalinkRouter {
-  char *class;
-  struct lavalinkRouterDetails *details;
+struct coglink_lavalinkRouter {
+  char class[16];
+  struct coglink_lavalinkRouterDetails *details;
 };
 
 /**
  * Retrieves the Lavalink router planner.
  * @param lavaInfo Structure with important informations of the Lavalink.
+ * @param guildId ID of the guild.
  * @param res Structure with the information of the request.
  * @returns COGLINK_SUCCESS / ERROR
  */
-int coglink_getRouterPlanner(struct lavaInfo *lavaInfo, struct requestInformation *res);
+int coglink_getRouterPlanner(struct coglink_lavaInfo *lavaInfo, u64snowflake guildId, struct coglink_requestInformation *res);
 
 /**
  * Parses the response body of coglink_getRouterPlanner function.
@@ -47,27 +48,29 @@ int coglink_getRouterPlanner(struct lavaInfo *lavaInfo, struct requestInformatio
  * @param lavalinkRouterStruct Structure with the parsed information.
  * @returns COGLINK_SUCCESS / ERROR
  */
-int coglink_parseRouterPlanner(struct lavaInfo *lavaInfo, struct requestInformation *res, char *ipPosition, struct lavalinkRouter **lavalinkRouterStruct);
+int coglink_parseRouterPlanner(struct coglink_lavaInfo *lavaInfo, struct coglink_requestInformation *res, char *ipPosition, struct coglink_lavalinkRouter *lavalinkRouterStruct);
 
 /**
  * Frees the allocations generated while performing the function coglink_getRouterPlanner.
  * @param res Structure with the information of the request.
  */
-void coglink_getRouterPlannerCleanup(struct requestInformation *res);
+void coglink_getRouterPlannerCleanup(struct coglink_requestInformation *res);
 
 /**
  * Removes an IP from failing address list.
  * @param lavaInfo Structure with important informations of the Lavalink.
+ * @param guildId ID of the guild.
  * @param ip IP that will be removed from failing address list.
  * @returns COGLINK_SUCCESS / ERROR
  */
-int coglink_freeFailingAddress(struct lavaInfo *lavaInfo, char *ip);
+int coglink_freeFailingAddress(struct coglink_lavaInfo *lavaInfo, u64snowflake guildId, char *ip);
 
 /**
  * Removes all IPs from failing address list.
  * @param lavaInfo Structure with important informations of the Lavalink.
+ * @param guildId ID of the guild.
  * @returns COGLINK_SUCCESS / ERROR
  */
-int coglink_freeFailingAllAddresses(struct lavaInfo *lavaInfo);
+int coglink_freeFailingAllAddresses(struct coglink_lavaInfo *lavaInfo, u64snowflake guildId);
 
 #endif

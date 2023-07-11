@@ -15,7 +15,7 @@ Coglink was made with performance in mind, if it was parsing the whole JSON, it 
 Follow the example above of the `coglink_searchSong` function:
 
 ```c
-struct requestInformation res;
+struct coglink_requestInformation res;
 
 int resStatus = coglink_searchSong(&lavaInfo, "Very ordinary life", &res);
 
