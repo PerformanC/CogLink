@@ -181,7 +181,7 @@ int _coglink_checkParse(struct coglink_lavaInfo *lavaInfo, jsmnf_pair *field, ch
 int _coglink_selectBestNode(struct coglink_lavaInfo *lavaInfo) {
   int i = -1;
   int bestStatsNode = 0, bestStats = -1;
-  while (i++ <= lavaInfo->nodeCount) {
+  while (i++ <= lavaInfo->nodeCount - 1) {
     int systemLoad = lavaInfo->nodes[i].stats.systemLoad ? lavaInfo->nodes[i].stats.systemLoad : 0;
     int cores = lavaInfo->nodes[i].stats.cores ? lavaInfo->nodes[i].stats.cores : 0;
 

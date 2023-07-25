@@ -30,10 +30,10 @@ int _coglink_findPlayerNode(u64snowflake guildId) {
   char key[32];
   snprintf(key, sizeof(key), "player:%" PRIu64 "", guildId);
 
-  void *value = tablec_get(&coglink_hashtable, key);
+  struct tablec_buckets value = tablec_get(&coglink_hashtable, key);
 
   int node;
-  memcpy(&node, &value, sizeof(node));
+  memcpy(&node, &value.value, sizeof(node));
 
   return node;
 }
@@ -445,10 +445,11 @@ enum discord_event_scheduler __coglink_handleScheduler(struct discord *client, c
       jsmnf_pair *VUI = jsmnf_find(pairs, data, "user_id", sizeof("user_id") - 1);
       if (_coglink_checkParse(lavaInfo, VUI, "user_id") != COGLINK_PROCEED) return DISCORD_EVENT_IGNORE;
 
-      char guildId[COGLINK_GUILD_ID_LENGTH], userId[COGLINK_USER_ID_LENGTH + 6];
+      char *userId = malloc(COGLINK_USER_ID_LENGTH);
+      char *guildId = malloc(COGLINK_GUILD_ID_LENGTH);
 
-      snprintf(userId, sizeof(userId), "%.*s", (int)VUI->v.len, data + VUI->v.pos);
-      snprintf(guildId, sizeof(guildId), "%.*s", (int)VGI->v.len, data + VGI->v.pos);
+      snprintf(userId, COGLINK_USER_ID_LENGTH, "%.*s", (int)VUI->v.len, data + VUI->v.pos);
+      snprintf(guildId, COGLINK_GUILD_ID_LENGTH, "%.*s", (int)VGI->v.len, data + VGI->v.pos);
 
       if (0 == strcmp(userId, lavaInfo->botId)) {
         jsmnf_pair *SSI = jsmnf_find(pairs, data, "session_id", sizeof("session_id") - 1);
@@ -470,8 +471,6 @@ enum discord_event_scheduler __coglink_handleScheduler(struct discord *client, c
           if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->handleSchedulerVoiceStateDebugging || lavaInfo->debugging->tablecSuccessDebugging) log_debug("[coglink:tablec] The user that got updated is the bot, but the sessionId is NULL, removing the sessionId from the hashtable.");
         }
       } else if (lavaInfo->allowCachingVoiceChannelIds) {
-        snprintf(userId, sizeof(userId), "user:%.*s", (int)VUI->v.len, data + VUI->v.pos);
-
         jsmnf_pair *VCI = jsmnf_find(pairs, data, "channel_id", sizeof("channel_id") - 1);
         if (_coglink_checkParse(lavaInfo, VCI, "channel_id") != COGLINK_PROCEED) return DISCORD_EVENT_IGNORE;
 
@@ -523,8 +522,8 @@ enum discord_event_scheduler __coglink_handleScheduler(struct discord *client, c
       char guildId[COGLINK_GUILD_ID_LENGTH];
       snprintf(guildId, sizeof(guildId), "%.*s", (int)VGI->v.len, data + VGI->v.pos);
 
-      char *sessionId = tablec_get(&coglink_hashtable, guildId);
-      if (!sessionId || sessionId[0] == '\0') {
+      struct tablec_buckets sessionId = tablec_get(&coglink_hashtable, guildId);
+      if (!sessionId.value) {
         if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->handleSchedulerVoiceServerDebugging || lavaInfo->debugging->tablecErrorsDebugging) log_error("[coglink:TableC] The hashtable does not contain any data related to the guildId.");
         return DISCORD_EVENT_IGNORE;
       }
@@ -540,16 +539,16 @@ enum discord_event_scheduler __coglink_handleScheduler(struct discord *client, c
       char key[32];
       snprintf(key, sizeof(key), "player:%s", guildId);
 
-      void *value = tablec_get(&coglink_hashtable, key);
+      struct tablec_buckets value = tablec_get(&coglink_hashtable, key);
 
       int node;
-      memcpy(&node, &value, sizeof(node));
+      memcpy(&node, &value.value, sizeof(node));
 
       char reqPath[128];
       int pathLen = snprintf(reqPath, sizeof(reqPath), "/sessions/%s/players/%s", lavaInfo->nodes[node].sessionId, guildId);
 
       char payload[256];
-      int payloadLen = snprintf(payload, sizeof(payload), "{\"voice\":{\"token\":\"%.*s\",\"endpoint\":\"%.*s\",\"sessionId\":\"%s\"}}", (int)token->v.len, data + token->v.pos, (int)endpoint->v.len, data + endpoint->v.pos, sessionId);
+      int payloadLen = snprintf(payload, sizeof(payload), "{\"voice\":{\"token\":\"%.*s\",\"endpoint\":\"%.*s\",\"sessionId\":\"%s\"}}", (int)token->v.len, data + token->v.pos, (int)endpoint->v.len, data + endpoint->v.pos, (char *)sessionId.value);
 
       _coglink_performRequest(lavaInfo, &lavaInfo->nodes[node], NULL, 
                               &(struct __coglink_requestConfig) {
@@ -561,7 +560,9 @@ enum discord_event_scheduler __coglink_handleScheduler(struct discord *client, c
                                 .body = payload,
                                 .bodySize = payloadLen
                               });
-      free(sessionId);
+
+      free(sessionId.key);
+      free(sessionId.value);
     } return DISCORD_EVENT_IGNORE;
     default:
       return DISCORD_EVENT_MAIN_THREAD;
@@ -582,18 +583,18 @@ int coglink_joinVoiceChannel(struct coglink_lavaInfo *lavaInfo, struct discord *
 }
 
 int coglink_joinUserVoiceChannel(struct coglink_lavaInfo *lavaInfo, struct discord *client, u64snowflake userId, u64snowflake guildId) {
-  char userIdStr[COGLINK_USER_ID_LENGTH + 5];
-  snprintf(userIdStr, sizeof(userIdStr), "user:%"PRIu64"", userId);
+  char userIdStr[COGLINK_USER_ID_LENGTH];
+  snprintf(userIdStr, sizeof(userIdStr), "%"PRIu64"", userId);
 
-  void *voiceId = tablec_get(&coglink_hashtable, userIdStr);
+  struct tablec_buckets voiceId = tablec_get(&coglink_hashtable, userIdStr);
 
-  if (!voiceId) {
+  if (!voiceId.value) {
     if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->joinUserVoiceChannelDebugging || lavaInfo->debugging->tablecErrorsDebugging) log_error("[coglink:tablec] The hashtable does not contain any data related to the userId.");
     return COGLINK_TABLEC_NOT_FOUND;
   }
 
   char joinVCPayload[512];
-  int payloadLen = snprintf(joinVCPayload, sizeof(joinVCPayload), "{\"op\":4,\"d\":{\"guild_id\":%"PRIu64",\"channel_id\":\"%s\",\"self_mute\":false,\"self_deaf\":true}}", guildId, (char *)voiceId);
+  int payloadLen = snprintf(joinVCPayload, sizeof(joinVCPayload), "{\"op\":4,\"d\":{\"guild_id\":%"PRIu64",\"channel_id\":\"%s\",\"self_mute\":false,\"self_deaf\":true}}", guildId, (char *)voiceId.value);
 
   if (!ws_send_text(client->gw.ws, NULL, joinVCPayload, payloadLen)) {
     if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->sendPayloadErrorsDebugging) log_fatal("[coglink:libcurl] Something went wrong while sending a payload with op 4 to Discord.");
@@ -601,7 +602,8 @@ int coglink_joinUserVoiceChannel(struct coglink_lavaInfo *lavaInfo, struct disco
   }
   if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->sendPayloadSuccessDebugging) log_debug("[coglink:libcurl] Successfully sent the payload with op 4 to Discord.");
   
-  free(voiceId);
+  free(voiceId.key);
+  free(voiceId.value);
 
   return COGLINK_SUCCESS;
 }
