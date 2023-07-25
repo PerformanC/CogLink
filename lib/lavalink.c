@@ -375,7 +375,7 @@ void onTextEvent(void *data, struct websockets *ws, struct ws_info *info, const 
       snprintf(Ping, sizeof(Ping), "%.*s", (int)ping->v.len, text + ping->v.pos);
       snprintf(Connected, sizeof(Connected), "%.*s", (int)connected->v.len, text + connected->v.pos);
 
-      lavaInfo->events->onPlayerUpdate(guildId, Time, 0, (Connected[0] == 't' ? 1 : 0), 0);
+      lavaInfo->events->onPlayerUpdate(guildId, Time, Position, (Connected[0] == 't' ? 1 : 0), Ping);
       break;
     }
     default: {
@@ -561,7 +561,6 @@ enum discord_event_scheduler __coglink_handleScheduler(struct discord *client, c
                                 .body = payload,
                                 .bodySize = payloadLen
                               });
-                              
       free(sessionId);
     } return DISCORD_EVENT_IGNORE;
     default:

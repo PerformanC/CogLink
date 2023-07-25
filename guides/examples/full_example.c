@@ -66,7 +66,7 @@ void onStats(struct coglink_lavalinkStats *stats) {
 }
 
 void onPlayerUpdate(char *guildId, char *time, char *position, int connected, char *ping) {
-  log_trace("[COGLINK] GuildId: %s\n Time: %s\n Position: %d\n Connected: %s\n Ping: %s", guildId, time, position, connected, ping);
+  log_trace("[COGLINK] GuildId: %s\n Time: %s\n Position: %s\n Connected: %d\n Ping: %s", guildId, time, position, connected, ping);
 }
 
 void onUnknownOp(char *op, const char *text) {
