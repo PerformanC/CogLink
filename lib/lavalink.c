@@ -564,6 +564,100 @@ enum discord_event_scheduler __coglink_handleScheduler(struct discord *client, c
       free(sessionId.key);
       free(sessionId.value);
     } return DISCORD_EVENT_IGNORE;
+    case DISCORD_EV_GUILD_CREATE: {
+      jsmn_parser parser;
+      jsmntok_t tokens[5096];
+
+      jsmn_init(&parser);
+      int r = jsmn_parse(&parser, data, length, tokens, sizeof(tokens));
+
+      if (r < 0) {
+        if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->jsmnfErrorsDebugging || lavaInfo->debugging->handleSchedulerVoiceStateDebugging) log_error("[coglink:jsmn-find] Failed to parse JSON.");
+        return DISCORD_EVENT_IGNORE;
+      }
+
+      jsmnf_loader loader;
+      jsmnf_pair pairs[5096];
+
+      jsmnf_init(&loader);
+      r = jsmnf_load(&loader, data, tokens, parser.toknext, pairs, sizeof(pairs) / sizeof(*pairs));
+
+      if (r < 0) {
+        if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->jsmnfErrorsDebugging || lavaInfo->debugging->handleSchedulerVoiceStateDebugging) log_error("[coglink:jsmn-find] Failed to load jsmn-find.");
+        return DISCORD_EVENT_IGNORE;
+      }
+
+      jsmnf_pair *voice_states = jsmnf_find(pairs, data, "voice_states", sizeof("voice_states") - 1);
+
+      if (!voice_states) return DISCORD_EVENT_IGNORE;
+
+      jsmnf_pair *VGI = jsmnf_find(pairs, data, "id", sizeof("id") - 1);
+      if (_coglink_checkParse(lavaInfo, VGI, "id") != COGLINK_PROCEED) return DISCORD_EVENT_IGNORE;
+
+      char *guildId = malloc(COGLINK_GUILD_ID_LENGTH);
+      snprintf(guildId, COGLINK_GUILD_ID_LENGTH, "%.*s", (int)VGI->v.len, data + VGI->v.pos);
+
+      jsmnf_pair *GVS = jsmnf_find(pairs, data, "voice_states", sizeof("voice_states") - 1);
+
+      int i = GVS->size;
+      while (i > 0) {
+        char iStr[16];
+        snprintf(iStr, sizeof(iStr), "%d", i - 1);
+
+        char *path[] = { "voice_states", iStr, "user_id" };
+
+        jsmnf_pair *VUI = jsmnf_find_path(pairs, data, path, 3);
+        if (_coglink_checkParse(lavaInfo, VUI, "user_id") != COGLINK_PROCEED) return DISCORD_EVENT_IGNORE;
+
+        char *userId = malloc(COGLINK_USER_ID_LENGTH);
+
+        snprintf(userId, COGLINK_USER_ID_LENGTH, "%.*s", (int)VUI->v.len, data + VUI->v.pos);
+
+        if (0 == strcmp(userId, lavaInfo->botId)) {
+          path[2] = "session_id";
+          jsmnf_pair *SSI = jsmnf_find_path(pairs, data, path, 3);
+          if (_coglink_checkParse(lavaInfo, SSI, "session_id") != COGLINK_PROCEED) return DISCORD_EVENT_IGNORE;
+
+          char *sessionId = malloc(COGLINK_SESSION_ID_LENGTH);
+          snprintf(sessionId, COGLINK_SESSION_ID_LENGTH, "%.*s", (int)SSI->v.len, data + SSI->v.pos);
+
+          if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging)  log_debug("[coglink:memory] Allocated %d bytes for sessionId to be saved in the hashtable.", sizeof(sessionId));
+          if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->handleSchedulerVoiceStateDebugging) log_debug("[coglink:tablec] Parsed voice state update json, results:\n> guild_id: %s\n> user_id: %s\n> session_id: %s", guildId, userId, sessionId);
+
+          if (sessionId[0] != 'n') {
+            tablec_set(&coglink_hashtable, guildId, sessionId);
+
+            if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->handleSchedulerVoiceStateDebugging || lavaInfo->debugging->tablecSuccessDebugging) log_debug("[coglink:tablec] The user that got updated is the bot, saving the sessionId.");
+          } else {
+            tablec_del(&coglink_hashtable, guildId);
+
+            if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->handleSchedulerVoiceStateDebugging || lavaInfo->debugging->tablecSuccessDebugging) log_debug("[coglink:tablec] The user that got updated is the bot, but the sessionId is NULL, removing the sessionId from the hashtable.");
+          }
+        } else if (lavaInfo->allowCachingVoiceChannelIds) {
+          path[2] = "channel_id";
+          jsmnf_pair *VCI = jsmnf_find_path(pairs, data, path, 3);
+          if (_coglink_checkParse(lavaInfo, VCI, "channel_id") != COGLINK_PROCEED) return DISCORD_EVENT_IGNORE;
+
+          char *channelId = malloc(COGLINK_VOICE_ID_LENGTH);
+          snprintf(channelId, COGLINK_VOICE_ID_LENGTH, "%.*s", (int)VCI->v.len, data + VCI->v.pos);
+
+          if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging)  log_debug("[coglink:memory] Allocated %d bytes for voiceId to be saved in the hashtable.", sizeof(channelId));
+          if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->handleSchedulerVoiceStateDebugging) log_debug("[coglink:tablec] Parsed voice state update json, results:\n> guild_id: %s\n> user_id: %s\n> channel_id: %s", guildId, userId, channelId);
+
+          if (channelId[0] != 'n') {
+            tablec_set(&coglink_hashtable, userId, channelId);
+
+            if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->handleSchedulerVoiceStateDebugging || lavaInfo->debugging->tablecSuccessDebugging) log_debug("[coglink:tablec] Optional save members channel ID is enabled, saving the channelId.");
+          } else {
+            tablec_del(&coglink_hashtable, userId);
+
+            if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->handleSchedulerVoiceStateDebugging || lavaInfo->debugging->tablecSuccessDebugging) log_debug("[coglink:tablec] Optional save members channel ID is enabled, but the channelId is NULL, removing the channelId from the hashtable.");
+          }
+        }
+
+        i--;
+      }
+    } return DISCORD_EVENT_IGNORE;
     default:
       return DISCORD_EVENT_MAIN_THREAD;
   }
@@ -680,7 +774,7 @@ int coglink_connectNode(struct coglink_lavaInfo *lavaInfo, struct discord *clien
     ws_add_header(nodeInfo->ws, "Num-Shards", lavaInfo->shards);
     ws_add_header(nodeInfo->ws, "User-Id", lavaInfo->botId);
     ws_add_header(nodeInfo->ws, "Client-Name", "Coglink");
-    ws_add_header(nodeInfo->ws, "Sec-WebSocket-Protocol", "undefined");
+    ws_add_header(nodeInfo->ws, "Sec-WebSocket-Protocol", "13");
 
     io_poller_curlm_add(client->io_poller, nodeInfo->mhandle, _coglink_IOPoller, nodeInfo);
     io_poller_curlm_enable_perform(client->io_poller, nodeInfo->mhandle);
