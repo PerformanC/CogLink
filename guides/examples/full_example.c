@@ -22,7 +22,9 @@ void on_ready(struct discord *client, const struct discord_ready *bot) {
 
 int onRaw(struct coglink_lavaInfo *lavaInfo, const char *text, size_t length) {
   (void)lavaInfo, (void)length;
+
   log_debug("[COGLINK] On Raw event: %s", text);
+
   return COGLINK_PROCEED; // Let's allow coglink handle it, here, we say to Coglink that it can proceed handling it.
 }
 

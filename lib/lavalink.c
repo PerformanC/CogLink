@@ -466,7 +466,24 @@ enum discord_event_scheduler __coglink_handleScheduler(struct discord *client, c
 
           if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->handleSchedulerVoiceStateDebugging || lavaInfo->debugging->tablecSuccessDebugging) log_debug("[coglink:tablec] The user that got updated is the bot, saving the sessionId.");
         } else {
+          free(sessionId);
+
+          struct tablec_buckets value = tablec_get(&coglink_hashtable, guildId);
+
+          if (!value.value) {
+            free(guildId);
+            free(userId);
+
+            return DISCORD_EVENT_IGNORE;
+          }
+
+          free(value.value);
+          free(value.key);
+
           tablec_del(&coglink_hashtable, guildId);
+
+          free(guildId);
+          free(userId);
 
           if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->handleSchedulerVoiceStateDebugging || lavaInfo->debugging->tablecSuccessDebugging) log_debug("[coglink:tablec] The user that got updated is the bot, but the sessionId is NULL, removing the sessionId from the hashtable.");
         }
@@ -485,7 +502,24 @@ enum discord_event_scheduler __coglink_handleScheduler(struct discord *client, c
 
           if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->handleSchedulerVoiceStateDebugging || lavaInfo->debugging->tablecSuccessDebugging) log_debug("[coglink:tablec] Optional save members channel ID is enabled, saving the channelId.");
         } else {
+          free(channelId);
+
+          struct tablec_buckets value = tablec_get(&coglink_hashtable, userId);
+
+          if (!value.value) {
+            free(userId);
+            free(guildId);
+
+            return DISCORD_EVENT_IGNORE;
+          }
+
+          free(value.value);
+          free(value.key);
+
           tablec_del(&coglink_hashtable, userId);
+
+          free(guildId);
+          free(userId);
 
           if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->handleSchedulerVoiceStateDebugging || lavaInfo->debugging->tablecSuccessDebugging) log_debug("[coglink:tablec] Optional save members channel ID is enabled, but the channelId is NULL, removing the channelId from the hashtable.");
         }
@@ -563,6 +597,8 @@ enum discord_event_scheduler __coglink_handleScheduler(struct discord *client, c
 
       free(sessionId.key);
       free(sessionId.value);
+
+      tablec_del(&coglink_hashtable, guildId);
     } return DISCORD_EVENT_IGNORE;
     case DISCORD_EV_GUILD_CREATE: {
       jsmn_parser parser;
@@ -624,15 +660,9 @@ enum discord_event_scheduler __coglink_handleScheduler(struct discord *client, c
           if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->memoryDebugging)  log_debug("[coglink:memory] Allocated %d bytes for sessionId to be saved in the hashtable.", sizeof(sessionId));
           if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->handleSchedulerVoiceStateDebugging) log_debug("[coglink:tablec] Parsed voice state update json, results:\n> guild_id: %s\n> user_id: %s\n> session_id: %s", guildId, userId, sessionId);
 
-          if (sessionId[0] != 'n') {
-            tablec_set(&coglink_hashtable, guildId, sessionId);
+          tablec_set(&coglink_hashtable, guildId, sessionId);
 
-            if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->handleSchedulerVoiceStateDebugging || lavaInfo->debugging->tablecSuccessDebugging) log_debug("[coglink:tablec] The user that got updated is the bot, saving the sessionId.");
-          } else {
-            tablec_del(&coglink_hashtable, guildId);
-
-            if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->handleSchedulerVoiceStateDebugging || lavaInfo->debugging->tablecSuccessDebugging) log_debug("[coglink:tablec] The user that got updated is the bot, but the sessionId is NULL, removing the sessionId from the hashtable.");
-          }
+          if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->handleSchedulerVoiceStateDebugging || lavaInfo->debugging->tablecSuccessDebugging) log_debug("[coglink:tablec] The user that got updated is the bot, saving the sessionId.");
         } else if (lavaInfo->allowCachingVoiceChannelIds) {
           path[2] = "channel_id";
           jsmnf_pair *VCI = jsmnf_find_path(pairs, data, path, 3);
@@ -676,6 +706,23 @@ int coglink_joinVoiceChannel(struct coglink_lavaInfo *lavaInfo, struct discord *
   return COGLINK_SUCCESS;
 }
 
+int coglink_getUserVoiceChannel(struct coglink_lavaInfo *lavaInfo, u64snowflake userId, char *channelId, int channelIdSize) {
+  char userIdStr[COGLINK_USER_ID_LENGTH];
+  snprintf(userIdStr, sizeof(userIdStr), "%"PRIu64"", userId);
+
+  struct tablec_buckets voiceId = tablec_get(&coglink_hashtable, userIdStr);
+
+  if (!voiceId.value) {
+    if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->joinUserVoiceChannelDebugging || lavaInfo->debugging->tablecErrorsDebugging) log_error("[coglink:tablec] The hashtable does not contain any data related to the userId.");
+
+    return COGLINK_TABLEC_NOT_FOUND;
+  }
+
+  snprintf(channelId, channelIdSize, "%s", (char *)voiceId.value);
+
+  return COGLINK_SUCCESS;
+}
+
 int coglink_joinUserVoiceChannel(struct coglink_lavaInfo *lavaInfo, struct discord *client, u64snowflake userId, u64snowflake guildId) {
   char userIdStr[COGLINK_USER_ID_LENGTH];
   snprintf(userIdStr, sizeof(userIdStr), "%"PRIu64"", userId);
@@ -684,6 +731,7 @@ int coglink_joinUserVoiceChannel(struct coglink_lavaInfo *lavaInfo, struct disco
 
   if (!voiceId.value) {
     if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->joinUserVoiceChannelDebugging || lavaInfo->debugging->tablecErrorsDebugging) log_error("[coglink:tablec] The hashtable does not contain any data related to the userId.");
+
     return COGLINK_TABLEC_NOT_FOUND;
   }
 
@@ -692,12 +740,10 @@ int coglink_joinUserVoiceChannel(struct coglink_lavaInfo *lavaInfo, struct disco
 
   if (!ws_send_text(client->gw.ws, NULL, joinVCPayload, payloadLen)) {
     if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->sendPayloadErrorsDebugging) log_fatal("[coglink:libcurl] Something went wrong while sending a payload with op 4 to Discord.");
+
     return COGLINK_ERROR;
   }
   if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->sendPayloadSuccessDebugging) log_debug("[coglink:libcurl] Successfully sent the payload with op 4 to Discord.");
-  
-  free(voiceId.key);
-  free(voiceId.value);
 
   return COGLINK_SUCCESS;
 }

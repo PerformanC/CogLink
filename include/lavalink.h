@@ -180,6 +180,15 @@ int coglink_joinVoiceChannel(struct coglink_lavaInfo *lavaInfo, struct discord *
 int coglink_joinUserVoiceChannel(struct coglink_lavaInfo *lavaInfo, struct discord *client, u64snowflake userId, u64snowflake guildId);
 
 /**
+ * Retrieves the voice channel that a user is in, must have the optional settings enabled for it.
+ * @param lavaInfo Structure with important informations of the Lavalink.
+ * @param userId ID of the user that the bot will join in its voice channel.
+ * @param channelId Pointer to a char pointer that will be filled with the voice channel ID.
+ * @param channelIdSize Size of the char pointer that will be filled with the voice channel ID.
+ */
+int coglink_getUserVoiceChannel(struct coglink_lavaInfo *lavaInfo, u64snowflake userId, char channelId[], int channelIdSize);
+
+/**
  * Removes all information in the lavaInfo struct
  * @param lavaInfo Structure with important informations of the Lavalink.
  */
