@@ -18,6 +18,7 @@ all:
 
 gen_docs:
 	doxygen Doxyfile
+	rm -f $(DOCS_DIR)/* || true
 	rm -rf $(DOCS_DIR)/search
 	mv $(DOCS_DIR)/html/* $(DOCS_DIR)
 	rm -rf $(DOCS_DIR)/html
