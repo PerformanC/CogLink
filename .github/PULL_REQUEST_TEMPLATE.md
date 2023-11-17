@@ -1,32 +1,16 @@
-# Changes
+## Changes
 
-A super detailed description of the changes you made.
+Write here about the changes you've made
 
-## Systems affected
+## Why 
 
-- [ ] Lavalink WebSocket
-- [ ] Lavalink rest API
-- [ ] Coglink's caching
-- [ ] Memory management
-- [ ] Coglink's internal functions
-- [ ] Other (please specify in this `()`)
+Write here why you think this should be merged
 
-## Type of this PR
+## Checkmarks
 
-- [ ] Bugfix
-- [ ] Feature
-- [ ] Documentation
-- [ ] Optimization
-- [ ] Other (please specify in this `()`)
+- [ ] The modified functions have been tested.
+- [ ] Used the same indentation as the rest of the project.
 
-## Why?
+## Additional information
 
-Explain here the reason why you've made this PR, in case it was because of an issue, please mention the issue.
-
-## Tested?
-
-- [ ] Tested on Linux (All features changed by me)
-
-## Testing
-
-Please explain here how you made the testing, please be as specific as possible.
+If you have any additional information, write it here
