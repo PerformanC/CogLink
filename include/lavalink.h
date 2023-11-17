@@ -151,6 +151,12 @@ struct coglink_lavaInfo {
   int allowCachingVoiceChannelIds;
 };
 
+struct coglink_voiceData {
+  char *token;
+  char *endpoint;
+  char *sessionId;
+};
+
 void _coglink_createPlayer(u64snowflake guildId, int data);
 
 int _coglink_findPlayerNode(u64snowflake guildId);
