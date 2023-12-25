@@ -463,6 +463,8 @@ enum discord_event_scheduler __coglink_handleScheduler(struct discord *client, c
 
         if (sessionId[0] != 'n') {
           struct coglink_voiceData *vcData = malloc(sizeof(struct coglink_voiceData));
+          vcData->token = NULL;
+          vcData->endpoint = NULL;
           vcData->sessionId = sessionId;
 
           tablec_set(&coglink_hashtable, guildId, vcData);
@@ -482,9 +484,18 @@ enum discord_event_scheduler __coglink_handleScheduler(struct discord *client, c
 
           struct coglink_voiceData *vcData = value.value;
 
-          if (vcData->token) free(vcData->token);
-          if (vcData->endpoint) free(vcData->endpoint);
-          free(vcData->sessionId);
+          if (vcData->token) {
+            free(vcData->token);
+            vcData->token = NULL;
+          }
+          if (vcData->endpoint) {
+            free(vcData->endpoint);
+            vcData->endpoint = NULL;
+          }
+          if (vcData->sessionId) {
+            free(vcData->sessionId);
+            vcData->sessionId = NULL;
+          }
           free(vcData);
           free(value.key);
 
@@ -615,9 +626,16 @@ enum discord_event_scheduler __coglink_handleScheduler(struct discord *client, c
       newVcData->endpoint = endpointStr;
       newVcData->sessionId = vcData->sessionId;
 
-      if (vcData->token) free(vcData->token);
-      if (vcData->endpoint) free(vcData->endpoint);
+      if (vcData->token) {
+        free(vcData->token);
+        vcData->token = NULL;
+      }
+      if (vcData->endpoint) {
+        free(vcData->endpoint);
+        vcData->endpoint = NULL;
+      }
       free(vcData);
+      vcData = NULL;
 
       tablec_del(&coglink_hashtable, guildId);
       tablec_set(&coglink_hashtable, guildId, newVcData);
@@ -625,7 +643,7 @@ enum discord_event_scheduler __coglink_handleScheduler(struct discord *client, c
     } return DISCORD_EVENT_IGNORE;
     case DISCORD_EV_GUILD_CREATE: {
       jsmn_parser parser;
-      jsmntok_t tokens[5096];
+      jsmntok_t tokens[5096 * 4];
 
       jsmn_init(&parser);
       int r = jsmn_parse(&parser, data, length, tokens, sizeof(tokens));
@@ -636,7 +654,7 @@ enum discord_event_scheduler __coglink_handleScheduler(struct discord *client, c
       }
 
       jsmnf_loader loader;
-      jsmnf_pair pairs[5096];
+      jsmnf_pair pairs[5096 * 4];
 
       jsmnf_init(&loader);
       r = jsmnf_load(&loader, data, tokens, parser.toknext, pairs, sizeof(pairs) / sizeof(*pairs));
