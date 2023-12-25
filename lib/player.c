@@ -367,7 +367,7 @@ int coglink_playSong(struct coglink_lavaInfo *lavaInfo, char *encodedTrack, u64s
   int pathLen = snprintf(reqPath, sizeof(reqPath), "/sessions/%s/players/%"PRIu64"", lavaInfo->nodes[node].sessionId, guildId);
 
   char payload[1024];
-  int payloadLen = snprintf(payload, sizeof(payload), "{\"encodedTrack\":\"%s\"}", encodedTrack);
+  int payloadLen = snprintf(payload, sizeof(payload), "{\"track\":{\"encoded\":\"%s\"}}", encodedTrack);
 
   return _coglink_performRequest(lavaInfo, &lavaInfo->nodes[node], NULL, 
                                  &(struct __coglink_requestConfig) {
@@ -404,7 +404,7 @@ void coglink_stopPlayer(struct coglink_lavaInfo *lavaInfo, u64snowflake guildId)
                             .requestType = __COGLINK_PATCH_REQ,
                             .path = reqPath,
                             .pathLength = pathLen,
-                            .body = "{\"encodedTrack\":null}",
+                            .body = "{\"track\":{\"encoded\":null}}",
                             .bodySize = 21
                           });
 }
