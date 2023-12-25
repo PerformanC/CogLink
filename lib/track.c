@@ -86,7 +86,7 @@ int coglink_decodeTrack(struct coglink_lavaInfo *lavaInfo, char *encodedTrack, s
 
 int coglink_initParseTrack(struct coglink_lavaInfo *lavaInfo, struct coglink_parsedTrackStruct *cStruct, struct coglink_requestInformation *res) {
   jsmn_parser parser;
-  jsmntok_t tokens[1024];
+  jsmntok_t tokens[1024 * 4];
 
   jsmn_init(&parser);
   int r = jsmn_parse(&parser, res->body, res->size, tokens, sizeof(tokens));
