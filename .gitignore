@@ -1,0 +1,10 @@
+*
+
+!guides
+!include
+!lib
+!.gitignore
+!Doxyfile
+!LICENSE
+!Makefile
+!README.md

@@ -4,10 +4,10 @@
 #include <concord/discord.h>
 #include <concord/log.h>
 
-#include <coglink/lavalink-internal.h>
-#include <coglink/lavalink.h>
-#include <coglink/definitions.h>
-#include <coglink/player.h>
+#include "lavalink-internal.h"
+#include "lavalink.h"
+#include "definitions.h"
+#include "player.h"
 
 int coglink_createPlayer(struct coglink_lavaInfo *lavaInfo, u64snowflake guildId) {
   int node = _coglink_selectBestNode(lavaInfo);

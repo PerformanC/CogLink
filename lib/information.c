@@ -3,10 +3,10 @@
 #include <concord/discord.h>
 #include <concord/log.h>
 
-#include <coglink/lavalink-internal.h>
-#include <coglink/lavalink.h>
-#include <coglink/definitions.h>
-#include <coglink/information.h>
+#include "lavalink-internal.h"
+#include "lavalink.h"
+#include "definitions.h"
+#include "information.h"
 
 int coglink_getLavalinkVersion(struct coglink_lavaInfo *lavaInfo, u64snowflake guildId, char **version) {
   int node = _coglink_findPlayerNode(guildId);

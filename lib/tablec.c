@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <coglink/tablec.h>
+#include "tablec.h"
 
 void tablec_init(struct tablec_ht *tablec, size_t max_capacity) {
   tablec->length = 0;

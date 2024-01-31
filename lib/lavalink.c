@@ -8,11 +8,11 @@
 #include <concord/jsmn.h>
 #include <concord/jsmn-find.h>
 
-#include <coglink/lavalink.h>
-#include <coglink/lavalink-internal.h>
-#include <coglink/definitions.h>
-#include <coglink/player.h>
-#include <coglink/tablec.h>
+#include "lavalink.h"
+#include "lavalink-internal.h"
+#include "definitions.h"
+#include "player.h"
+#include "tablec.h"
 
 struct tablec_ht coglink_hashtable;
 
