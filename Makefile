@@ -9,7 +9,7 @@ SRC_DIR = lib
 OBJ_DIR = obj
 
 CFLAGS := -Wall -Wextra -Wpedantic
-LDFLAGS := -std=gnu99 -Iinclude
+LDFLAGS := -std=gnu99 -Iinclude -Iexternal
 LFLAGS := -lcurl -ldiscord
 
 SRCS = $(foreach dir,$(SRC_DIR),$(wildcard $(dir)/*.c))
