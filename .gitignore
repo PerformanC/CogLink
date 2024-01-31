@@ -1,8 +1,13 @@
 *
 
 !guides
+!guides/*
 !include
+!include/*
 !lib
+!lib/*
+!external
+!external/*
 !.gitignore
 !Doxyfile
 !LICENSE
