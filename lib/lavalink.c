@@ -30,10 +30,12 @@ int _coglink_findPlayerNode(u64snowflake guildId) {
   char key[32];
   snprintf(key, sizeof(key), "player:%" PRIu64 "", guildId);
 
-  struct tablec_buckets value = tablec_get(&coglink_hashtable, key);
+  struct tablec_bucket *value = tablec_get(&coglink_hashtable, key);
+
+  if (!value) return -1;
 
   int node;
-  memcpy(&node, &value.value, sizeof(node));
+  memcpy(&node, value->value, sizeof(node));
 
   return node;
 }
@@ -473,16 +475,16 @@ enum discord_event_scheduler __coglink_handleScheduler(struct discord *client, c
         } else {
           free(sessionId);
 
-          struct tablec_buckets value = tablec_get(&coglink_hashtable, guildId);
+          struct tablec_bucket *value = tablec_get(&coglink_hashtable, guildId);
 
-          if (!value.value) {
+          if (!value->value) {
             free(guildId);
             free(userId);
 
             return DISCORD_EVENT_IGNORE;
           }
 
-          struct coglink_voiceData *vcData = value.value;
+          struct coglink_voiceData *vcData = value->value;
 
           if (vcData->token) {
             free(vcData->token);
@@ -497,7 +499,7 @@ enum discord_event_scheduler __coglink_handleScheduler(struct discord *client, c
             vcData->sessionId = NULL;
           }
           free(vcData);
-          free(value.key);
+          free(value->key);
 
           tablec_del(&coglink_hashtable, guildId);
 
@@ -523,17 +525,17 @@ enum discord_event_scheduler __coglink_handleScheduler(struct discord *client, c
         } else {
           free(channelId);
 
-          struct tablec_buckets value = tablec_get(&coglink_hashtable, userId);
+          struct tablec_bucket *value = tablec_get(&coglink_hashtable, userId);
 
-          if (!value.value) {
+          if (!value->value) {
             free(userId);
             free(guildId);
 
             return DISCORD_EVENT_IGNORE;
           }
 
-          free(value.value);
-          free(value.key);
+          free(value->value);
+          free(value->key);
 
           tablec_del(&coglink_hashtable, userId);
 
@@ -575,12 +577,12 @@ enum discord_event_scheduler __coglink_handleScheduler(struct discord *client, c
       char guildId[COGLINK_GUILD_ID_LENGTH];
       snprintf(guildId, sizeof(guildId), "%.*s", (int)VGI->v.len, data + VGI->v.pos);
 
-      struct tablec_buckets dataVcData = tablec_get(&coglink_hashtable, guildId);
-      if (!dataVcData.value) {
+      struct tablec_bucket *dataVcData = tablec_get(&coglink_hashtable, guildId);
+      if (!dataVcData->value) {
         if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->handleSchedulerVoiceServerDebugging || lavaInfo->debugging->tablecErrorsDebugging) log_error("[coglink:TableC] The hashtable does not contain any data related to the guildId.");
         return DISCORD_EVENT_IGNORE;
       }
-      struct coglink_voiceData *vcData = dataVcData.value;
+      struct coglink_voiceData *vcData = dataVcData->value;
 
       if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->handleSchedulerVoiceServerDebugging || lavaInfo->debugging->tablecSuccessDebugging) log_debug("[coglink:TableC] Successfully found the sessionID in the hashtable.");
   
@@ -593,10 +595,10 @@ enum discord_event_scheduler __coglink_handleScheduler(struct discord *client, c
       char key[32];
       snprintf(key, sizeof(key), "player:%s", guildId);
 
-      struct tablec_buckets value = tablec_get(&coglink_hashtable, key);
+      struct tablec_bucket *value = tablec_get(&coglink_hashtable, key);
 
       int node;
-      memcpy(&node, &value.value, sizeof(node));
+      memcpy(&node, &value->value, sizeof(node));
 
       char reqPath[128];
       int pathLen = snprintf(reqPath, sizeof(reqPath), "/sessions/%s/players/%s", lavaInfo->nodes[node].sessionId, guildId);
@@ -748,15 +750,15 @@ int coglink_getUserVoiceChannel(struct coglink_lavaInfo *lavaInfo, u64snowflake 
   char userIdStr[COGLINK_USER_ID_LENGTH];
   snprintf(userIdStr, sizeof(userIdStr), "%"PRIu64"", userId);
 
-  struct tablec_buckets voiceId = tablec_get(&coglink_hashtable, userIdStr);
+  struct tablec_bucket *voiceId = tablec_get(&coglink_hashtable, userIdStr);
 
-  if (!voiceId.value) {
+  if (!voiceId->value) {
     if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->joinUserVoiceChannelDebugging || lavaInfo->debugging->tablecErrorsDebugging) log_error("[coglink:tablec] The hashtable does not contain any data related to the userId.");
 
     return COGLINK_TABLEC_NOT_FOUND;
   }
 
-  snprintf(channelId, channelIdSize, "%s", (char *)voiceId.value);
+  snprintf(channelId, channelIdSize, "%s", (char *)voiceId->value);
 
   return COGLINK_SUCCESS;
 }
@@ -765,16 +767,16 @@ int coglink_joinUserVoiceChannel(struct coglink_lavaInfo *lavaInfo, struct disco
   char userIdStr[COGLINK_USER_ID_LENGTH];
   snprintf(userIdStr, sizeof(userIdStr), "%"PRIu64"", userId);
 
-  struct tablec_buckets voiceId = tablec_get(&coglink_hashtable, userIdStr);
+  struct tablec_bucket *voiceId = tablec_get(&coglink_hashtable, userIdStr);
 
-  if (!voiceId.value) {
+  if (!voiceId->value) {
     if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->joinUserVoiceChannelDebugging || lavaInfo->debugging->tablecErrorsDebugging) log_error("[coglink:tablec] The hashtable does not contain any data related to the userId.");
 
     return COGLINK_TABLEC_NOT_FOUND;
   }
 
   char joinVCPayload[512];
-  int payloadLen = snprintf(joinVCPayload, sizeof(joinVCPayload), "{\"op\":4,\"d\":{\"guild_id\":%"PRIu64",\"channel_id\":\"%s\",\"self_mute\":false,\"self_deaf\":true}}", guildId, (char *)voiceId.value);
+  int payloadLen = snprintf(joinVCPayload, sizeof(joinVCPayload), "{\"op\":4,\"d\":{\"guild_id\":%"PRIu64",\"channel_id\":\"%s\",\"self_mute\":false,\"self_deaf\":true}}", guildId, (char *)voiceId->value);
 
   if (!ws_send_text(client->gw.ws, NULL, joinVCPayload, payloadLen)) {
     if (lavaInfo->debugging->allDebugging || lavaInfo->debugging->sendPayloadErrorsDebugging) log_fatal("[coglink:libcurl] Something went wrong while sending a payload with op 4 to Discord.");
