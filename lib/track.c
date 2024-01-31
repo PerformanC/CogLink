@@ -4,10 +4,10 @@
 #include <concord/discord.h>
 #include <concord/log.h>
 
-#include <coglink/lavalink-internal.h>
-#include <coglink/lavalink.h>
-#include <coglink/definitions.h>
-#include <coglink/track.h>
+#include "lavalink-internal.h"
+#include "lavalink.h"
+#include "definitions.h"
+#include "track.h"
 
 int coglink_searchSong(struct coglink_lavaInfo *lavaInfo, char *song, struct coglink_requestInformation *res) {
   int node = _coglink_selectBestNode(lavaInfo);

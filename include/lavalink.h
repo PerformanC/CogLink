@@ -7,8 +7,8 @@
 
 #include <concord/websockets.h>
 
-#include <coglink/plugins.h>
-#include <coglink/definitions.h>
+#include "plugins.h"
+#include "definitions.h"
 
 struct coglink_requestInformation {
   char *body;

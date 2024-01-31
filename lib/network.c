@@ -4,10 +4,10 @@
 #include <concord/discord.h>
 #include <concord/log.h>
 
-#include <coglink/lavalink-internal.h>
-#include <coglink/lavalink.h>
-#include <coglink/definitions.h>
-#include <coglink/network.h>
+#include "lavalink-internal.h"
+#include "lavalink.h"
+#include "definitions.h"
+#include "network.h"
 
 int coglink_getRouterPlanner(struct coglink_lavaInfo *lavaInfo, u64snowflake guildId, struct coglink_requestInformation *res) {
   int node = _coglink_findPlayerNode(guildId);

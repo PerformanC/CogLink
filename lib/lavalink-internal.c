@@ -4,9 +4,9 @@
 #include <concord/discord.h>
 #include <concord/websockets.h>
 
-#include <coglink/lavalink-internal.h>
-#include <coglink/lavalink.h>
-#include <coglink/definitions.h>
+#include "lavalink-internal.h"
+#include "lavalink.h"
+#include "definitions.h"
 
 size_t __coglink_WriteMemoryCallback(void *data, size_t size, size_t nmemb, void *userp) {
   size_t writeSize = size * nmemb;
