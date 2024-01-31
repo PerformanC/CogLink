@@ -1,15 +1,15 @@
-CC = clang
+CC = gcc
 
 PREFIX := /usr/local
 LIBDIR := $(PREFIX)/lib
 INCLUDEDIR := $(PREFIX)/include/coglink
 DOCS_DIR = ../CoglinDocs
 
-SRC_DIR = lib
+SRC_DIR = lib external
 OBJ_DIR = obj
 
 CFLAGS := -Wall -Wextra -Wpedantic
-LDFLAGS := -std=gnu99 -Iinclude -Iexternal
+LDFLAGS := -std=c99 -D_POSIX_C_SOURCE=200112L -Iinclude -Iexternal
 LFLAGS := -lcurl -ldiscord
 
 SRCS = $(foreach dir,$(SRC_DIR),$(wildcard $(dir)/*.c))
@@ -19,6 +19,9 @@ CogLink: $(OBJS)
 	ar qv libcoglink.a $(OBJS)
 
 $(OBJ_DIR)/%.o: lib/%.c | $(OBJ_DIR)
+	$(CC) -c -fPIC $< -o $@ $(LDFLAGS) $(CFLAGS)
+
+$(OBJ_DIR)/%.o: external/%.c | $(OBJ_DIR)
 	$(CC) -c -fPIC $< -o $@ $(LDFLAGS) $(CFLAGS)
 
 $(OBJ_DIR):
@@ -36,6 +39,10 @@ install:
 	mkdir -p $(INCLUDEDIR)
 	cp include/* $(INCLUDEDIR)
 	mv libcoglink.a $(LIBDIR)
+
+uninstall:
+	rm -rf $(INCLUDEDIR)
+	rm -f $(LIBDIR)/libcoglink.a
 
 gen_docs:
 	doxygen Doxyfile
