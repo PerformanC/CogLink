@@ -25,6 +25,12 @@ size_t _coglink_write_cb(void *data, size_t size, size_t nmemb, void *userp) {
   return write_size;
 }
 
+size_t _coglink_fake_write_cb(void *data, size_t size, size_t nmemb, void *userp) {
+  (void)data; (void)size; (void)nmemb; (void)userp;
+
+  return size * nmemb;
+}
+
 int _coglink_perform_request(struct coglink_node *nodeInfo, struct coglink_request_params *req, struct coglink_response *res) {
   CURL *curl = curl_easy_init();
 
@@ -66,8 +72,8 @@ int _coglink_perform_request(struct coglink_node *nodeInfo, struct coglink_reque
     c_res = curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, _coglink_write_cb);
     c_res = curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)res);
   } else {
-    /* todo: Is it necessary? */
-    // c_res = curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, __coglink_WriteMemoryCallbackNoSave);
+    /* avoids libcurl to write to stdout */
+    c_res = curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, _coglink_fake_write_cb);
   }
 
   c_res = curl_easy_perform(curl);
