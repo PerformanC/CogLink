@@ -85,6 +85,11 @@ struct coglink_track {
   struct coglink_partial_track *info;
 };
 
+struct coglink_tracks {
+  struct coglink_track *array;
+  size_t size;
+};
+
 struct coglink_track_start_payload {
   u64snowflake guildId;
   struct coglink_track *track;
@@ -161,7 +166,7 @@ struct coglink_playlist_info {
 
 struct coglink_load_tracks_playlist_response {
   struct coglink_playlist_info *info;
-  struct coglink_track *tracks;
+  struct coglink_tracks *tracks;
   /* plugins are not supported. Use NodeLink instead. */
 };
 

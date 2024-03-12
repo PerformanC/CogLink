@@ -364,36 +364,51 @@ void *coglink_parse_load_tracks_response(struct coglink_load_tracks_response *re
   if (!loadType) return NULL;
 
   switch (json[loadType->v.pos + 1]) {
-    // case 'r': { /* tRack */
-    //   struct coglink_tracks *tracks = malloc(sizeof(struct coglink_tracks));
-    //   tracks->array = malloc(sizeof(struct coglink_partial_track) * 1);
-    //   tracks->size = 1;
+    case 'r': { /* tRack */
+      _coglink_parse_track(pairs, json); /* Defines track_info */
 
-    //   _coglink_parse_track(pairs, json); /* Defines track_info */
+      response->type = COGLINK_LOAD_TYPE_TRACK;
+      response->data = track_info;
 
-    //   tracks->array[0] = *track_info->info;
+      goto cleanup;
+    }
+    case 'l': { /* pLaylist */
+      char *playlist_path[] = { "data", "tracks", NULL };
 
-    //   struct coglink_load_tracks_response *response = malloc(sizeof(struct coglink_load_tracks_response));
-    //   response->type = COGLINK_LOAD_TYPE_TRACK;
-    //   response->tracks = tracks;
+      jsmnf_pair *tracks = jsmnf_find_path(pairs, json, playlist_path, 2);
 
-    //   return response;
-    // }
-    // case 'l': { /* pLaylist */
-    //   struct coglink_tracks *tracks = malloc(sizeof(struct coglink_tracks));
-    //   tracks->array = malloc(sizeof(struct coglink_partial_track) * 1);
-    //   tracks->size = 1;
+      struct coglink_load_tracks_playlist_response *data = malloc(sizeof(struct coglink_load_tracks_playlist_response));
+      data->info = malloc(sizeof(struct coglink_playlist_info));
+      data->tracks = malloc(sizeof(struct coglink_tracks));
+      data->tracks->array = malloc(sizeof(struct coglink_track) * tracks->size);
+      data->tracks->size = tracks->size;
 
-    //   _coglink_parse_track(pairs, json); /* Defines track_info */
+      for (int i = 0; i < tracks->size; i++) {
+        char i_str[11];
+        snprintf(i_str, sizeof(i_str), "%d", i);
 
-    //   tracks->array[0] = *track_info->info;
+        char *track_path[] = { "data", "tracks", i_str };
+        jsmnf_pair *track_pair = jsmnf_find_path(pairs, json, track_path, 3);
 
-    //   struct coglink_load_tracks_response *response = malloc(sizeof(struct coglink_load_tracks_response));
-    //   response->type = COGLINK_LOAD_TYPE_PLAYLIST;
-    //   response->tracks = tracks;
+        _coglink_parse_track(track_pair, json); /* Defines track_info */
 
-    //   return response;
-    // }
+        data->tracks->array[i] = *track_info;
+      }
+
+      playlist_path[1] = "info";
+      playlist_path[2] = "name";
+
+      jsmnf_pair *playlist_name = jsmnf_find_path(pairs, json, playlist_path, 3);
+      snprintf(data->info->name, sizeof(data->info->name), "%.*s", (int)playlist_name->v.len, json + playlist_name->v.pos);
+
+      playlist_path[2] = "selectedTrack";
+      jsmnf_pair *selected_track = jsmnf_find_path(pairs, json, playlist_path, 3);
+      PAIR_TO_SIZET(selected_track, selectedTrackStr, data->info->selectedTrack, 16);
+
+      response->type = COGLINK_LOAD_TYPE_PLAYLIST;
+
+      goto cleanup;
+    }
     case 'e': { /* sEarch */
       jsmnf_pair *tracks = jsmnf_find(pairs, json, "data", sizeof("data") - 1);
 
@@ -418,20 +433,40 @@ void *coglink_parse_load_tracks_response(struct coglink_load_tracks_response *re
 
       goto cleanup;
     }
-    // case 'm': { /* eMpty */
-    //   struct coglink_load_tracks_response *response = malloc(sizeof(struct coglink_load_tracks_response));
-    //   response->type = COGLINK_LOAD_TYPE_EMPTY;
-    //   response->tracks = NULL;
+    case 'm': { /* eMpty */
+      struct coglink_load_tracks_response *response = malloc(sizeof(struct coglink_load_tracks_response));
+      response->type = COGLINK_LOAD_TYPE_EMPTY;
+      response->data = NULL;
 
-    //   return response;
-    // }
-    // case 'r': { /* eRror */
-    //   struct coglink_load_tracks_response *response = malloc(sizeof(struct coglink_load_tracks_response));
-    //   response->type = COGLINK_LOAD_TYPE_ERROR;
-    //   response->tracks = NULL;
+      goto cleanup;
+    }
+    case 'r': { /* eRror */
+      char *path[] = { "exception", "message" };
 
-    //   return response;
-    // }
+      FIND_FIELD_PATH(pairs, message, "message", 2);
+
+      path[1] = "severity";
+      FIND_FIELD_PATH(pairs, severity, "severity", 2);
+
+      path[1] = "cause";
+      FIND_FIELD_PATH(pairs, cause, "cause", 2);
+
+      struct coglink_load_tracks_error_response *data = malloc(sizeof(struct coglink_load_tracks_error_response));
+      response->type = COGLINK_LOAD_TYPE_ERROR;
+
+      data->message = malloc(message->v.len + 1);
+      snprintf(data->message, message->v.len + 1, "%.*s", (int)message->v.len, json + message->v.pos);
+
+      data->severity = malloc(severity->v.len + 1);
+      snprintf(data->severity, severity->v.len + 1, "%.*s", (int)severity->v.len, json + severity->v.pos);
+
+      data->cause = malloc(cause->v.len + 1);
+      snprintf(data->cause, cause->v.len + 1, "%.*s", (int)cause->v.len, json + cause->v.pos);
+
+      response->data = data;
+
+      goto cleanup;
+    }
   }
 
   cleanup: {
