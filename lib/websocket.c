@@ -61,6 +61,11 @@ void _ws_on_text(void *data, struct websockets *ws, struct ws_info *info, const 
 
       break;
     }
+    case COGLINK_TRACK_START: {
+      if (c_info->c_client->events->on_track_start) c_info->c_client->events->on_track_start((struct coglink_track_start_payload *)payload);
+
+      break;
+    }
     case COGLINK_TRACK_END: {
       struct coglink_track_end_payload *track_end = (struct coglink_track_end_payload *)payload;
 
@@ -80,7 +85,22 @@ void _ws_on_text(void *data, struct websockets *ws, struct ws_info *info, const 
         if (queue->size != 0) coglink_play_track(c_info->c_client, player, queue->array[0]);
       }
 
-      if (c_info->c_client->events->on_track_end) c_info->c_client->events->on_track_end((struct coglink_track_end_payload *)payload);
+      if (c_info->c_client->events->on_track_end) c_info->c_client->events->on_track_end(track_end);
+
+      break;
+    }
+    case COGLINK_TRACK_EXCEPTION: {
+      if (c_info->c_client->events->on_track_excetion) c_info->c_client->events->on_track_excetion((struct coglink_track_exception_payload *)payload);
+
+      break;
+    }
+    case COGLINK_TRACK_STUCK: {
+      if (c_info->c_client->events->on_track_stuck) c_info->c_client->events->on_track_stuck((struct coglink_track_stuck_payload *)payload);
+
+      break;
+    }
+    case COGLINK_WEBSOCKET_CLOSED: {
+      if (c_info->c_client->events->on_websocket_closed) c_info->c_client->events->on_websocket_closed((struct coglink_websocket_closed_payload *)payload);
 
       break;
     }
