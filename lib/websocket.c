@@ -29,16 +29,16 @@ void _ws_on_close(void *data, struct websockets *ws, struct ws_info *info, enum 
 
   struct _coglink_websocket_data *c_info = data;
 
-  if (c_info->c_client->events->onClose == NULL) return;
+  if (c_info->c_client->events->on_close == NULL) return;
 
-  c_info->c_client->events->onClose(wscode, reason);
+  c_info->c_client->events->on_close(wscode, reason);
 }
 
 void _ws_on_text(void *data, struct websockets *ws, struct ws_info *info, const char *text, size_t length) {
   (void) ws; (void) info;
   struct _coglink_websocket_data *c_info = data;
 
-  if (c_info->c_client->events->onRaw && c_info->c_client->events->onRaw(c_info->c_client, text, length) != COGLINK_PROCEED) return;
+  if (c_info->c_client->events->on_raw && c_info->c_client->events->on_raw(c_info->c_client, text, length) != COGLINK_PROCEED) return;
 
   int type;
   void *payload = coglink_parse_websocket_data(&type, text, length);
@@ -47,17 +47,40 @@ void _ws_on_text(void *data, struct websockets *ws, struct ws_info *info, const 
     case COGLINK_READY: {
       c_info->c_client->nodes->array[c_info->node_id].session_id = ((struct coglink_ready_payload *)payload)->session_id;
 
-      if (c_info->c_client->events->onReady) c_info->c_client->events->onReady((struct coglink_ready_payload *)payload);
+      if (c_info->c_client->events->on_ready) c_info->c_client->events->on_ready((struct coglink_ready_payload *)payload);
 
       break;
     }
     case COGLINK_PLAYER_UPDATE: {
-      if (c_info->c_client->events->onPlayerUpdate) c_info->c_client->events->onPlayerUpdate((struct coglink_player_update_payload *)payload);
+      if (c_info->c_client->events->on_player_update) c_info->c_client->events->on_player_update((struct coglink_player_update_payload *)payload);
 
       break;
     }
     case COGLINK_STATS: {
-      if (c_info->c_client->events->onStats) c_info->c_client->events->onStats((struct coglink_stats_payload *)payload);
+      if (c_info->c_client->events->on_stats) c_info->c_client->events->on_stats((struct coglink_stats_payload *)payload);
+
+      break;
+    }
+    case COGLINK_TRACK_END: {
+      struct coglink_track_end_payload *track_end = (struct coglink_track_end_payload *)payload;
+
+      struct coglink_player *player = coglink_get_player(c_info->c_client, track_end->guildId);
+
+      if (player == NULL) {
+        DEBUG("[coglink] Player not found for guild %" PRIu64 "", track_end->guildId);
+
+        return;
+      }
+
+      struct coglink_player_queue *queue = coglink_get_player_queue(c_info->c_client, player);
+
+      if (queue->size != 0) {
+        coglink_remove_track_from_queue(c_info->c_client, player, 0);
+
+        if (queue->size != 0) coglink_play_track(c_info->c_client, player, queue->array[0]);
+      }
+
+      if (c_info->c_client->events->on_track_end) c_info->c_client->events->on_track_end((struct coglink_track_end_payload *)payload);
 
       break;
     }

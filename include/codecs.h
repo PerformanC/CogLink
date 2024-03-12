@@ -199,6 +199,8 @@ void *coglink_parse_websocket_data(int *type, const char *json, size_t length);
 
 void *coglink_parse_load_tracks_response(struct coglink_load_tracks_response *response, const char *json, size_t length);
 
+void coglink_free_load_tracks_response(struct coglink_load_tracks_response *response);
+
 struct coglink_voice_state *coglink_parse_voice_state(const char *json, size_t length);
 
 struct coglink_voice_server_update *coglink_parse_voice_server_update(const char *json, size_t length);

@@ -17,7 +17,7 @@ int _coglink_select_node(struct coglink_client *c_client) {
 
   do {
     if (!c_client->nodes->array[i].stats) {
-      if (bestStatsNode == -1) bestStatsNode = i;
+      if (bestStatsNode == -1 && c_client->nodes->array[i].session_id) bestStatsNode = i;
 
       continue;
     }
@@ -140,29 +140,31 @@ int coglink_add_track_to_queue(struct coglink_client *c_client, struct coglink_p
   queue->array = realloc(queue->array, sizeof(char *) * (queue->size + 1));
   queue->size++;
 
-  queue->array[queue->size - 1] = track;
+  /* copy */
+  queue->array[queue->size - 1] = malloc(strlen(track) + 1);
+  strcpy(queue->array[queue->size - 1], track);
 
   return COGLINK_SUCCESS;
 }
 
-int coglink_remove_track_from_queue(struct coglink_client *c_client, struct coglink_player *player, char *track) {
+int coglink_remove_track_from_queue(struct coglink_client *c_client, struct coglink_player *player, size_t position) {
   struct coglink_player_queue *queue = coglink_get_player_queue(c_client, player);
 
-  for (size_t i = 0; i < queue->size; i++) {
-    if (strcmp(queue->array[i], track) == 0) {
-      queue->array[i] = '\0';
-
-      for (size_t j = i; j < queue->size - 1; j++) {
-        queue->array[j] = queue->array[j + 1];
-      }
-
-      queue->array = realloc(queue->array, sizeof(char *) * (queue->size - 1));
-
-      return COGLINK_SUCCESS;
-    }
+  if (position >= queue->size) {
+    FATAL("[coglink] Attempted to remove a track from an invalid position.");
   }
 
-  return COGLINK_NOT_FOUND;
+  free(queue->array[position]);
+  queue->array[position] = '\0';
+
+  for (size_t j = position; j < queue->size - 1; j++) {
+    queue->array[j] = queue->array[j + 1];
+  }
+
+  queue->array = realloc(queue->array, sizeof(char *) * (queue->size - 1));
+  queue->size--;
+
+  return COGLINK_SUCCESS;
 }
 
 int coglink_remove_player(struct coglink_client *c_client, struct coglink_player *player) {
@@ -204,6 +206,7 @@ int coglink_load_tracks(struct coglink_client *c_client, struct coglink_player *
   return COGLINK_SUCCESS;
 }
 
+/* todo: methods for creating payloads instead */
 int coglink_play_track(struct coglink_client *c_client, struct coglink_player *player, char *track) {
   struct coglink_node *node = &c_client->nodes->array[player->node];
 
@@ -213,15 +216,15 @@ int coglink_play_track(struct coglink_client *c_client, struct coglink_player *p
   char *payload = malloc(payload_size);
   snprintf(payload, payload_size, "{\"track\":{\"encoded\":\"%s\"}}", track);
 
-  size_t endpoint_size = (sizeof("/sessions//guilds/") - 1) + COGLINK_SESSION_ID_LENGTH + 19 + 1;
+  size_t endpoint_size = (sizeof("/sessions//players/") - 1) + COGLINK_SESSION_ID_LENGTH + 19 + 1;
   char *endpoint = malloc(endpoint_size);
-  snprintf(endpoint, endpoint_size, "/sessions/%s/guilds/%" PRIu64 "", node->session_id, player->guild_id);
+  snprintf(endpoint, endpoint_size, "/sessions/%s/players/%" PRIu64 "", node->session_id, player->guild_id);
 
   _coglink_perform_request(node, &(struct coglink_request_params) {
     .endpoint = endpoint,
-    .method = "POST",
+    .method = "PATCH",
     .body = payload,
-    .body_length = payload_size,
+    .body_length = payload_size - 1,
     .get_response = false
   }, NULL);
 

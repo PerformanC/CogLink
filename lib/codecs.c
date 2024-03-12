@@ -65,6 +65,8 @@
   snprintf(track_info->info->sourceName, sizeof(track_info->info->sourceName), "%.*s", (int)sourceName->v.len, json + sourceName->v.pos);
 
 void *coglink_parse_websocket_data(int *event_type, const char *json, size_t length) {
+  *event_type = COGLINK_PARSE_ERROR;
+
   jsmn_parser parser;
   jsmntok_t tokens[64];
 
@@ -73,8 +75,6 @@ void *coglink_parse_websocket_data(int *event_type, const char *json, size_t len
 
   if (r < 0) {
     ERROR("[coglink:jsmn-find] Failed to parse JSON.");
-
-    *event_type = COGLINK_PARSE_ERROR;
 
     return NULL;
   }
@@ -88,14 +88,12 @@ void *coglink_parse_websocket_data(int *event_type, const char *json, size_t len
   if (r < 0) {
     FATAL("[coglink:jsmn-find] Failed to load jsmn-find.");
 
-    *event_type = COGLINK_PARSE_ERROR;
-
     return NULL;
   }
 
   jsmnf_pair *op = jsmnf_find(pairs, json, "op", sizeof("op") - 1);
   if (!op) {
-    *event_type = COGLINK_PARSE_ERROR;
+    ERROR("[coglink:jsmn-find] No op field found.");
 
     return NULL;
   }
@@ -103,10 +101,10 @@ void *coglink_parse_websocket_data(int *event_type, const char *json, size_t len
   const char *Op = json + op->v.pos;
 
   switch(Op[0]) {
-    case 'r': { /* ready */
+    case 'r': { /* Ready */
       jsmnf_pair *sessionId = jsmnf_find(pairs, json, "sessionId", sizeof("sessionId") - 1);
       if (!sessionId) {
-        *event_type = COGLINK_PARSE_ERROR;
+        ERROR("[coglink:jsmn-find] No sessionId field found.");
 
         return NULL;
       }
@@ -125,7 +123,7 @@ void *coglink_parse_websocket_data(int *event_type, const char *json, size_t len
 
       return ready;
     }
-    case 'e': {
+    case 'e': { /* Event */
       FIND_FIELD(type, "type");
       FIND_FIELD(guildId, "guildId");
 
@@ -135,7 +133,8 @@ void *coglink_parse_websocket_data(int *event_type, const char *json, size_t len
 
           PAIR_TO_SIZET(guildId, guildIdStr, parsedTrack->guildId, 18);
 
-          _coglink_parse_track(pairs, json); /* Defines track_info */
+          jsmnf_pair *event_track_info = jsmnf_find(pairs, json, "track", sizeof("track") - 1);
+          _coglink_parse_track(event_track_info, json); /* Defines track_info */
 
           parsedTrack->track = track_info;
 
@@ -150,7 +149,8 @@ void *coglink_parse_websocket_data(int *event_type, const char *json, size_t len
 
           PAIR_TO_SIZET(guildId, guildIdStr, parsedTrack->guildId, 18);
 
-          _coglink_parse_track(pairs, json); /* Defines track_info */
+          jsmnf_pair *event_track_info = jsmnf_find(pairs, json, "track", sizeof("track") - 1);
+          _coglink_parse_track(event_track_info, json); /* Defines track_info */
 
           parsedTrack->track = track_info;
 
@@ -169,7 +169,8 @@ void *coglink_parse_websocket_data(int *event_type, const char *json, size_t len
 
           PAIR_TO_SIZET(guildId, guildIdStr, parsedTrack->guildId, 18);
 
-          _coglink_parse_track(pairs, json); /* Defines track_info */
+          jsmnf_pair *event_track_info = jsmnf_find(pairs, json, "track", sizeof("track") - 1);
+          _coglink_parse_track(event_track_info, json); /* Defines track_info */
 
           parsedTrack->track = track_info;
           parsedTrack->exception = malloc(sizeof(struct coglink_exception_payload));
@@ -191,7 +192,8 @@ void *coglink_parse_websocket_data(int *event_type, const char *json, size_t len
 
           PAIR_TO_SIZET(guildId, guildIdStr, parsedTrack->guildId, 18);
 
-          _coglink_parse_track(pairs, json); /* Defines track_info */
+          jsmnf_pair *event_track_info = jsmnf_find(pairs, json, "track", sizeof("track") - 1);
+          _coglink_parse_track(event_track_info, json); /* Defines track_info */
 
           parsedTrack->track = track_info;
 
@@ -335,25 +337,25 @@ void *coglink_parse_websocket_data(int *event_type, const char *json, size_t len
 /* todo: move to int */
 void *coglink_parse_load_tracks_response(struct coglink_load_tracks_response *response, const char *json, size_t length) {
   jsmn_parser parser;
-  jsmntok_t tokens[256];
+  jsmntok_t *toks = NULL;
+  unsigned num_tokens = 0;
 
   jsmn_init(&parser);
-  int r = jsmn_parse(&parser, json, length, tokens, sizeof(tokens));
-
-  if (r < 0) {
+  int r = jsmn_parse_auto(&parser, json, length, &toks, &num_tokens);
+  if (r <= 0) {
     ERROR("[coglink:jsmn-find] Failed to parse JSON.");
 
     return NULL;
   }
 
   jsmnf_loader loader;
-  jsmnf_pair pairs[256];
+  jsmnf_pair *pairs = NULL;
+  unsigned num_pairs = 0;
 
   jsmnf_init(&loader);
-  r = jsmnf_load(&loader, json, tokens, parser.toknext, pairs, sizeof(pairs) / sizeof(*pairs));
-
-  if (r < 0) {
-    FATAL("[coglink:jsmn-find] Failed to load jsmn-find.");
+  r = jsmnf_load_auto(&loader, json, toks, num_tokens, &pairs, &num_pairs);
+  if (r <= 0) {
+    ERROR("[coglink:jsmn-find] Failed to load jsmn-find.");
 
     return NULL;
   }
@@ -414,7 +416,7 @@ void *coglink_parse_load_tracks_response(struct coglink_load_tracks_response *re
       response->type = COGLINK_LOAD_TYPE_SEARCH;
       response->data = data;
 
-      return NULL;
+      goto cleanup;
     }
     // case 'm': { /* eMpty */
     //   struct coglink_load_tracks_response *response = malloc(sizeof(struct coglink_load_tracks_response));
@@ -432,7 +434,29 @@ void *coglink_parse_load_tracks_response(struct coglink_load_tracks_response *re
     // }
   }
 
+  cleanup: {
+    free(toks);
+    free(pairs);
+  }
+
   return NULL;
+}
+
+void coglink_free_load_tracks_response(struct coglink_load_tracks_response *response) {
+  switch (response->type) {
+    case COGLINK_LOAD_TYPE_SEARCH: {
+      struct coglink_load_tracks_search_response *data = response->data;
+
+      for (size_t i = 0; i < data->size; i++) {
+        free(data->array[i].info);
+      }
+
+      free(data->array);
+      free(data);
+
+      break;
+    }
+  }
 }
 
 struct coglink_voice_state *coglink_parse_voice_state(const char *json, size_t length) {

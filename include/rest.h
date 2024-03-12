@@ -43,7 +43,7 @@ struct coglink_player_queue *coglink_get_player_queue(struct coglink_client *c_c
 
 int coglink_add_track_to_queue(struct coglink_client *c_client, struct coglink_player *player, char *track);
 
-int coglink_remove_track_from_queue(struct coglink_client *c_client, struct coglink_player *player, char *track);
+int coglink_remove_track_from_queue(struct coglink_client *c_client, struct coglink_player *player, size_t position);
 
 int coglink_remove_player(struct coglink_client *c_client, struct coglink_player *player);
 
