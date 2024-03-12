@@ -62,6 +62,8 @@ void _ws_on_text(void *data, struct websockets *ws, struct ws_info *info, const 
       break;
     }
     case COGLINK_PARSE_ERROR: {
+      DEBUG("[coglink] Failed to parse WebSocket data: %s", text);
+
       break;
     }
   }
@@ -225,6 +227,7 @@ int coglink_connect_nodes(struct coglink_client *c_client, struct discord *clien
 
     nodes->array[i].ws = ws_init(&callbacks, client->gw.mhandle, NULL);
 
+    /* todo: use libcurl (official) websocket client */
     ws_set_url(node_info->ws, hostname, NULL);
     ws_start(node_info->ws);
 

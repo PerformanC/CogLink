@@ -74,7 +74,13 @@ struct coglink_partial_track {
   char sourceName[16];
 };
 
+struct coglink_partial_tracks {
+  struct coglink_partial_track *array;
+  size_t size;
+};
+
 struct coglink_track {
+  /* todo: use dynamic */
   char encoded[512];
   struct coglink_partial_track *info;
 };
@@ -86,6 +92,7 @@ struct coglink_track_start_payload {
 
 #define COGLINK_TRACK_START 41
 
+/* todo: dynamic allocation but demanding copy if used for longer */
 struct coglink_track_end_payload {
   u64snowflake guildId;
   struct coglink_track *track;
@@ -94,12 +101,38 @@ struct coglink_track_end_payload {
 
 #define COGLINK_TRACK_END 42
 
-/* coglink_parse_load_tracks_response */
-
-struct coglink_tracks {
-  struct coglink_partial_track *array;
-  size_t size;
+struct coglink_exception_payload {
+  char *message;
+  /* todo: use enums */
+  char *severity;
+  char *cause;
 };
+
+struct coglink_track_exception_payload {
+  u64snowflake guildId;
+  struct coglink_track *track;
+  struct coglink_exception_payload *exception;
+};
+
+#define COGLINK_TRACK_EXCEPTION 43
+
+struct coglink_track_stuck_payload {
+  u64snowflake guildId;
+  struct coglink_track *track;
+  int thresholdMs;
+};
+
+#define COGLINK_TRACK_STUCK 44
+
+struct coglink_websocket_closed_payload {
+  int code;
+  char reason[256];
+  bool byRemote;
+};
+
+#define COGLINK_WEBSOCKET_CLOSED 45
+
+/* coglink_parse_load_tracks_response */
 
 enum coglink_load_type {
   COGLINK_LOAD_TYPE_TRACK,
@@ -111,7 +144,38 @@ enum coglink_load_type {
 
 struct coglink_load_tracks_response {
   enum coglink_load_type type;
-  struct coglink_tracks *tracks;
+  /* todo: implement it without voiding (?) */
+  void *data;
+};
+
+struct coglink_load_tracks_track_response {
+  struct coglink_track *array;
+  size_t size;
+};
+
+/* todo: change name (?) */
+struct coglink_playlist_info {
+  char name[256];
+  int selectedTrack;
+};
+
+struct coglink_load_tracks_playlist_response {
+  struct coglink_playlist_info *info;
+  struct coglink_track *tracks;
+  /* plugins are not supported. Use NodeLink instead. */
+};
+
+struct coglink_load_tracks_search_response {
+  struct coglink_track *array;
+  size_t size;
+};
+
+/* Empty will not allocate data */
+
+struct coglink_load_tracks_error_response {
+  char *message;
+  char *severity;
+  char *cause;
 };
 
 /* coglink_parse_voice_state */
@@ -133,7 +197,7 @@ struct coglink_voice_server_update {
 
 void *coglink_parse_websocket_data(int *type, const char *json, size_t length);
 
-struct coglink_load_tracks_response *coglink_parse_load_tracks_response(const char *json, size_t length);
+void *coglink_parse_load_tracks_response(struct coglink_load_tracks_response *response, const char *json, size_t length);
 
 struct coglink_voice_state *coglink_parse_voice_state(const char *json, size_t length);
 

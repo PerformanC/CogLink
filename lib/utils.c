@@ -12,7 +12,10 @@ size_t _coglink_write_cb(void *data, size_t size, size_t nmemb, void *userp) {
   struct coglink_response *mem = userp;
 
   char *ptr = realloc(mem->body, mem->size + write_size + 1);
-  if (!ptr) FATAL("[coglink:libcurl] Not enough memory to realloc.\n");
+  if (!ptr) {
+    /* todo: fix calling FATAL without any valid case to fall under this */
+    FATAL("[coglink:libcurl] Not enough memory to realloc.\n");
+  }
 
   mem->body = ptr;
   memcpy(&(mem->body[mem->size]), data, write_size);
