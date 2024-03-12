@@ -47,7 +47,7 @@ int coglink_remove_track_from_queue(struct coglink_client *c_client, struct cogl
 
 int coglink_remove_player(struct coglink_client *c_client, struct coglink_player *player);
 
-int coglink_load_tracks(struct coglink_client *c_client, struct coglink_player *player, char *identifier);
+int coglink_load_tracks(struct coglink_client *c_client, struct coglink_player *player, char *identifier, struct coglink_load_tracks_response *response);
 
 int coglink_play_track(struct coglink_client *c_client, struct coglink_player *player, char *track);
 

@@ -10,60 +10,60 @@
 #include "codecs.h"
 
 #define _coglink_parse_track(pairs, json)                                                                                       \
-  struct coglink_track *track_info = malloc(sizeof(struct coglink_partial_track));                                                   \
-  track_info->info = malloc(sizeof(struct coglink_partial_track));                                                                   \
+  struct coglink_track *track_info = malloc(sizeof(struct coglink_partial_track));                                              \
+  track_info->info = malloc(sizeof(struct coglink_partial_track));                                                              \
                                                                                                                                 \
   char *path[] = { "encoded", NULL };                                                                                           \
-  FIND_FIELD_PATH(encoded, "encoded", 1);                                                                                       \
-  snprintf(track_info->encoded, sizeof(track_info->encoded), "%.*s", (int)encoded->v.len, json + encoded->v.pos);                         \
+  FIND_FIELD_PATH(pairs, encoded, "encoded", 1);                                                                                       \
+  snprintf(track_info->encoded, sizeof(track_info->encoded), "%.*s", (int)encoded->v.len, json + encoded->v.pos);               \
                                                                                                                                 \
   path[0] = "info";                                                                                                             \
   path[1] = "identifier";                                                                                                       \
-  FIND_FIELD_PATH(identifier, "identifier", 2);                                                                                 \
+  FIND_FIELD_PATH(pairs, identifier, "identifier", 2);                                                                                 \
   snprintf(track_info->info->identifier, sizeof(track_info->info->identifier), "%.*s", (int)identifier->v.len, json + identifier->v.pos); \
                                                                                                                                 \
   path[1] = "isSeekable";                                                                                                       \
-  FIND_FIELD_PATH(isSeekable, "isSeekable", 2);                                                                                 \
+  FIND_FIELD_PATH(pairs, isSeekable, "isSeekable", 2);                                                                                 \
   if (json[isSeekable->v.pos] == 't') track_info->info->isSeekable = true;                                                           \
   else track_info->info->isSeekable = false;                                                                                         \
                                                                                                                                 \
   path[1] = "author";                                                                                                           \
-  FIND_FIELD_PATH(author, "author", 2);                                                                                         \
+  FIND_FIELD_PATH(pairs, author, "author", 2);                                                                                         \
   snprintf(track_info->info->author, sizeof(track_info->info->author), "%.*s", (int)author->v.len, json + author->v.pos);                 \
                                                                                                                                 \
   path[1] = "length";                                                                                                           \
-  FIND_FIELD_PATH(length, "length", 2);                                                                                         \
+  FIND_FIELD_PATH(pairs, length, "length", 2);                                                                                         \
   PAIR_TO_SIZET(length, lengthStr, track_info->info->length, 16);                                                                    \
                                                                                                                                 \
   path[1] = "isStream";                                                                                                         \
-  FIND_FIELD_PATH(isStream, "isStream", 2);                                                                                     \
+  FIND_FIELD_PATH(pairs, isStream, "isStream", 2);                                                                                     \
   if (json[isStream->v.pos] == 't') track_info->info->isStream = true;                                                               \
   else track_info->info->isStream = false;                                                                                           \
                                                                                                                                 \
   path[1] = "position";                                                                                                         \
-  FIND_FIELD_PATH(position, "position", 2);                                                                                     \
+  FIND_FIELD_PATH(pairs, position, "position", 2);                                                                                     \
   PAIR_TO_SIZET(position, positionStr, track_info->info->position, 16);                                                              \
                                                                                                                                 \
   path[1] = "title";                                                                                                            \
-  FIND_FIELD_PATH(title, "title", 2);                                                                                           \
+  FIND_FIELD_PATH(pairs, title, "title", 2);                                                                                           \
   snprintf(track_info->info->title, sizeof(track_info->info->title), "%.*s", (int)title->v.len, json + title->v.pos);                     \
                                                                                                                                 \
   path[1] = "uri";                                                                                                              \
-  FIND_FIELD_PATH(uri, "uri", 2);                                                                                               \
+  FIND_FIELD_PATH(pairs, uri, "uri", 2);                                                                                               \
   snprintf(track_info->info->uri, sizeof(track_info->info->uri), "%.*s", (int)uri->v.len, json + uri->v.pos);                             \
                                                                                                                                 \
   path[1] = "isrc";                                                                                                             \
-  FIND_FIELD_PATH(isrc, "isrc", 2);                                                                                             \
+  FIND_FIELD_PATH(pairs, isrc, "isrc", 2);                                                                                             \
   snprintf(track_info->info->isrc, sizeof(track_info->info->isrc), "%.*s", (int)isrc->v.len, json + isrc->v.pos);                         \
                                                                                                                                 \
   path[1] = "artworkUrl";                                                                                                       \
-  FIND_FIELD_PATH(artworkUrl, "artworkUrl", 2);                                                                                 \
+  FIND_FIELD_PATH(pairs, artworkUrl, "artworkUrl", 2);                                                                                 \
   snprintf(track_info->info->artworkUrl, sizeof(track_info->info->artworkUrl), "%.*s", (int)artworkUrl->v.len, json + artworkUrl->v.pos); \
                                                                                                                                 \
   path[1] = "sourceName";                                                                                                       \
-  FIND_FIELD_PATH(sourceName, "sourceName", 2);                                                                                 \
+  FIND_FIELD_PATH(pairs, sourceName, "sourceName", 2);                                                                                 \
   snprintf(track_info->info->sourceName, sizeof(track_info->info->sourceName), "%.*s", (int)sourceName->v.len, json + sourceName->v.pos);
-  
+
 void *coglink_parse_websocket_data(int *event_type, const char *json, size_t length) {
   jsmn_parser parser;
   jsmntok_t tokens[64];
@@ -160,63 +160,70 @@ void *coglink_parse_websocket_data(int *event_type, const char *json, size_t len
 
           return parsedTrack;
         }
-        // case 'c': { /* TrackExceptionEvent */
-        //   struct coglink_parsedTrack parsedTrack = _coglink_buildTrackStruct(c_info, pairs, json);
-        //   if (parsedTrack.encoded[0] == '\0') return;
+        case 'c': { /* TrackExceptionEvent */
+          FIND_FIELD(message, "message");
+          FIND_FIELD(severity, "severity");
+          FIND_FIELD(cause, "cause");
 
-        //   char *path[] = { "exception", "message" };
-        //   FIND_FIELD_PATH("message", sizeof("message") - 1, 2);
+          struct coglink_track_exception_payload *parsedTrack = malloc(sizeof(struct coglink_track_end_payload));
 
-        //   path[1] = "severity";
-        //   FIND_FIELD_PATH("severity", sizeof("severity") - 1, 2);
+          PAIR_TO_SIZET(guildId, guildIdStr, parsedTrack->guildId, 18);
 
-        //   path[1] = "cause";
-        //   FIND_FIELD_PATH("cause", sizeof("cause") - 1, 2);
+          _coglink_parse_track(pairs, json); /* Defines track_info */
 
-        //   char Message[128], Severity[16], Cause[256];
-        //   snprintf(Message, sizeof(Message), "%.*s", (int)message->v.len, json + message->v.pos);
-        //   snprintf(Severity, sizeof(Severity), "%.*s", (int)severity->v.len, json + severity->v.pos);
-        //   snprintf(Cause, sizeof(Cause), "%.*s", (int)cause->v.len, json + cause->v.pos);
+          parsedTrack->track = track_info;
+          parsedTrack->exception = malloc(sizeof(struct coglink_exception_payload));
+          parsedTrack->exception->message = malloc(message->v.len + 1);
+          snprintf(parsedTrack->exception->message, message->v.len + 1, "%.*s", (int)message->v.len, json + message->v.pos);
+          parsedTrack->exception->severity = malloc(severity->v.len + 1);
+          snprintf(parsedTrack->exception->severity, severity->v.len + 1, "%.*s", (int)severity->v.len, json + severity->v.pos);
+          parsedTrack->exception->cause = malloc(cause->v.len + 1);
+          snprintf(parsedTrack->exception->cause, cause->v.len + 1, "%.*s", (int)cause->v.len, json + cause->v.pos);
 
-        //   c_info->c_info->events->onTrackException(guildId, &parsedTrack, Message, Severity, Cause);
-        //   break;
-        // }
-        // case 'u': { /* TrackStuckEvent */
-        //   struct coglink_parsedTrack parsedTrack = _coglink_buildTrackStruct(c_info, pairs, json);
-        //   if (parsedTrack.encoded[0] == '\0') return;
+          *event_type = COGLINK_TRACK_EXCEPTION;
 
-        //   jsmnf_pair *thresholdMs = FIND_FIELD("thresholdMs", sizeof("thresholdMs") - 1);
+          return parsedTrack;
+        }
+        case 'u': { /* TrackStuckEvent */
+          FIND_FIELD(reason, "thresholdMs");
 
-        //   size_t ThresholdMs;
-        //   PAIR_TO_SIZET(thresholdMs, "thresholdMs", "ThresholdMs", 16);
+          struct coglink_track_stuck_payload *parsedTrack = malloc(sizeof(struct coglink_track_end_payload));
 
-        //   c_info->c_info->events->onTrackStuck(guildId, ThresholdMs, &parsedTrack);
-        //   break;
-        // }
-        // case 't': { /* WebSocketClosedEvent */
-        //   if (!c_info->c_info->events->onWebSocketClosed) return;
+          PAIR_TO_SIZET(guildId, guildIdStr, parsedTrack->guildId, 18);
 
-        //   jsmnf_pair *code = FIND_FIELD("code", sizeof("code") - 1);
-        //   jsmnf_pair *reason = FIND_FIELD("reason", sizeof("reason") - 1);
-        //   jsmnf_pair *byRemote = FIND_FIELD("byRemote", sizeof("byRemote") - 1);
+          _coglink_parse_track(pairs, json); /* Defines track_info */
 
-        //   char Code[16], Reason[128];
-        //   bool ByRemote;
+          parsedTrack->track = track_info;
 
-        //   snprintf(Code, sizeof(Code), "%.*s", (int)code->v.len, json + code->v.pos);
-        //   snprintf(Reason, sizeof(Reason), "%.*s", (int)reason->v.len, json + reason->v.pos);
+          PAIR_TO_SIZET(reason, thresholdMsStr, parsedTrack->thresholdMs, 8);
 
-        //   if (json[byRemote->v.pos] == 't') ByRemote = true;
-        //   else ByRemote = false;
-  
-        //   c_info->c_info->events->onWebSocketClosed(guildId, Code, Reason, ByRemote);
-        //   break;
-        // }
-        // default: {
-        //   if (c_info->c_info->events->onUnknownEvent) c_info->c_info->events->onUnknownEvent(guildId, Type, json);
+          *event_type = COGLINK_TRACK_STUCK;
 
-        //   break;
-        // }
+          return parsedTrack;
+        }
+        case 't': { /* WebSocketClosedEvent */
+          FIND_FIELD(code, "code");
+          FIND_FIELD(reason, "reason");
+          FIND_FIELD(byRemote, "byRemote");
+
+          struct coglink_websocket_closed_payload *c_info = malloc(sizeof(struct coglink_websocket_closed_payload));
+
+          PAIR_TO_SIZET(code, codeStr, c_info->code, 8);
+          snprintf(c_info->reason, sizeof(c_info->reason), "%.*s", (int)reason->v.len, json + reason->v.pos);
+          if (json[byRemote->v.pos] == 't') c_info->byRemote = true;
+          else c_info->byRemote = false;
+
+          *event_type = COGLINK_WEBSOCKET_CLOSED;
+
+          return c_info;
+        }
+        default: {
+          ERROR("[coglink:jsmn-find] Unknown event type: %.*s", (int)type->v.len, json + type->v.pos);
+
+          *event_type = COGLINK_PARSE_ERROR;
+
+          break;
+        }
       }
 
       break;
@@ -228,36 +235,36 @@ void *coglink_parse_websocket_data(int *event_type, const char *json, size_t len
       FIND_FIELD(memory, "memory");
 
       char *path[] = { "memory", "free" };
-      FIND_FIELD_PATH(lavaFree, "free", 2);
+      FIND_FIELD_PATH(pairs, lavaFree, "free", 2);
 
       path[1] = "used";
-      FIND_FIELD_PATH(used, "used", 2);
+      FIND_FIELD_PATH(pairs, used, "used", 2);
 
       path[1] = "allocated";
-      FIND_FIELD_PATH(allocated, "allocated", 2);
+      FIND_FIELD_PATH(pairs, allocated, "allocated", 2);
 
       path[1] = "reservable";
-      FIND_FIELD_PATH(reservable, "reservable", 2);
+      FIND_FIELD_PATH(pairs, reservable, "reservable", 2);
 
       path[0] = "cpu";
       path[1] = "cores";
-      FIND_FIELD_PATH(cores, "cores", 2);
+      FIND_FIELD_PATH(pairs, cores, "cores", 2);
 
       path[1] = "systemLoad";
-      FIND_FIELD_PATH(systemLoad, "systemLoad", 2);
+      FIND_FIELD_PATH(pairs, systemLoad, "systemLoad", 2);
 
       path[1] = "lavalinkLoad";
-      FIND_FIELD_PATH(lavalinkLoad, "lavalinkLoad", 2);
+      FIND_FIELD_PATH(pairs, lavalinkLoad, "lavalinkLoad", 2);
 
       path[0] = "frameStats";
       path[1] = "sent";
-      FIND_FIELD_PATH(sent, "sent", 2);
+      FIND_FIELD_PATH(pairs, sent, "sent", 2);
 
       path[1] = "deficit";
-      FIND_FIELD_PATH(deficit, "deficit", 2);
+      FIND_FIELD_PATH(pairs, deficit, "deficit", 2);
 
       path[1] = "nulled";
-      FIND_FIELD_PATH(nulled, "nulled", 2);
+      FIND_FIELD_PATH(pairs, nulled, "nulled", 2);
 
       struct coglink_stats_payload *stats = malloc(sizeof(struct coglink_stats_payload));
       stats->memory = malloc(sizeof(struct coglink_stats_memory_payload));
@@ -288,16 +295,16 @@ void *coglink_parse_websocket_data(int *event_type, const char *json, size_t len
       FIND_FIELD(guildId, "guildId");
 
       char *path[] = { "state", "time" };
-      FIND_FIELD_PATH(time, "time", 2);
+      FIND_FIELD_PATH(pairs, time, "time", 2);
 
       path[1] = "position";
-      FIND_FIELD_PATH(position, "position", 2);
+      FIND_FIELD_PATH(pairs, position, "position", 2);
 
       path[1] = "connected";
-      FIND_FIELD_PATH(connected, "connected", 2);
+      FIND_FIELD_PATH(pairs, connected, "connected", 2);
 
       path[1] = "ping";
-      FIND_FIELD_PATH(ping, "ping", 2);
+      FIND_FIELD_PATH(pairs, ping, "ping", 2);
 
       struct coglink_player_update_payload *playerUpdate = malloc(sizeof(struct coglink_player_update_payload));
       playerUpdate->state = malloc(sizeof(struct coglink_player_state_payload));
@@ -313,18 +320,22 @@ void *coglink_parse_websocket_data(int *event_type, const char *json, size_t len
 
       return playerUpdate;
     }
-    // default: {
-    //   if (c_info->c_info->events->onUnknownOp) c_info->c_info->events->onUnknownOp(Op, json);
-    //   break;
-    // }
+    default: {
+      ERROR("[coglink:jsmn-find] Unknown event type: %.*s", (int)op->v.len, json + op->v.pos);
+
+      *event_type = COGLINK_PARSE_ERROR;
+
+      break;
+    }
   }
 
   return NULL;
 }
 
-struct coglink_load_tracks_response *coglink_parse_load_tracks_response(const char *json, size_t length) {
+/* todo: move to int */
+void *coglink_parse_load_tracks_response(struct coglink_load_tracks_response *response, const char *json, size_t length) {
   jsmn_parser parser;
-  jsmntok_t tokens[64];
+  jsmntok_t tokens[256];
 
   jsmn_init(&parser);
   int r = jsmn_parse(&parser, json, length, tokens, sizeof(tokens));
@@ -336,7 +347,7 @@ struct coglink_load_tracks_response *coglink_parse_load_tracks_response(const ch
   }
 
   jsmnf_loader loader;
-  jsmnf_pair pairs[64];
+  jsmnf_pair pairs[256];
 
   jsmnf_init(&loader);
   r = jsmnf_load(&loader, json, tokens, parser.toknext, pairs, sizeof(pairs) / sizeof(*pairs));
@@ -382,19 +393,28 @@ struct coglink_load_tracks_response *coglink_parse_load_tracks_response(const ch
     //   return response;
     // }
     case 'e': { /* sEarch */
-      struct coglink_tracks *tracks = malloc(sizeof(struct coglink_tracks));
-      tracks->array = malloc(sizeof(struct coglink_partial_track) * 1);
-      tracks->size = 1;
+      jsmnf_pair *tracks = jsmnf_find(pairs, json, "data", sizeof("data") - 1);
 
-      _coglink_parse_track(pairs, json); /* Defines track_info */
+      struct coglink_load_tracks_search_response *data = malloc(sizeof(struct coglink_load_tracks_search_response));
+      data->array = malloc(sizeof(struct coglink_track) * tracks->size);
+      data->size = tracks->size;
 
-      tracks->array[0] = *track_info->info;
+      for (int i = 0; i < tracks->size; i++) {
+        char i_str[11];
+        snprintf(i_str, sizeof(i_str), "%d", i);
 
-      struct coglink_load_tracks_response *response = malloc(sizeof(struct coglink_load_tracks_response));
+        char *track_path[] = { "data", i_str };
+        jsmnf_pair *track_pair = jsmnf_find_path(pairs, json, track_path, 2);
+
+        _coglink_parse_track(track_pair, json); /* Defines track_info */
+
+        data->array[i] = *track_info;
+      }
+
       response->type = COGLINK_LOAD_TYPE_SEARCH;
-      response->tracks = tracks;
+      response->data = data;
 
-      return response;
+      return NULL;
     }
     // case 'm': { /* eMpty */
     //   struct coglink_load_tracks_response *response = malloc(sizeof(struct coglink_load_tracks_response));

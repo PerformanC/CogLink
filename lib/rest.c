@@ -13,10 +13,14 @@
 /* todo: option for more algorithms */
 int _coglink_select_node(struct coglink_client *c_client) {
   size_t i = 0;
-  int bestStatsNode = 0, bestStats = -1;
+  int bestStatsNode = -1, bestStats = -1;
 
   do {
-    if (!c_client->nodes->array[i].stats) continue;
+    if (!c_client->nodes->array[i].stats) {
+      if (bestStatsNode == -1) bestStatsNode = i;
+
+      continue;
+    }
 
     int systemLoad = c_client->nodes->array[i].stats->cpu->systemLoad;
     int cores = c_client->nodes->array[i].stats->cpu->cores;
@@ -74,6 +78,9 @@ int coglink_join_voice_channel(struct discord *client, u64snowflake guild_id, u6
 
 struct coglink_player *coglink_create_player(struct coglink_client *c_client, u64snowflake guild_id) {
   int selected_node = _coglink_select_node(c_client);
+
+  if (selected_node == -1) return NULL;
+
   size_t i = 0;
 
   do {
@@ -169,10 +176,10 @@ int coglink_remove_player(struct coglink_client *c_client, struct coglink_player
   return COGLINK_SUCCESS;
 }
 
-int coglink_load_tracks(struct coglink_client *c_client, struct coglink_player *player, char *identifier) {
+int coglink_load_tracks(struct coglink_client *c_client, struct coglink_player *player, char *identifier, struct coglink_load_tracks_response *response) {
   struct coglink_node *node = &c_client->nodes->array[player->node];
 
-  if (node->session_id == NULL) return COGLINK_NODE_READY;
+  if (node->session_id == NULL) return COGLINK_NODE_OFFLINE;
 
   size_t endpoint_size = (sizeof("/loadtracks?identifier=") - 1) + strlen(identifier) + 1;
   char *endpoint = malloc(endpoint_size);
@@ -188,9 +195,11 @@ int coglink_load_tracks(struct coglink_client *c_client, struct coglink_player *
     .get_response = true
   }, res);
 
-  printf("%s\n", res->body);
+  coglink_parse_load_tracks_response(response, res->body, res->size);
 
   free(endpoint);
+  free(res->body);
+  free(res);
   
   return COGLINK_SUCCESS;
 }
@@ -198,7 +207,7 @@ int coglink_load_tracks(struct coglink_client *c_client, struct coglink_player *
 int coglink_play_track(struct coglink_client *c_client, struct coglink_player *player, char *track) {
   struct coglink_node *node = &c_client->nodes->array[player->node];
 
-  if (node->session_id == NULL) return COGLINK_NODE_READY;
+  if (node->session_id == NULL) return COGLINK_NODE_OFFLINE;
 
   size_t payload_size = (sizeof("{\"track\":{\"encoded\":\"\"}}") - 1) + strlen(track) + 1;
   char *payload = malloc(payload_size);
