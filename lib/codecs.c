@@ -9,61 +9,6 @@
 
 #include "codecs.h"
 
-#define _coglink_parse_track(pairs, json)                                                                                       \
-  struct coglink_track *track_info = malloc(sizeof(struct coglink_partial_track));                                              \
-  track_info->info = malloc(sizeof(struct coglink_partial_track));                                                              \
-                                                                                                                                \
-  char *path[] = { "encoded", NULL };                                                                                           \
-  FIND_FIELD_PATH(pairs, encoded, "encoded", 1);                                                                                       \
-  snprintf(track_info->encoded, sizeof(track_info->encoded), "%.*s", (int)encoded->v.len, json + encoded->v.pos);               \
-                                                                                                                                \
-  path[0] = "info";                                                                                                             \
-  path[1] = "identifier";                                                                                                       \
-  FIND_FIELD_PATH(pairs, identifier, "identifier", 2);                                                                                 \
-  snprintf(track_info->info->identifier, sizeof(track_info->info->identifier), "%.*s", (int)identifier->v.len, json + identifier->v.pos); \
-                                                                                                                                \
-  path[1] = "isSeekable";                                                                                                       \
-  FIND_FIELD_PATH(pairs, isSeekable, "isSeekable", 2);                                                                                 \
-  if (json[isSeekable->v.pos] == 't') track_info->info->isSeekable = true;                                                           \
-  else track_info->info->isSeekable = false;                                                                                         \
-                                                                                                                                \
-  path[1] = "author";                                                                                                           \
-  FIND_FIELD_PATH(pairs, author, "author", 2);                                                                                         \
-  snprintf(track_info->info->author, sizeof(track_info->info->author), "%.*s", (int)author->v.len, json + author->v.pos);                 \
-                                                                                                                                \
-  path[1] = "length";                                                                                                           \
-  FIND_FIELD_PATH(pairs, length, "length", 2);                                                                                         \
-  PAIR_TO_SIZET(length, lengthStr, track_info->info->length, 16);                                                                    \
-                                                                                                                                \
-  path[1] = "isStream";                                                                                                         \
-  FIND_FIELD_PATH(pairs, isStream, "isStream", 2);                                                                                     \
-  if (json[isStream->v.pos] == 't') track_info->info->isStream = true;                                                               \
-  else track_info->info->isStream = false;                                                                                           \
-                                                                                                                                \
-  path[1] = "position";                                                                                                         \
-  FIND_FIELD_PATH(pairs, position, "position", 2);                                                                                     \
-  PAIR_TO_SIZET(position, positionStr, track_info->info->position, 16);                                                              \
-                                                                                                                                \
-  path[1] = "title";                                                                                                            \
-  FIND_FIELD_PATH(pairs, title, "title", 2);                                                                                           \
-  snprintf(track_info->info->title, sizeof(track_info->info->title), "%.*s", (int)title->v.len, json + title->v.pos);                     \
-                                                                                                                                \
-  path[1] = "uri";                                                                                                              \
-  FIND_FIELD_PATH(pairs, uri, "uri", 2);                                                                                               \
-  snprintf(track_info->info->uri, sizeof(track_info->info->uri), "%.*s", (int)uri->v.len, json + uri->v.pos);                             \
-                                                                                                                                \
-  path[1] = "isrc";                                                                                                             \
-  FIND_FIELD_PATH(pairs, isrc, "isrc", 2);                                                                                             \
-  snprintf(track_info->info->isrc, sizeof(track_info->info->isrc), "%.*s", (int)isrc->v.len, json + isrc->v.pos);                         \
-                                                                                                                                \
-  path[1] = "artworkUrl";                                                                                                       \
-  FIND_FIELD_PATH(pairs, artworkUrl, "artworkUrl", 2);                                                                                 \
-  snprintf(track_info->info->artworkUrl, sizeof(track_info->info->artworkUrl), "%.*s", (int)artworkUrl->v.len, json + artworkUrl->v.pos); \
-                                                                                                                                \
-  path[1] = "sourceName";                                                                                                       \
-  FIND_FIELD_PATH(pairs, sourceName, "sourceName", 2);                                                                                 \
-  snprintf(track_info->info->sourceName, sizeof(track_info->info->sourceName), "%.*s", (int)sourceName->v.len, json + sourceName->v.pos);
-
 void *coglink_parse_websocket_data(int *event_type, const char *json, size_t length) {
   *event_type = COGLINK_PARSE_ERROR;
 
@@ -124,17 +69,17 @@ void *coglink_parse_websocket_data(int *event_type, const char *json, size_t len
       return ready;
     }
     case 'e': { /* Event */
-      FIND_FIELD(type, "type");
-      FIND_FIELD(guildId, "guildId");
+      FIND_FIELD(json, type, "type");
+      FIND_FIELD(json, guildId, "guildId");
 
       switch(json[type->v.pos + 7]) {
         case 'a': { /* TrackStartEvent */
           struct coglink_track_start_payload *parsedTrack = malloc(sizeof(struct coglink_track_start_payload));
 
-          PAIR_TO_SIZET(guildId, guildIdStr, parsedTrack->guildId, 18);
+          PAIR_TO_SIZET(json, guildId, guildIdStr, parsedTrack->guildId, 18);
 
           jsmnf_pair *event_track_info = jsmnf_find(pairs, json, "track", sizeof("track") - 1);
-          _coglink_parse_track(event_track_info, json); /* Defines track_info */
+          coglink_parse_track(event_track_info, json); /* Defines track_info */
 
           parsedTrack->track = track_info;
 
@@ -143,14 +88,14 @@ void *coglink_parse_websocket_data(int *event_type, const char *json, size_t len
           return parsedTrack;
         }
         case 'd': { /* TrackEndEvent */
-          FIND_FIELD(reason, "reason");
+          FIND_FIELD(json, reason, "reason");
 
           struct coglink_track_end_payload *parsedTrack = malloc(sizeof(struct coglink_track_end_payload));
 
-          PAIR_TO_SIZET(guildId, guildIdStr, parsedTrack->guildId, 18);
+          PAIR_TO_SIZET(json, guildId, guildIdStr, parsedTrack->guildId, 18);
 
           jsmnf_pair *event_track_info = jsmnf_find(pairs, json, "track", sizeof("track") - 1);
-          _coglink_parse_track(event_track_info, json); /* Defines track_info */
+          coglink_parse_track(event_track_info, json); /* Defines track_info */
 
           parsedTrack->track = track_info;
 
@@ -161,16 +106,16 @@ void *coglink_parse_websocket_data(int *event_type, const char *json, size_t len
           return parsedTrack;
         }
         case 'c': { /* TrackExceptionEvent */
-          FIND_FIELD(message, "message");
-          FIND_FIELD(severity, "severity");
-          FIND_FIELD(cause, "cause");
+          FIND_FIELD(json, message, "message");
+          FIND_FIELD(json, severity, "severity");
+          FIND_FIELD(json, cause, "cause");
 
           struct coglink_track_exception_payload *parsedTrack = malloc(sizeof(struct coglink_track_end_payload));
 
-          PAIR_TO_SIZET(guildId, guildIdStr, parsedTrack->guildId, 18);
+          PAIR_TO_SIZET(json, guildId, guildIdStr, parsedTrack->guildId, 18);
 
           jsmnf_pair *event_track_info = jsmnf_find(pairs, json, "track", sizeof("track") - 1);
-          _coglink_parse_track(event_track_info, json); /* Defines track_info */
+          coglink_parse_track(event_track_info, json); /* Defines track_info */
 
           parsedTrack->track = track_info;
           parsedTrack->exception = malloc(sizeof(struct coglink_exception_payload));
@@ -186,31 +131,31 @@ void *coglink_parse_websocket_data(int *event_type, const char *json, size_t len
           return parsedTrack;
         }
         case 'u': { /* TrackStuckEvent */
-          FIND_FIELD(reason, "thresholdMs");
+          FIND_FIELD(json, reason, "thresholdMs");
 
           struct coglink_track_stuck_payload *parsedTrack = malloc(sizeof(struct coglink_track_end_payload));
 
-          PAIR_TO_SIZET(guildId, guildIdStr, parsedTrack->guildId, 18);
+          PAIR_TO_SIZET(json, guildId, guildIdStr, parsedTrack->guildId, 18);
 
           jsmnf_pair *event_track_info = jsmnf_find(pairs, json, "track", sizeof("track") - 1);
-          _coglink_parse_track(event_track_info, json); /* Defines track_info */
+          coglink_parse_track(event_track_info, json); /* Defines track_info */
 
           parsedTrack->track = track_info;
 
-          PAIR_TO_SIZET(reason, thresholdMsStr, parsedTrack->thresholdMs, 8);
+          PAIR_TO_SIZET(json, reason, thresholdMsStr, parsedTrack->thresholdMs, 8);
 
           *event_type = COGLINK_TRACK_STUCK;
 
           return parsedTrack;
         }
         case 't': { /* WebSocketClosedEvent */
-          FIND_FIELD(code, "code");
-          FIND_FIELD(reason, "reason");
-          FIND_FIELD(byRemote, "byRemote");
+          FIND_FIELD(json, code, "code");
+          FIND_FIELD(json, reason, "reason");
+          FIND_FIELD(json, byRemote, "byRemote");
 
           struct coglink_websocket_closed_payload *c_info = malloc(sizeof(struct coglink_websocket_closed_payload));
 
-          PAIR_TO_SIZET(code, codeStr, c_info->code, 8);
+          PAIR_TO_SIZET(json, code, codeStr, c_info->code, 8);
           snprintf(c_info->reason, sizeof(c_info->reason), "%.*s", (int)reason->v.len, json + reason->v.pos);
           if (json[byRemote->v.pos] == 't') c_info->byRemote = true;
           else c_info->byRemote = false;
@@ -231,61 +176,61 @@ void *coglink_parse_websocket_data(int *event_type, const char *json, size_t len
       break;
     }
     case 's': { /* Stats */
-      FIND_FIELD(players, "players");
-      FIND_FIELD(playingPlayers, "playingPlayers");
-      FIND_FIELD(uptime, "uptime");
-      FIND_FIELD(memory, "memory");
+      FIND_FIELD(json, players, "players");
+      FIND_FIELD(json, playingPlayers, "playingPlayers");
+      FIND_FIELD(json, uptime, "uptime");
+      FIND_FIELD(json, memory, "memory");
 
       char *path[] = { "memory", "free" };
-      FIND_FIELD_PATH(pairs, lavaFree, "free", 2);
+      FIND_FIELD_PATH(json, pairs, lavaFree, "free", 2);
 
       path[1] = "used";
-      FIND_FIELD_PATH(pairs, used, "used", 2);
+      FIND_FIELD_PATH(json, pairs, used, "used", 2);
 
       path[1] = "allocated";
-      FIND_FIELD_PATH(pairs, allocated, "allocated", 2);
+      FIND_FIELD_PATH(json, pairs, allocated, "allocated", 2);
 
       path[1] = "reservable";
-      FIND_FIELD_PATH(pairs, reservable, "reservable", 2);
+      FIND_FIELD_PATH(json, pairs, reservable, "reservable", 2);
 
       path[0] = "cpu";
       path[1] = "cores";
-      FIND_FIELD_PATH(pairs, cores, "cores", 2);
+      FIND_FIELD_PATH(json, pairs, cores, "cores", 2);
 
       path[1] = "systemLoad";
-      FIND_FIELD_PATH(pairs, systemLoad, "systemLoad", 2);
+      FIND_FIELD_PATH(json, pairs, systemLoad, "systemLoad", 2);
 
       path[1] = "lavalinkLoad";
-      FIND_FIELD_PATH(pairs, lavalinkLoad, "lavalinkLoad", 2);
+      FIND_FIELD_PATH(json, pairs, lavalinkLoad, "lavalinkLoad", 2);
 
       path[0] = "frameStats";
       path[1] = "sent";
-      FIND_FIELD_PATH(pairs, sent, "sent", 2);
+      FIND_FIELD_PATH(json, pairs, sent, "sent", 2);
 
       path[1] = "deficit";
-      FIND_FIELD_PATH(pairs, deficit, "deficit", 2);
+      FIND_FIELD_PATH(json, pairs, deficit, "deficit", 2);
 
       path[1] = "nulled";
-      FIND_FIELD_PATH(pairs, nulled, "nulled", 2);
+      FIND_FIELD_PATH(json, pairs, nulled, "nulled", 2);
 
       struct coglink_stats_payload *stats = malloc(sizeof(struct coglink_stats_payload));
       stats->memory = malloc(sizeof(struct coglink_stats_memory_payload));
       stats->cpu = malloc(sizeof(struct coglink_stats_cpu_payload));
       stats->frameStats = malloc(sizeof(struct coglink_stats_frame_stats_payload));
 
-      PAIR_TO_SIZET(players, playersStr, stats->players, 8);
-      PAIR_TO_SIZET(playingPlayers, playingPlayersStr, stats->playingPlayers, 16);
-      PAIR_TO_SIZET(uptime, uptimeStr, stats->uptime, 8);
-      PAIR_TO_SIZET(lavaFree, freeStr, stats->memory->free, 8);
-      PAIR_TO_SIZET(used, usedStr, stats->memory->used, 8);
-      PAIR_TO_SIZET(allocated, allocatedStr, stats->memory->allocated, 8);
-      PAIR_TO_SIZET(reservable, reservableStr, stats->memory->reservable, 8);
-      PAIR_TO_SIZET(cores, coresStr, stats->cpu->cores, 8);
-      PAIR_TO_SIZET(systemLoad, systemLoadStr, stats->cpu->systemLoad, 8);
-      PAIR_TO_SIZET(lavalinkLoad, lavalinkLoadStr, stats->cpu->lavalinkLoad, 8);
-      PAIR_TO_SIZET(sent, sentStr, stats->frameStats->sent, 8);
-      PAIR_TO_SIZET(deficit, deficitStr, stats->frameStats->deficit, 8);
-      PAIR_TO_SIZET(nulled, nulledStr, stats->frameStats->nulled, 8);
+      PAIR_TO_SIZET(json, players, playersStr, stats->players, 8);
+      PAIR_TO_SIZET(json, playingPlayers, playingPlayersStr, stats->playingPlayers, 16);
+      PAIR_TO_SIZET(json, uptime, uptimeStr, stats->uptime, 8);
+      PAIR_TO_SIZET(json, lavaFree, freeStr, stats->memory->free, 8);
+      PAIR_TO_SIZET(json, used, usedStr, stats->memory->used, 8);
+      PAIR_TO_SIZET(json, allocated, allocatedStr, stats->memory->allocated, 8);
+      PAIR_TO_SIZET(json, reservable, reservableStr, stats->memory->reservable, 8);
+      PAIR_TO_SIZET(json, cores, coresStr, stats->cpu->cores, 8);
+      PAIR_TO_SIZET(json, systemLoad, systemLoadStr, stats->cpu->systemLoad, 8);
+      PAIR_TO_SIZET(json, lavalinkLoad, lavalinkLoadStr, stats->cpu->lavalinkLoad, 8);
+      PAIR_TO_SIZET(json, sent, sentStr, stats->frameStats->sent, 8);
+      PAIR_TO_SIZET(json, deficit, deficitStr, stats->frameStats->deficit, 8);
+      PAIR_TO_SIZET(json, nulled, nulledStr, stats->frameStats->nulled, 8);
 
       DEBUG("[coglink:jsmn-find] Parsed error search json, results:\n> Players: %s\n> PlayingPlayers: %s\n> Uptime: %s\n> Free: %s\n> Used: %s\n> Allocated: %s\n> Reservable: %s\n> Cores: %s\n> SystemLoad: %s\n> LavalinkLoad: %s\n> Sent: %s\n> Nulled: %s\n> Deficit: %s", playersStr, playingPlayersStr, uptimeStr, freeStr, usedStr, allocatedStr, reservableStr, coresStr, systemLoadStr, lavalinkLoadStr, sentStr, nulledStr, deficitStr);
 
@@ -294,27 +239,27 @@ void *coglink_parse_websocket_data(int *event_type, const char *json, size_t len
       return stats;
     }
     case 'p': { /* PlayerUpdate */
-      FIND_FIELD(guildId, "guildId");
+      FIND_FIELD(json, guildId, "guildId");
 
       char *path[] = { "state", "time" };
-      FIND_FIELD_PATH(pairs, time, "time", 2);
+      FIND_FIELD_PATH(json, pairs, time, "time", 2);
 
       path[1] = "position";
-      FIND_FIELD_PATH(pairs, position, "position", 2);
+      FIND_FIELD_PATH(json, pairs, position, "position", 2);
 
       path[1] = "connected";
-      FIND_FIELD_PATH(pairs, connected, "connected", 2);
+      FIND_FIELD_PATH(json, pairs, connected, "connected", 2);
 
       path[1] = "ping";
-      FIND_FIELD_PATH(pairs, ping, "ping", 2);
+      FIND_FIELD_PATH(json, pairs, ping, "ping", 2);
 
       struct coglink_player_update_payload *playerUpdate = malloc(sizeof(struct coglink_player_update_payload));
       playerUpdate->state = malloc(sizeof(struct coglink_player_state_payload));
 
-      PAIR_TO_SIZET(guildId, guildIdStr, playerUpdate->guildId, 18);
-      PAIR_TO_SIZET(time, timeStr, playerUpdate->state->time, 16);
-      PAIR_TO_SIZET(position, positionStr, playerUpdate->state->position, 16);
-      PAIR_TO_SIZET(ping, pingStr, playerUpdate->state->ping, 8);
+      PAIR_TO_SIZET(json, guildId, guildIdStr, playerUpdate->guildId, 18);
+      PAIR_TO_SIZET(json, time, timeStr, playerUpdate->state->time, 16);
+      PAIR_TO_SIZET(json, position, positionStr, playerUpdate->state->position, 16);
+      PAIR_TO_SIZET(json, ping, pingStr, playerUpdate->state->ping, 8);
       if (json[connected->v.pos] == 't') playerUpdate->state->connected = true;
       else playerUpdate->state->connected = false;
 
@@ -363,16 +308,21 @@ void *coglink_parse_load_tracks_response(struct coglink_load_tracks_response *re
   jsmnf_pair *loadType = jsmnf_find(pairs, json, "loadType", sizeof("loadType") - 1);
   if (!loadType) return NULL;
 
-  switch (json[loadType->v.pos + 1]) {
-    case 'r': { /* tRack */
-      _coglink_parse_track(pairs, json); /* Defines track_info */
+  response->type = COGLINK_LOAD_TYPE_EMPTY;
+  response->data = NULL;
+
+  switch (json[loadType->v.pos + 3]) {
+    case 'c': { /* traCk */
+      jsmnf_pair *data = jsmnf_find(pairs, json, "data", sizeof("data") - 1);
+
+      coglink_parse_track(data, json); /* Defines track_info */
 
       response->type = COGLINK_LOAD_TYPE_TRACK;
       response->data = track_info;
 
       goto cleanup;
     }
-    case 'l': { /* pLaylist */
+    case 'y': { /* plaYlist */
       char *playlist_path[] = { "data", "tracks", NULL };
 
       jsmnf_pair *tracks = jsmnf_find_path(pairs, json, playlist_path, 2);
@@ -390,7 +340,7 @@ void *coglink_parse_load_tracks_response(struct coglink_load_tracks_response *re
         char *track_path[] = { "data", "tracks", i_str };
         jsmnf_pair *track_pair = jsmnf_find_path(pairs, json, track_path, 3);
 
-        _coglink_parse_track(track_pair, json); /* Defines track_info */
+        coglink_parse_track(track_pair, json); /* Defines track_info */
 
         data->tracks->array[i] = *track_info;
       }
@@ -403,13 +353,14 @@ void *coglink_parse_load_tracks_response(struct coglink_load_tracks_response *re
 
       playlist_path[2] = "selectedTrack";
       jsmnf_pair *selected_track = jsmnf_find_path(pairs, json, playlist_path, 3);
-      PAIR_TO_SIZET(selected_track, selectedTrackStr, data->info->selectedTrack, 16);
+      PAIR_TO_SIZET(json, selected_track, selectedTrackStr, data->info->selectedTrack, 16);
 
       response->type = COGLINK_LOAD_TYPE_PLAYLIST;
+      response->data = data;
 
       goto cleanup;
     }
-    case 'e': { /* sEarch */
+    case 'r': { /* seaRch */
       jsmnf_pair *tracks = jsmnf_find(pairs, json, "data", sizeof("data") - 1);
 
       struct coglink_load_tracks_search_response *data = malloc(sizeof(struct coglink_load_tracks_search_response));
@@ -423,7 +374,7 @@ void *coglink_parse_load_tracks_response(struct coglink_load_tracks_response *re
         char *track_path[] = { "data", i_str };
         jsmnf_pair *track_pair = jsmnf_find_path(pairs, json, track_path, 2);
 
-        _coglink_parse_track(track_pair, json); /* Defines track_info */
+        coglink_parse_track(track_pair, json); /* Defines track_info */
 
         data->array[i] = *track_info;
       }
@@ -433,23 +384,21 @@ void *coglink_parse_load_tracks_response(struct coglink_load_tracks_response *re
 
       goto cleanup;
     }
-    case 'm': { /* eMpty */
-      struct coglink_load_tracks_response *response = malloc(sizeof(struct coglink_load_tracks_response));
-      response->type = COGLINK_LOAD_TYPE_EMPTY;
-      response->data = NULL;
+    case 't': { /* empTy */
+      /* Nothing to do */
 
       goto cleanup;
     }
-    case 'r': { /* eRror */
+    case 'o': { /* errOr */
       char *path[] = { "exception", "message" };
 
-      FIND_FIELD_PATH(pairs, message, "message", 2);
+      FIND_FIELD_PATH(json, pairs, message, "message", 2);
 
       path[1] = "severity";
-      FIND_FIELD_PATH(pairs, severity, "severity", 2);
+      FIND_FIELD_PATH(json, pairs, severity, "severity", 2);
 
       path[1] = "cause";
-      FIND_FIELD_PATH(pairs, cause, "cause", 2);
+      FIND_FIELD_PATH(json, pairs, cause, "cause", 2);
 
       struct coglink_load_tracks_error_response *data = malloc(sizeof(struct coglink_load_tracks_error_response));
       response->type = COGLINK_LOAD_TYPE_ERROR;
@@ -479,6 +428,28 @@ void *coglink_parse_load_tracks_response(struct coglink_load_tracks_response *re
 
 void coglink_free_load_tracks_response(struct coglink_load_tracks_response *response) {
   switch (response->type) {
+    case COGLINK_LOAD_TYPE_TRACK: {
+      struct coglink_load_tracks_track_response *data = response->data;
+
+      free(data->info);
+      free(data);
+
+      break;
+    }
+    case COGLINK_LOAD_TYPE_PLAYLIST: {
+      struct coglink_load_tracks_playlist_response *data = response->data;
+
+      free(data->info);
+
+      for (size_t i = 0; i < data->tracks->size; i++) {
+        free(data->tracks->array[i].info);
+      }
+      
+      free(data->tracks);
+      free(data);
+
+      break;
+    }
     case COGLINK_LOAD_TYPE_SEARCH: {
       struct coglink_load_tracks_search_response *data = response->data;
 
@@ -487,6 +458,21 @@ void coglink_free_load_tracks_response(struct coglink_load_tracks_response *resp
       }
 
       free(data->array);
+      free(data);
+
+      break;
+    }
+    case COGLINK_LOAD_TYPE_EMPTY: {
+      /* Nothing to free */
+
+      break;
+    }
+    case COGLINK_LOAD_TYPE_ERROR: {
+      struct coglink_load_tracks_error_response *data = response->data;
+
+      free(data->message);
+      free(data->severity);
+      free(data->cause);
       free(data);
 
       break;
@@ -532,10 +518,10 @@ struct coglink_voice_state *coglink_parse_voice_state(const char *json, size_t l
 
   struct coglink_voice_state *voiceState = malloc(sizeof(struct coglink_voice_state));
 
-  PAIR_TO_SIZET(guild_id, guild_id_str, voiceState->guild_id, 18);
-  PAIR_TO_SIZET(channel_id, channel_id_str, voiceState->channel_id, 18);
+  PAIR_TO_SIZET(json, guild_id, guild_id_str, voiceState->guild_id, 18);
+  PAIR_TO_SIZET(json, channel_id, channel_id_str, voiceState->channel_id, 18);
   if (channel_id) {
-    PAIR_TO_SIZET(user_id, user_id_str, voiceState->user_id, 18);
+    PAIR_TO_SIZET(json, user_id, user_id_str, voiceState->user_id, 18);
   } else {
     voiceState->user_id = 0;
   }
@@ -587,7 +573,7 @@ struct coglink_voice_server_update *coglink_parse_voice_server_update(const char
   voiceServerUpdate->endpoint = malloc(endpoint->v.len + 1);
   snprintf(voiceServerUpdate->endpoint, endpoint->v.len + 1, "%.*s", (int)endpoint->v.len, json + endpoint->v.pos);
 
-  PAIR_TO_SIZET(guild_id, guild_id_str, voiceServerUpdate->guild_id, 18);
+  PAIR_TO_SIZET(json, guild_id, guild_id_str, voiceServerUpdate->guild_id, 18);
 
   return voiceServerUpdate;
 }
