@@ -233,3 +233,124 @@ int coglink_play_track(struct coglink_client *c_client, struct coglink_player *p
 
   return COGLINK_SUCCESS;
 }
+
+struct coglink_partial_track *coglink_decode_track(struct coglink_client *c_client, struct coglink_player *player, char *track) {
+  struct coglink_node *node = &c_client->nodes->array[player->node];
+
+  if (node->session_id == NULL) return NULL;
+
+  size_t endpoint_size = (sizeof("/decodetracks?encodeTrack=") - 1) + strlen(track) + 1;
+  char *endpoint = malloc(endpoint_size);
+  snprintf(endpoint, endpoint_size, "/decodetracks?encodeTrack=%s", track);
+
+  struct coglink_response *res = malloc(sizeof(struct coglink_response));
+
+  _coglink_perform_request(node, &(struct coglink_request_params) {
+    .endpoint = endpoint,
+    .method = "PATCH",
+    .get_response = true
+  }, res);
+
+  jsmn_parser parser;
+  jsmntok_t tokens[64];
+
+  jsmn_init(&parser);
+  int r = jsmn_parse(&parser, res->body, res->size, tokens, sizeof(tokens));
+
+  if (r < 0) {
+    ERROR("[coglink:jsmn-find] Failed to parse JSON.");
+
+    return NULL;
+  }
+
+  jsmnf_loader loader;
+  jsmnf_pair pairs[64];
+
+  jsmnf_init(&loader);
+  r = jsmnf_load(&loader, res->body, tokens, parser.toknext, pairs, sizeof(pairs) / sizeof(*pairs));
+
+  if (r < 0) {
+    FATAL("[coglink:jsmn-find] Failed to load jsmn-find.");
+
+    return NULL;
+  }
+
+  coglink_parse_partial_track(pairs, res->body);
+
+  free(endpoint);
+
+  return track_info;
+}
+
+struct coglink_partial_tracks *coglink_decode_tracks(struct coglink_client *c_client, struct coglink_player *player, struct coglink_decode_tracks_params *params) {
+  struct coglink_node *node = &c_client->nodes->array[player->node];
+
+  if (node->session_id == NULL) return NULL;
+
+  char *endpoint = "/decodetracks";
+  char *body = malloc(1 + 1);
+  snprintf(body, 2, "[");
+  size_t body_length = 0;
+
+  for (size_t i = 0; i < params->size; i++) {
+    size_t track_size = strlen(params->array[i]) + 1;
+    body = realloc(body, body_length + track_size + 1);
+    snprintf(body + body_length, track_size + 1, "\"%s\",", params->array[i]);
+    body_length += track_size;
+  }
+
+  body[body_length - 1] = ']';
+
+  struct coglink_response *res = malloc(sizeof(struct coglink_response));
+
+  _coglink_perform_request(node, &(struct coglink_request_params) {
+    .endpoint = endpoint,
+    .method = "PATCH",
+    .body = body,
+    .body_length = body_length,
+    .get_response = true
+  }, res);
+
+  jsmn_parser parser;
+  jsmntok_t *toks = NULL;
+  unsigned num_tokens = 0;
+
+  jsmn_init(&parser);
+  int r = jsmn_parse_auto(&parser, res->body, res->size, &toks, &num_tokens);
+  if (r <= 0) {
+    ERROR("[coglink:jsmn-find] Failed to parse JSON.");
+
+    return NULL;
+  }
+
+  jsmnf_loader loader;
+  jsmnf_pair *pairs = NULL;
+  unsigned num_pairs = 0;
+
+  jsmnf_init(&loader);
+  r = jsmnf_load_auto(&loader, res->body, toks, num_tokens, &pairs, &num_pairs);
+  if (r <= 0) {
+    ERROR("[coglink:jsmn-find] Failed to load jsmn-find.");
+
+    return NULL;
+  }
+
+  struct coglink_partial_tracks *tracks_info = malloc(sizeof(struct coglink_partial_tracks *));
+  tracks_info->array = malloc(sizeof(struct coglink_partial_track) * pairs->size);
+  tracks_info->size = pairs->size;
+
+  for (int i = 0; i < pairs->size; i++) {
+    coglink_parse_partial_track(pairs, res->body);
+
+    tracks_info->array[i] = *track_info;
+  }
+
+  free(body);
+  free(res->body);
+  free(res);
+  free(toks);
+  free(pairs);
+
+  return tracks_info;
+}
+

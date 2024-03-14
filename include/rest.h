@@ -30,6 +30,11 @@ struct coglink_users {
   size_t size;
 };
 
+struct coglink_decode_tracks_params {
+  char **array;
+  size_t size;
+};
+
 struct coglink_user *coglink_get_user(struct coglink_client *c_client, u64snowflake user_id);
 
 int coglink_join_voice_channel(struct discord *client, u64snowflake guild_id, u64snowflake channel_id);

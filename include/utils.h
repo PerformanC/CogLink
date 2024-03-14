@@ -3,16 +3,16 @@
 
 #define COGLINK_SESSION_ID_LENGTH 16
 
-#define FIND_FIELD(field, fieldName)                                             \
+#define FIND_FIELD(json, field, fieldName)                                       \
   jsmnf_pair *field = jsmnf_find(pairs, json, fieldName, sizeof(fieldName) - 1); \
                                                                                  \
   if (field == NULL) {                                                           \
-    ERROR("[coglink] Failed to find field: %s", fieldName);                       \
+    ERROR("[coglink] Failed to find field: %s", fieldName);                      \
                                                                                  \
     return NULL;                                                                 \
   }
 
-#define FIND_FIELD_PATH(pairs, field, fieldName, pathSize)          \
+#define FIND_FIELD_PATH(json, pairs, field, fieldName, pathSize)    \
   jsmnf_pair *field = jsmnf_find_path(pairs, json, path, pathSize); \
                                                                     \
   if (field == NULL) {                                              \
@@ -21,19 +21,12 @@
     return NULL;                                                    \
   }
 
-#define PAIR_TO_SIZET(pair, fieldName, outputName, size) \
-  char fieldName[size];                                  \
-  memcpy(fieldName, json + pair->v.pos, pair->v.len);    \
-                                                         \
+#define PAIR_TO_SIZET(json, pair, fieldName, outputName, size) \
+  char fieldName[size];                                        \
+  memcpy(fieldName, json + pair->v.pos, pair->v.len);          \
+                                                               \
   outputName = strtoull(fieldName, NULL, 10);
 
-#define FATAL(...) printf(__VA_ARGS__);
-#define DEBUG(...) log_debug(__VA_ARGS__);
-#define INFO(...)  log_info(__VA_ARGS__);
-#define WARN(...)  log_warn(__VA_ARGS__);
-#define ERROR(...) log_error(__VA_ARGS__);
-
-/*
 #ifdef COGLINK_DEBUG
   #define FATAL(...)          \
     log_fatal(__VA_ARGS__);   \
@@ -51,7 +44,6 @@
   #define WARN(...)
   #define ERROR(...)
 #endif
-*/
 
 #include "lavalink.h"
 
