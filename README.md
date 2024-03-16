@@ -5,7 +5,7 @@ A Concord (C99) LavaLink/NodeLink client.
 ## Features
 
 - C99 compatible
-- Low memory usage (> 7MB of RAM a working bot)
+- Low memory usage (> 5MB of RAM a working bot)
 - Portable
 
 ## Dependencies
@@ -76,6 +76,6 @@ None known yet, but if you are using CogLink, please let us know in [PerformanC'
 
 ## License
 
-CogLink is licensed under PerformanC's License, which is a modified version of the MIT License, focusing on the protection of the source code and the rights of the PerformanC team over the source code.
+CogLink is licensed under [BSD 2-Clause License](LICENSE). You can read more about it on [Open Source Initiative](https://opensource.org/licenses/BSD-2-Clause).
 
 * This project uses the latest standards of The PerformanC Organization.
