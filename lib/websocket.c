@@ -127,6 +127,7 @@ enum discord_event_scheduler _coglink_handle_scheduler(struct discord *client, c
           if (player == NULL) return DISCORD_EVENT_MAIN_THREAD;
 
           player->voice_data = malloc(sizeof(struct coglink_voice_data));
+          /* todo: is it necessary after being sent to the node? */
           player->voice_data->session_id = voice_state->session_id;
         } else {
           size_t i = 0;
@@ -175,9 +176,7 @@ enum discord_event_scheduler _coglink_handle_scheduler(struct discord *client, c
       if (player == NULL) {
         DEBUG("[coglink] Player not found for guild %" PRIu64 "", voice_server_update->guild_id);
 
-        free(voice_server_update->endpoint);
-        free(voice_server_update->token);
-        free(voice_server_update);
+        coglink_free_voice_server_update(voice_server_update);
 
         return DISCORD_EVENT_IGNORE;
       }
@@ -216,9 +215,7 @@ enum discord_event_scheduler _coglink_handle_scheduler(struct discord *client, c
 
       free(payload);
 
-      free(voice_server_update->endpoint);
-      free(voice_server_update->token);
-      free(voice_server_update);
+      coglink_free_voice_server_update(voice_server_update);
 
       break;
     }

@@ -342,7 +342,7 @@ void *coglink_parse_load_tracks_response(struct coglink_load_tracks_response *re
 
         coglink_parse_track(track_pair, json); /* Defines track_info */
 
-        data->tracks->array[i] = *track_info;
+        data->tracks->array[i] = track_info;
       }
 
       playlist_path[1] = "info";
@@ -442,7 +442,8 @@ void coglink_free_load_tracks_response(struct coglink_load_tracks_response *resp
       free(data->info);
 
       for (size_t i = 0; i < data->tracks->size; i++) {
-        free(data->tracks->array[i].info);
+        free(data->tracks->array[i]->info);
+        free(data->tracks->array[i]);
       }
       
       free(data->tracks);
@@ -531,6 +532,11 @@ struct coglink_voice_state *coglink_parse_voice_state(const char *json, size_t l
   return voiceState;
 }
 
+void coglink_free_voice_state(struct coglink_voice_state *voiceState) {
+  free(voiceState->session_id);
+  free(voiceState);
+}
+
 struct coglink_voice_server_update *coglink_parse_voice_server_update(const char *json, size_t length) {
   jsmn_parser parser;
   jsmntok_t tokens[128];
@@ -576,4 +582,10 @@ struct coglink_voice_server_update *coglink_parse_voice_server_update(const char
   PAIR_TO_SIZET(json, guild_id, guild_id_str, voiceServerUpdate->guild_id, 18);
 
   return voiceServerUpdate;
+}
+
+void coglink_free_voice_server_update(struct coglink_voice_server_update *voiceServerUpdate) {
+  free(voiceServerUpdate->token);
+  free(voiceServerUpdate->endpoint);
+  free(voiceServerUpdate);
 }

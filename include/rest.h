@@ -56,4 +56,10 @@ int coglink_load_tracks(struct coglink_client *c_client, struct coglink_player *
 
 int coglink_play_track(struct coglink_client *c_client, struct coglink_player *player, char *track);
 
+struct coglink_track *coglink_decode_track(struct coglink_client *c_client, struct coglink_player *player, char *track);
+
+struct coglink_tracks *coglink_decode_tracks(struct coglink_client *c_client, struct coglink_player *player, struct coglink_decode_tracks_params *params);
+
+void coglink_free_decode_tracks(struct coglink_tracks *tracks);
+
 #endif
