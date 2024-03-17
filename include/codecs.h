@@ -86,7 +86,7 @@ struct coglink_track {
 };
 
 struct coglink_tracks {
-  struct coglink_track *array;
+  struct coglink_track **array;
   size_t size;
 };
 
@@ -203,7 +203,7 @@ struct coglink_voice_server_update {
 };
 
 #define coglink_parse_track(pairs, json)                                                                                                  \
-  struct coglink_track *track_info = malloc(sizeof(struct coglink_partial_track));                                                        \
+  struct coglink_track *track_info = malloc(sizeof(struct coglink_track));                                                                \
   track_info->info = malloc(sizeof(struct coglink_partial_track));                                                                        \
                                                                                                                                           \
   char *path[] = { "encoded", NULL };                                                                                                     \
@@ -303,6 +303,10 @@ void coglink_free_load_tracks_response(struct coglink_load_tracks_response *resp
 
 struct coglink_voice_state *coglink_parse_voice_state(const char *json, size_t length);
 
+void coglink_free_voice_state(struct coglink_voice_state *voiceState);
+
 struct coglink_voice_server_update *coglink_parse_voice_server_update(const char *json, size_t length);
+
+void coglink_free_voice_server_update(struct coglink_voice_server_update *voiceServerUpdate);
 
 #endif

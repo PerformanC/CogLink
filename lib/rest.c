@@ -234,20 +234,21 @@ int coglink_play_track(struct coglink_client *c_client, struct coglink_player *p
   return COGLINK_SUCCESS;
 }
 
-struct coglink_partial_track *coglink_decode_track(struct coglink_client *c_client, struct coglink_player *player, char *track) {
+/* todo: decentralize from a player */
+struct coglink_track *coglink_decode_track(struct coglink_client *c_client, struct coglink_player *player, char *track) {
   struct coglink_node *node = &c_client->nodes->array[player->node];
 
   if (node->session_id == NULL) return NULL;
 
-  size_t endpoint_size = (sizeof("/decodetracks?encodeTrack=") - 1) + strlen(track) + 1;
+  size_t endpoint_size = (sizeof("/decodetrack?encodedTrack=") - 1) + strlen(track) + 1;
   char *endpoint = malloc(endpoint_size);
-  snprintf(endpoint, endpoint_size, "/decodetracks?encodeTrack=%s", track);
+  snprintf(endpoint, endpoint_size, "/decodetrack?encodedTrack=%s", track);
 
   struct coglink_response *res = malloc(sizeof(struct coglink_response));
 
   _coglink_perform_request(node, &(struct coglink_request_params) {
     .endpoint = endpoint,
-    .method = "PATCH",
+    .method = "GET",
     .get_response = true
   }, res);
 
@@ -275,14 +276,14 @@ struct coglink_partial_track *coglink_decode_track(struct coglink_client *c_clie
     return NULL;
   }
 
-  coglink_parse_partial_track(pairs, res->body);
+  coglink_parse_track(pairs, res->body);
 
   free(endpoint);
 
   return track_info;
 }
 
-struct coglink_partial_tracks *coglink_decode_tracks(struct coglink_client *c_client, struct coglink_player *player, struct coglink_decode_tracks_params *params) {
+struct coglink_tracks *coglink_decode_tracks(struct coglink_client *c_client, struct coglink_player *player, struct coglink_decode_tracks_params *params) {
   struct coglink_node *node = &c_client->nodes->array[player->node];
 
   if (node->session_id == NULL) return NULL;
@@ -305,7 +306,7 @@ struct coglink_partial_tracks *coglink_decode_tracks(struct coglink_client *c_cl
 
   _coglink_perform_request(node, &(struct coglink_request_params) {
     .endpoint = endpoint,
-    .method = "PATCH",
+    .method = "POST",
     .body = body,
     .body_length = body_length,
     .get_response = true
@@ -335,14 +336,14 @@ struct coglink_partial_tracks *coglink_decode_tracks(struct coglink_client *c_cl
     return NULL;
   }
 
-  struct coglink_partial_tracks *tracks_info = malloc(sizeof(struct coglink_partial_tracks *));
-  tracks_info->array = malloc(sizeof(struct coglink_partial_track) * pairs->size);
+  struct coglink_tracks *tracks_info = malloc(sizeof(struct coglink_tracks *));
+  tracks_info->array = malloc(sizeof(struct coglink_track) * pairs->size);
   tracks_info->size = pairs->size;
 
   for (int i = 0; i < pairs->size; i++) {
-    coglink_parse_partial_track(pairs, res->body);
+    coglink_parse_track(pairs, res->body);
 
-    tracks_info->array[i] = *track_info;
+    tracks_info->array[i] = track_info;
   }
 
   free(body);
@@ -354,3 +355,12 @@ struct coglink_partial_tracks *coglink_decode_tracks(struct coglink_client *c_cl
   return tracks_info;
 }
 
+void coglink_free_decode_tracks(struct coglink_tracks *tracks) {
+  for (size_t i = 0; i < tracks->size; i++) {
+    free(tracks->array[i]->encoded);
+    free(tracks->array[i]);
+  }
+
+  free(tracks->array);
+  free(tracks);
+}
