@@ -82,7 +82,15 @@ void _ws_on_text(void *data, struct websockets *ws, struct ws_info *info, const 
       if (queue->size != 0) {
         coglink_remove_track_from_queue(c_info->c_client, player, 0);
 
-        if (queue->size != 0) coglink_play_track(c_info->c_client, player, queue->array[0]);
+        if (queue->size != 0) {
+          struct coglink_update_player_params data = {
+            .track = &(struct coglink_update_player_track_params) {
+              .encoded = queue->array[0]
+            }
+          };
+
+          coglink_update_player(c_info->c_client, player, &data);
+        }
       }
 
       if (c_info->c_client->events->on_track_end) c_info->c_client->events->on_track_end(track_end);

@@ -202,6 +202,44 @@ struct coglink_voice_server_update {
   u64snowflake guild_id;
 };
 
+/* coglink_parse_node_info */
+
+struct coglink_node_info_version {
+  char *semver;
+  int major;
+  int minor;
+  int patch;
+  char *preRelease;
+  char *build;
+};
+
+/* todo: generic array */
+struct coglink_node_info_sourceManagers {
+  char **array;
+  size_t size;
+};
+
+struct coglink_node_info_filters {
+  char **array;
+  size_t size;
+};
+
+struct coglink_node_info_git {
+  char *branch;
+  char *commit;
+  int commitTime;
+};
+
+struct coglink_node_info {
+  struct coglink_node_info_version *version;
+  int buildTime;
+  struct coglink_node_info_git *git;
+  char *jvm;
+  char *lavaplayer;
+  struct coglink_node_info_sourceManagers *sourceManagers;
+  struct coglink_node_info_filters *filters;
+};
+
 #define coglink_parse_track(pairs, json)                                                                                                  \
   struct coglink_track *track_info = malloc(sizeof(struct coglink_track));                                                                \
   track_info->info = malloc(sizeof(struct coglink_partial_track));                                                                        \
@@ -308,5 +346,11 @@ void coglink_free_voice_state(struct coglink_voice_state *voiceState);
 struct coglink_voice_server_update *coglink_parse_voice_server_update(const char *json, size_t length);
 
 void coglink_free_voice_server_update(struct coglink_voice_server_update *voiceServerUpdate);
+
+void *coglink_parse_node_info(struct coglink_node_info *response, const char *json, size_t length);
+
+void coglink_free_node_info(struct coglink_node_info *node_info);
+
+void *coglink_parse_stats(struct coglink_stats_payload *response, const char *json, size_t length);
 
 #endif

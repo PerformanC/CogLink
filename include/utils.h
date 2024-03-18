@@ -53,6 +53,7 @@ struct coglink_request_params {
   char *body;
   size_t body_length;
   bool get_response;
+  bool unversioned;
 };
 
 struct coglink_response {
