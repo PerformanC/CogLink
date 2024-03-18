@@ -34,7 +34,7 @@ size_t _coglink_fake_write_cb(void *data, size_t size, size_t nmemb, void *userp
 int _coglink_perform_request(struct coglink_node *nodeInfo, struct coglink_request_params *req, struct coglink_response *res) {
   CURL *curl = curl_easy_init();
 
-  size_t url_size = (nodeInfo->ssl ? 1 : 0) + (sizeof("http://:/v4") - 1) + strlen(nodeInfo->hostname) + 4 + strlen(req->endpoint);
+  size_t url_size = (nodeInfo->ssl ? 1 : 0) + (sizeof("http://:") - 1) + (req->unversioned ? 0 : (sizeof("/v4") - 1)) + strlen(nodeInfo->hostname) + 4 + strlen(req->endpoint);
   char *full_url = malloc(url_size + 1);
   url_size = snprintf(full_url, url_size + 1, "http%s://%s:%d/v4%s", nodeInfo->ssl ? "s" : "", nodeInfo->hostname, nodeInfo->port, req->endpoint);
 

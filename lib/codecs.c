@@ -589,3 +589,228 @@ void coglink_free_voice_server_update(struct coglink_voice_server_update *voiceS
   free(voiceServerUpdate->endpoint);
   free(voiceServerUpdate);
 }
+
+void *coglink_parse_node_info(struct coglink_node_info *response, const char *json, size_t length) {
+  jsmn_parser parser;
+  jsmntok_t tokens[128];
+
+  jsmn_init(&parser);
+  int r = jsmn_parse(&parser, json, length, tokens, sizeof(tokens));
+
+  if (r < 0) {
+    ERROR("[coglink:jsmn-find] Failed to parse JSON.");
+
+    return NULL;
+  }
+
+  jsmnf_loader loader;
+  jsmnf_pair pairs[128];
+
+  jsmnf_init(&loader);
+  r = jsmnf_load(&loader, json, tokens, parser.toknext, pairs, sizeof(pairs) / sizeof(*pairs));
+
+  if (r < 0) {
+    FATAL("[coglink:jsmn-find] Failed to load jsmn-find.");
+
+    return NULL;
+  }
+
+  jsmnf_pair *version = jsmnf_find(pairs, json, "version", sizeof("version") - 1);
+  if (!version) return NULL;
+
+  jsmnf_pair *buildTime = jsmnf_find(pairs, json, "buildTime", sizeof("buildTime") - 1);
+  if (!buildTime) return NULL;
+
+  jsmnf_pair *git = jsmnf_find(pairs, json, "git", sizeof("git") - 1);
+  if (!git) return NULL;
+
+  jsmnf_pair *jvm = jsmnf_find(pairs, json, "jvm", sizeof("jvm") - 1);
+  if (!jvm) return NULL;
+
+  jsmnf_pair *lavaplayer = jsmnf_find(pairs, json, "lavaplayer", sizeof("lavaplayer") - 1);
+  if (!lavaplayer) return NULL;
+
+  jsmnf_pair *sourceManagers = jsmnf_find(pairs, json, "sourceManagers", sizeof("sourceManagers") - 1);
+  if (!sourceManagers) return NULL;
+
+  jsmnf_pair *filters = jsmnf_find(pairs, json, "filters", sizeof("filters") - 1);
+  if (!filters) return NULL;
+
+  char *path[] = { "version", "semver" };
+  FIND_FIELD_PATH(json, pairs, semver, "semver", 2);
+
+  path[1] = "major";
+  FIND_FIELD_PATH(json, pairs, major, "major", 2);
+
+  path[1] = "minor";
+  FIND_FIELD_PATH(json, pairs, minor, "minor", 2);
+
+  path[1] = "patch";
+  FIND_FIELD_PATH(json, pairs, patch, "patch", 2);
+
+  path[1] = "preRelease";
+  FIND_FIELD_PATH(json, pairs, preRelease, "preRelease", 2);
+
+  path[1] = "build";
+  FIND_FIELD_PATH(json, pairs, build, "build", 2);
+
+  response->version->semver = malloc(semver->v.len + 1);
+  snprintf(response->version->semver, semver->v.len + 1, "%.*s", (int)semver->v.len, json + semver->v.pos);
+  PAIR_TO_SIZET(json, major, majorStr, response->version->major, 8);
+  PAIR_TO_SIZET(json, minor, minorStr, response->version->minor, 8);
+  PAIR_TO_SIZET(json, patch, patchStr, response->version->patch, 8);
+  response->version->preRelease = malloc(preRelease->v.len + 1);
+  snprintf(response->version->preRelease, preRelease->v.len + 1, "%.*s", (int)preRelease->v.len, json + preRelease->v.pos);
+  response->version->build = malloc(build->v.len + 1);
+  snprintf(response->version->build, build->v.len + 1, "%.*s", (int)build->v.len, json + build->v.pos);
+
+  PAIR_TO_SIZET(json, buildTime, buildTimeStr, response->buildTime, 8);
+
+  path[0] = "git";
+  path[1] = "branch";
+  FIND_FIELD_PATH(json, pairs, branch, "branch", 2);
+
+  path[1] = "commit";
+  FIND_FIELD_PATH(json, pairs, commit, "commit", 2);
+
+  path[1] = "commitTime";
+  FIND_FIELD_PATH(json, pairs, commitTime, "commitTime", 2);
+
+  response->git->branch = malloc(branch->v.len + 1);
+  snprintf(response->git->branch, branch->v.len + 1, "%.*s", (int)branch->v.len, json + branch->v.pos);
+  response->git->commit = malloc(commit->v.len + 1);
+  snprintf(response->git->commit, commit->v.len + 1, "%.*s", (int)commit->v.len, json + commit->v.pos);
+  PAIR_TO_SIZET(json, commitTime, commitTimeStr, response->git->commitTime, 8);
+
+  response->jvm = malloc(jvm->v.len + 1);
+  snprintf(response->jvm, jvm->v.len + 1, "%.*s", (int)jvm->v.len, json + jvm->v.pos);
+
+  response->lavaplayer = malloc(lavaplayer->v.len + 1);
+  snprintf(response->lavaplayer, lavaplayer->v.len + 1, "%.*s", (int)lavaplayer->v.len, json + lavaplayer->v.pos);
+
+  response->sourceManagers->size = sourceManagers->size;
+  response->sourceManagers->array = malloc(sizeof(char *) * sourceManagers->size);
+  for (int i = 0; i < (int)sourceManagers->size; i++) {
+    char i_str[11];
+    snprintf(i_str, sizeof(i_str), "%d", i);
+
+    char *path[] = { "sourceManagers", i_str };
+    jsmnf_pair *sourceManager = jsmnf_find_path(pairs, json, path, 2);
+
+    response->sourceManagers->array[i] = malloc(sourceManager->v.len + 1);
+    snprintf(response->sourceManagers->array[i], sourceManager->v.len + 1, "%.*s", (int)sourceManager->v.len, json + sourceManager->v.pos);
+  }
+
+  response->filters->size = filters->size;
+  response->filters->array = malloc(sizeof(char *) * filters->size);
+  for (int i = 0; i < filters->size; i++) {
+    char i_str[11];
+    snprintf(i_str, sizeof(i_str), "%d", i);
+
+    char *path[] = { "filters", i_str };
+    jsmnf_pair *filter = jsmnf_find_path(pairs, json, path, 2);
+
+    response->filters->array[i] = malloc(filter->v.len + 1);
+    snprintf(response->filters->array[i], filter->v.len + 1, "%.*s", (int)filter->v.len, json + filter->v.pos);
+  }
+
+  return (void *)1;
+}
+
+void coglink_free_node_info(struct coglink_node_info *response) {
+  free(response->version->semver);
+  free(response->version->preRelease);
+  free(response->version->build);
+  free(response->version);
+  free(response->git->branch);
+  free(response->git->commit);
+  free(response->jvm);
+  free(response->lavaplayer);
+
+  for (size_t i = 0; i < response->sourceManagers->size; i++) {
+    free(response->sourceManagers->array[i]);
+  }
+  free(response->sourceManagers->array);
+  free(response->sourceManagers);
+
+  for (size_t i = 0; i < response->filters->size; i++) {
+    free(response->filters->array[i]);
+  }
+  free(response->filters->array);
+  free(response->filters);
+}
+
+void *coglink_parse_stats(struct coglink_stats_payload *response, const char *json, size_t length) {
+  jsmn_parser parser;
+  jsmntok_t tokens[128];
+
+  jsmn_init(&parser);
+  int r = jsmn_parse(&parser, json, length, tokens, sizeof(tokens));
+
+  if (r < 0) {
+    ERROR("[coglink:jsmn-find] Failed to parse JSON.");
+
+    return NULL;
+  }
+
+  jsmnf_loader loader;
+  jsmnf_pair pairs[128];
+
+  jsmnf_init(&loader);
+  r = jsmnf_load(&loader, json, tokens, parser.toknext, pairs, sizeof(pairs) / sizeof(*pairs));
+
+  if (r < 0) {
+    FATAL("[coglink:jsmn-find] Failed to load jsmn-find.");
+
+    return NULL;
+  }
+
+  jsmnf_pair *players = jsmnf_find(pairs, json, "players", sizeof("players") - 1);
+  if (!players) return NULL;
+
+  jsmnf_pair *playingPlayers = jsmnf_find(pairs, json, "playingPlayers", sizeof("playingPlayers") - 1);
+  if (!playingPlayers) return NULL;
+
+  jsmnf_pair *uptime = jsmnf_find(pairs, json, "uptime", sizeof("uptime") - 1);
+  if (!uptime) return NULL;
+
+  jsmnf_pair *memory = jsmnf_find(pairs, json, "memory", sizeof("memory") - 1);
+  if (!memory) return NULL;
+
+  char *path[] = { "memory", "free" };
+  FIND_FIELD_PATH(json, pairs, lavaFree, "free", 2);
+
+  path[1] = "used";
+  FIND_FIELD_PATH(json, pairs, used, "used", 2);
+
+  path[1] = "allocated";
+  FIND_FIELD_PATH(json, pairs, allocated, "allocated", 2);
+
+  path[1] = "reservable";
+  FIND_FIELD_PATH(json, pairs, reservable, "reservable", 2);
+
+  path[0] = "cpu";
+  path[1] = "cores";
+  FIND_FIELD_PATH(json, pairs, cores, "cores", 2);
+
+  path[1] = "systemLoad";
+  FIND_FIELD_PATH(json, pairs, systemLoad, "systemLoad", 2);
+
+  path[1] = "lavalinkLoad";
+  FIND_FIELD_PATH(json, pairs, lavalinkLoad, "lavalinkLoad", 2);
+
+  /* frameStats is always null, so we don't need to parse it */
+
+  PAIR_TO_SIZET(json, players, playersStr,response->players, 8);
+  PAIR_TO_SIZET(json, playingPlayers, playingPlayersStr,response->playingPlayers, 16);
+  PAIR_TO_SIZET(json, uptime, uptimeStr,response->uptime, 8);
+  PAIR_TO_SIZET(json, lavaFree, freeStr,response->memory->free, 8);
+  PAIR_TO_SIZET(json, used, usedStr,response->memory->used, 8);
+  PAIR_TO_SIZET(json, allocated, allocatedStr,response->memory->allocated, 8);
+  PAIR_TO_SIZET(json, reservable, reservableStr,response->memory->reservable, 8);
+  PAIR_TO_SIZET(json, cores, coresStr,response->cpu->cores, 8);
+  PAIR_TO_SIZET(json, systemLoad, systemLoadStr,response->cpu->systemLoad, 8);
+  PAIR_TO_SIZET(json, lavalinkLoad, lavalinkLoadStr,response->cpu->lavalinkLoad, 8);
+
+  return (void *)1;
+}
