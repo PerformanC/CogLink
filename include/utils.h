@@ -12,6 +12,15 @@
     return NULL;                                                                 \
   }
 
+#define NEW_FIND_FIELD(json, field, fieldName)                                   \
+  jsmnf_pair *field = jsmnf_find(pairs, json, fieldName, sizeof(fieldName) - 1); \
+                                                                                 \
+  if (field == NULL) {                                                           \
+    ERROR("[coglink] Failed to find field: %s", fieldName);                      \
+                                                                                 \
+    return COGLINK_FAILED;                                                       \
+  }
+
 #define FIND_FIELD_PATH(json, pairs, field, fieldName, pathSize)    \
   jsmnf_pair *field = jsmnf_find_path(pairs, json, path, pathSize); \
                                                                     \
@@ -19,6 +28,15 @@
     ERROR("[coglink] Failed to find field: %s", fieldName);         \
                                                                     \
     return NULL;                                                    \
+  }
+
+#define NEW_FIND_FIELD_PATH(json, pairs, field, fieldName, pathSize) \
+  jsmnf_pair *field = jsmnf_find_path(pairs, json, path, pathSize);  \
+                                                                     \
+  if (field == NULL) {                                               \
+    ERROR("[coglink] Failed to find field: %s", fieldName);          \
+                                                                     \
+    return COGLINK_FAILED;                                           \
   }
 
 #define PAIR_TO_SIZET(json, pair, fieldName, outputName, size) \

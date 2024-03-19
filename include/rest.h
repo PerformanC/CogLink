@@ -138,9 +138,9 @@ int coglink_remove_player(struct coglink_client *c_client, struct coglink_player
 
 int coglink_load_tracks(struct coglink_client *c_client, struct coglink_player *player, char *identifier, struct coglink_load_tracks_response *response);
 
-struct coglink_track *coglink_decode_track(struct coglink_client *c_client, struct coglink_player *player, char *track);
+int coglink_decode_track(struct coglink_client *c_client, struct coglink_player *player, char *track, struct coglink_track *response);
 
-struct coglink_tracks *coglink_decode_tracks(struct coglink_client *c_client, struct coglink_player *player, struct coglink_decode_tracks_params *params);
+int coglink_decode_tracks(struct coglink_client *c_client, struct coglink_player *player, struct coglink_decode_tracks_params *params, struct coglink_tracks *response);
 
 void coglink_free_decode_tracks(struct coglink_tracks *tracks);
 

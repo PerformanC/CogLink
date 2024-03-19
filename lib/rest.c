@@ -197,20 +197,18 @@ int coglink_load_tracks(struct coglink_client *c_client, struct coglink_player *
     .get_response = true
   }, res);
 
-  coglink_parse_load_tracks_response(response, res->body, res->size);
+  int status = coglink_parse_load_tracks_response(response, res->body, res->size);
 
   free(endpoint);
   free(res->body);
   free(res);
   
-  return COGLINK_SUCCESS;
+  return status;
 }
 
 /* todo: decentralize from a player */
-struct coglink_track *coglink_decode_track(struct coglink_client *c_client, struct coglink_player *player, char *track) {
+int coglink_decode_track(struct coglink_client *c_client, struct coglink_player *player, char *track, struct coglink_track *response) {
   struct coglink_node *node = &c_client->nodes->array[player->node];
-
-  if (node->session_id == NULL) return NULL;
 
   size_t endpoint_size = (sizeof("/decodetrack?encodedTrack=") - 1) + strlen(track) + 1;
   char *endpoint = malloc(endpoint_size);
@@ -233,7 +231,7 @@ struct coglink_track *coglink_decode_track(struct coglink_client *c_client, stru
   if (r < 0) {
     ERROR("[coglink:jsmn-find] Failed to parse JSON.");
 
-    return NULL;
+    return COGLINK_FAILED;
   }
 
   jsmnf_loader loader;
@@ -245,20 +243,18 @@ struct coglink_track *coglink_decode_track(struct coglink_client *c_client, stru
   if (r < 0) {
     FATAL("[coglink:jsmn-find] Failed to load jsmn-find.");
 
-    return NULL;
+    return COGLINK_FAILED;
   }
 
-  coglink_parse_track(pairs, res->body);
+  coglink_new_parse_track(response, pairs, res->body);
 
   free(endpoint);
 
-  return track_info;
+  return COGLINK_SUCCESS;
 }
 
-struct coglink_tracks *coglink_decode_tracks(struct coglink_client *c_client, struct coglink_player *player, struct coglink_decode_tracks_params *params) {
+int coglink_decode_tracks(struct coglink_client *c_client, struct coglink_player *player, struct coglink_decode_tracks_params *params, struct coglink_tracks *response) {
   struct coglink_node *node = &c_client->nodes->array[player->node];
-
-  if (node->session_id == NULL) return NULL;
 
   char *endpoint = "/decodetracks";
   char *body = malloc(1 + 1);
@@ -293,7 +289,7 @@ struct coglink_tracks *coglink_decode_tracks(struct coglink_client *c_client, st
   if (r <= 0) {
     ERROR("[coglink:jsmn-find] Failed to parse JSON.");
 
-    return NULL;
+    return COGLINK_FAILED;
   }
 
   jsmnf_loader loader;
@@ -305,17 +301,17 @@ struct coglink_tracks *coglink_decode_tracks(struct coglink_client *c_client, st
   if (r <= 0) {
     ERROR("[coglink:jsmn-find] Failed to load jsmn-find.");
 
-    return NULL;
+    return COGLINK_FAILED;
   }
 
-  struct coglink_tracks *tracks_info = malloc(sizeof(struct coglink_tracks *));
-  tracks_info->array = malloc(sizeof(struct coglink_track) * pairs->size);
-  tracks_info->size = pairs->size;
+  response->array = malloc(sizeof(struct coglink_track) * pairs->size);
+  response->size = pairs->size;
 
   for (int i = 0; i < pairs->size; i++) {
-    coglink_parse_track(pairs, res->body);
+    response->array[i] = malloc(sizeof(struct coglink_track));
+    response->array[i]->info = malloc(sizeof(struct coglink_partial_track));
 
-    tracks_info->array[i] = track_info;
+    coglink_new_parse_track(response->array[i], pairs, res->body);
   }
 
   free(body);
@@ -324,7 +320,7 @@ struct coglink_tracks *coglink_decode_tracks(struct coglink_client *c_client, st
   free(toks);
   free(pairs);
 
-  return tracks_info;
+  return COGLINK_SUCCESS;
 }
 
 void coglink_free_decode_tracks(struct coglink_tracks *tracks) {
@@ -487,7 +483,7 @@ int coglink_update_player(struct coglink_client *c_client, struct coglink_player
     }
 
     if (params->filters->karaoke) {
-      size_t karaoke_size = (should_add_comma ? (sizeof(",") - 1) : 0) + (sizeof("\"karaoke\":{}") - 1) + (sizeof("{\"level\":-x.x,\"monoLevel\":-x.x,\"filterBand\":-x.x,\"filterWidth\":-x.x}") - 1) + 1;
+      size_t karaoke_size = (should_add_comma ? (sizeof(",") - 1) : 0) + (sizeof("\"karaoke\":{}") - 1) + (sizeof("{\"level\":-x.xxxxx,\"monoLevel\":-x.xxxxx,\"filterBand\":-x.xxxxx,\"filterWidth\":-x.xxxxx}") - 1) + 1;
 
       payload = realloc(payload, payload_size + karaoke_size);
       snprintf(payload + payload_size - 1, karaoke_size, "%s\"karaoke\":{\"level\":%f,\"monoLevel\":%f,\"filterBand\":%f,\"filterWidth\":%f}", (should_add_comma ? "," : ""), params->filters->karaoke->level, params->filters->karaoke->monoLevel, params->filters->karaoke->filterBand, params->filters->karaoke->filterWidth);
@@ -497,7 +493,7 @@ int coglink_update_player(struct coglink_client *c_client, struct coglink_player
     }
 
     if (params->filters->timescale) {
-      size_t timescale_size = (should_add_comma ? (sizeof(",") - 1) : 0) + (sizeof("\"timescale\":{}") - 1) + (sizeof("{\"speed\":-x.x,\"pitch\":-x.x,\"rate\":-x.x}") - 1) + 1;
+      size_t timescale_size = (should_add_comma ? (sizeof(",") - 1) : 0) + (sizeof("\"timescale\":{}") - 1) + (sizeof("{\"speed\":-x.xxxxx,\"pitch\":-x.xxxxx,\"rate\":-x.xxxxx}") - 1) + 1;
 
       payload = realloc(payload, payload_size + timescale_size);
       snprintf(payload + payload_size - 1, timescale_size, "%s\"timescale\":{\"speed\":%f,\"pitch\":%f,\"rate\":%f}", (should_add_comma ? "," : ""), params->filters->timescale->speed, params->filters->timescale->pitch, params->filters->timescale->rate);
@@ -507,7 +503,7 @@ int coglink_update_player(struct coglink_client *c_client, struct coglink_player
     }
 
     if (params->filters->tremolo) {
-      size_t tremolo_size = (should_add_comma ? (sizeof(",") - 1) : 0) + (sizeof("\"tremolo\":{}") - 1) + (sizeof("{\"frequency\":-x.x,\"depth\":-x.x}") - 1) + 1;
+      size_t tremolo_size = (should_add_comma ? (sizeof(",") - 1) : 0) + (sizeof("\"tremolo\":{}") - 1) + (sizeof("{\"frequency\":-x.xxxxx,\"depth\":-x.xxxxx}") - 1) + 1;
 
       payload = realloc(payload, payload_size + tremolo_size);
       snprintf(payload + payload_size - 1, tremolo_size, "%s\"tremolo\":{\"frequency\":%f,\"depth\":%f}", (should_add_comma ? "," : ""), params->filters->tremolo->frequency, params->filters->tremolo->depth);
@@ -517,7 +513,7 @@ int coglink_update_player(struct coglink_client *c_client, struct coglink_player
     }
 
     if (params->filters->vibrato) {
-      size_t vibrato_size = (should_add_comma ? (sizeof(",") - 1) : 0) + (sizeof("\"vibrato\":{}") - 1) + (sizeof("{\"frequency\":-x.x,\"depth\":-x.x}") - 1) + 1;
+      size_t vibrato_size = (should_add_comma ? (sizeof(",") - 1) : 0) + (sizeof("\"vibrato\":{}") - 1) + (sizeof("{\"frequency\":-x.xxxxx,\"depth\":-x.xxxxx}") - 1) + 1;
 
       payload = realloc(payload, payload_size + vibrato_size);
       snprintf(payload + payload_size - 1, vibrato_size, "%s\"vibrato\":{\"frequency\":%f,\"depth\":%f}", (should_add_comma ? "," : ""), params->filters->vibrato->frequency, params->filters->vibrato->depth);
@@ -527,7 +523,7 @@ int coglink_update_player(struct coglink_client *c_client, struct coglink_player
     }
 
     if (params->filters->rotation) {
-      size_t rotation_size = (should_add_comma ? (sizeof(",") - 1) : 0) + (sizeof("\"rotation\":{}") - 1) + (sizeof("{\"frequency\":-x.x,\"depth\":-x.x}") - 1) + 1;
+      size_t rotation_size = (should_add_comma ? (sizeof(",") - 1) : 0) + (sizeof("\"rotation\":{}") - 1) + (sizeof("{\"frequency\":-x.xxxxx,\"depth\":-x.xxxxx}") - 1) + 1;
 
       payload = realloc(payload, payload_size + rotation_size);
       snprintf(payload + payload_size - 1, rotation_size, "%s\"rotation\":{\"frequency\":%f,\"depth\":%f}", (should_add_comma ? "," : ""), params->filters->rotation->frequency, params->filters->rotation->depth);
@@ -537,7 +533,7 @@ int coglink_update_player(struct coglink_client *c_client, struct coglink_player
     }
 
     if (params->filters->distortion) {
-      size_t distortion_size = (should_add_comma ? (sizeof(",") - 1) : 0) + (sizeof("\"distortion\":{}") - 1) + (sizeof("{\"sinOffset\":-x.x,\"sinScale\":-x.x,\"cosOffset\":-x.x,\"cosScale\":-x.x,\"tanOffset\":-x.x,\"tanScale\":-x.x,\"offset\":-x.x,\"scale\":-x.x}") - 1) + 1;
+      size_t distortion_size = (should_add_comma ? (sizeof(",") - 1) : 0) + (sizeof("\"distortion\":{}") - 1) + (sizeof("{\"sinOffset\":-x.xxxxx,\"sinScale\":-x.xxxxx,\"cosOffset\":-x.xxxxx,\"cosScale\":-x.xxxxx,\"tanOffset\":-x.xxxxx,\"tanScale\":-x.xxxxx,\"offset\":-x.xxxxx,\"scale\":-x.xxxxx}") - 1) + 1;
 
       payload = realloc(payload, payload_size + distortion_size);
       snprintf(payload + payload_size - 1, distortion_size, "%s\"distortion\":{\"sinOffset\":%f,\"sinScale\":%f,\"cosOffset\":%f,\"cosScale\":%f,\"tanOffset\":%f,\"tanScale\":%f,\"offset\":%f,\"scale\":%f}", (should_add_comma ? "," : ""), params->filters->distortion->sinOffset, params->filters->distortion->sinScale, params->filters->distortion->cosOffset, params->filters->distortion->cosScale, params->filters->distortion->tanOffset, params->filters->distortion->tanScale, params->filters->distortion->offset, params->filters->distortion->scale);
@@ -547,7 +543,7 @@ int coglink_update_player(struct coglink_client *c_client, struct coglink_player
     }
 
     if (params->filters->channelMix) {
-      size_t channelMix_size = (should_add_comma ? (sizeof(",") - 1) : 0) + (sizeof("\"channelMix\":{}") - 1) + (sizeof("{\"leftToLeft\":-x.x,\"leftToRight\":-x.x,\"rightToLeft\":-x.x,\"rightToRight\":-x.x}") - 1) + 1;
+      size_t channelMix_size = (should_add_comma ? (sizeof(",") - 1) : 0) + (sizeof("\"channelMix\":{}") - 1) + (sizeof("{\"leftToLeft\":-x.xxxxx,\"leftToRight\":-x.xxxxx,\"rightToLeft\":-x.xxxxx,\"rightToRight\":-x.xxxxx}") - 1) + 1;
 
       payload = realloc(payload, payload_size + channelMix_size);
       snprintf(payload + payload_size - 1, channelMix_size, "%s\"channelMix\":{\"leftToLeft\":%f,\"leftToRight\":%f,\"rightToLeft\":%f,\"rightToRight\":%f}", (should_add_comma ? "," : ""), params->filters->channelMix->leftToLeft, params->filters->channelMix->leftToRight, params->filters->channelMix->rightToLeft, params->filters->channelMix->rightToRight);
@@ -557,7 +553,7 @@ int coglink_update_player(struct coglink_client *c_client, struct coglink_player
     }
 
     if (params->filters->lowPass) {
-      size_t lowPass_size = (should_add_comma ? (sizeof(",") - 1) : 0) + (sizeof("\"lowPass\":{}") - 1) + (sizeof("{\"smoothing\":-x.x}") - 1) + 1;
+      size_t lowPass_size = (should_add_comma ? (sizeof(",") - 1) : 0) + (sizeof("\"lowPass\":{}") - 1) + (sizeof("{\"smoothing\":-x.xxxxx}") - 1) + 1;
 
       payload = realloc(payload, payload_size + lowPass_size);
       snprintf(payload + payload_size - 1, lowPass_size, "%s\"lowPass\":{\"smoothing\":%f}", (should_add_comma ? "," : ""), params->filters->lowPass->smoothing);

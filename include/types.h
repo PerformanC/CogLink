@@ -5,7 +5,7 @@
 #define COGLINK_CURL_ERROR     -4
 #define COGLINK_NOT_FOUND      -3
 #define COGLINK_ALREADY_EXISTS -2
-#define COGLINk_FAILED         -1
+#define COGLINK_FAILED         -1
 #define COGLINK_SUCCESS         0
 #define COGLINK_PROCEED         1
 
