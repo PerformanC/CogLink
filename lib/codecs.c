@@ -69,8 +69,8 @@ void *coglink_parse_websocket_data(int *event_type, const char *json, size_t len
       return ready;
     }
     case 'e': { /* Event */
-      NEW_FIND_FIELD(json, type, "type");
-      NEW_FIND_FIELD(json, guildId, "guildId");
+      FIND_FIELD(json, type, "type");
+      FIND_FIELD(json, guildId, "guildId");
 
       switch(json[type->v.pos + 7]) {
         case 'a': { /* TrackStartEvent */
@@ -88,7 +88,7 @@ void *coglink_parse_websocket_data(int *event_type, const char *json, size_t len
           return parsedTrack;
         }
         case 'd': { /* TrackEndEvent */
-          NEW_FIND_FIELD(json, reason, "reason");
+          FIND_FIELD(json, reason, "reason");
 
           struct coglink_track_end_payload *parsedTrack = malloc(sizeof(struct coglink_track_end_payload));
 
@@ -106,9 +106,9 @@ void *coglink_parse_websocket_data(int *event_type, const char *json, size_t len
           return parsedTrack;
         }
         case 'c': { /* TrackExceptionEvent */
-          NEW_FIND_FIELD(json, message, "message");
-          NEW_FIND_FIELD(json, severity, "severity");
-          NEW_FIND_FIELD(json, cause, "cause");
+          FIND_FIELD(json, message, "message");
+          FIND_FIELD(json, severity, "severity");
+          FIND_FIELD(json, cause, "cause");
 
           struct coglink_track_exception_payload *parsedTrack = malloc(sizeof(struct coglink_track_end_payload));
 
@@ -131,7 +131,7 @@ void *coglink_parse_websocket_data(int *event_type, const char *json, size_t len
           return parsedTrack;
         }
         case 'u': { /* TrackStuckEvent */
-          NEW_FIND_FIELD(json, reason, "thresholdMs");
+          FIND_FIELD(json, reason, "thresholdMs");
 
           struct coglink_track_stuck_payload *parsedTrack = malloc(sizeof(struct coglink_track_end_payload));
 
@@ -149,9 +149,9 @@ void *coglink_parse_websocket_data(int *event_type, const char *json, size_t len
           return parsedTrack;
         }
         case 't': { /* WebSocketClosedEvent */
-          NEW_FIND_FIELD(json, code, "code");
-          NEW_FIND_FIELD(json, reason, "reason");
-          NEW_FIND_FIELD(json, byRemote, "byRemote");
+          FIND_FIELD(json, code, "code");
+          FIND_FIELD(json, reason, "reason");
+          FIND_FIELD(json, byRemote, "byRemote");
 
           struct coglink_websocket_closed_payload *c_info = malloc(sizeof(struct coglink_websocket_closed_payload));
 
@@ -176,42 +176,42 @@ void *coglink_parse_websocket_data(int *event_type, const char *json, size_t len
       break;
     }
     case 's': { /* Stats */
-      NEW_FIND_FIELD(json, players, "players");
-      NEW_FIND_FIELD(json, playingPlayers, "playingPlayers");
-      NEW_FIND_FIELD(json, uptime, "uptime");
-      NEW_FIND_FIELD(json, memory, "memory");
+      FIND_FIELD(json, players, "players");
+      FIND_FIELD(json, playingPlayers, "playingPlayers");
+      FIND_FIELD(json, uptime, "uptime");
+      FIND_FIELD(json, memory, "memory");
 
       char *path[] = { "memory", "free" };
-      NEW_FIND_FIELD_PATH(json, pairs, lavaFree, "free", 2);
+      FIND_FIELD_PATH(json, pairs, lavaFree, "free", 2);
 
       path[1] = "used";
-      NEW_FIND_FIELD_PATH(json, pairs, used, "used", 2);
+      FIND_FIELD_PATH(json, pairs, used, "used", 2);
 
       path[1] = "allocated";
-      NEW_FIND_FIELD_PATH(json, pairs, allocated, "allocated", 2);
+      FIND_FIELD_PATH(json, pairs, allocated, "allocated", 2);
 
       path[1] = "reservable";
-      NEW_FIND_FIELD_PATH(json, pairs, reservable, "reservable", 2);
+      FIND_FIELD_PATH(json, pairs, reservable, "reservable", 2);
 
       path[0] = "cpu";
       path[1] = "cores";
-      NEW_FIND_FIELD_PATH(json, pairs, cores, "cores", 2);
+      FIND_FIELD_PATH(json, pairs, cores, "cores", 2);
 
       path[1] = "systemLoad";
-      NEW_FIND_FIELD_PATH(json, pairs, systemLoad, "systemLoad", 2);
+      FIND_FIELD_PATH(json, pairs, systemLoad, "systemLoad", 2);
 
       path[1] = "lavalinkLoad";
-      NEW_FIND_FIELD_PATH(json, pairs, lavalinkLoad, "lavalinkLoad", 2);
+      FIND_FIELD_PATH(json, pairs, lavalinkLoad, "lavalinkLoad", 2);
 
       path[0] = "frameStats";
       path[1] = "sent";
-      NEW_FIND_FIELD_PATH(json, pairs, sent, "sent", 2);
+      FIND_FIELD_PATH(json, pairs, sent, "sent", 2);
 
       path[1] = "deficit";
-      NEW_FIND_FIELD_PATH(json, pairs, deficit, "deficit", 2);
+      FIND_FIELD_PATH(json, pairs, deficit, "deficit", 2);
 
       path[1] = "nulled";
-      NEW_FIND_FIELD_PATH(json, pairs, nulled, "nulled", 2);
+      FIND_FIELD_PATH(json, pairs, nulled, "nulled", 2);
 
       struct coglink_stats_payload *stats = malloc(sizeof(struct coglink_stats_payload));
       stats->memory = malloc(sizeof(struct coglink_stats_memory_payload));
@@ -239,19 +239,19 @@ void *coglink_parse_websocket_data(int *event_type, const char *json, size_t len
       return stats;
     }
     case 'p': { /* PlayerUpdate */
-      NEW_FIND_FIELD(json, guildId, "guildId");
+      FIND_FIELD(json, guildId, "guildId");
 
       char *path[] = { "state", "time" };
-      NEW_FIND_FIELD_PATH(json, pairs, time, "time", 2);
+      FIND_FIELD_PATH(json, pairs, time, "time", 2);
 
       path[1] = "position";
-      NEW_FIND_FIELD_PATH(json, pairs, position, "position", 2);
+      FIND_FIELD_PATH(json, pairs, position, "position", 2);
 
       path[1] = "connected";
-      NEW_FIND_FIELD_PATH(json, pairs, connected, "connected", 2);
+      FIND_FIELD_PATH(json, pairs, connected, "connected", 2);
 
       path[1] = "ping";
-      NEW_FIND_FIELD_PATH(json, pairs, ping, "ping", 2);
+      FIND_FIELD_PATH(json, pairs, ping, "ping", 2);
 
       struct coglink_player_update_payload *playerUpdate = malloc(sizeof(struct coglink_player_update_payload));
       playerUpdate->state = malloc(sizeof(struct coglink_player_state_payload));
@@ -314,7 +314,9 @@ int coglink_parse_load_tracks_response(struct coglink_load_tracks_response *resp
     case 'c': { /* traCk */
       jsmnf_pair *data = jsmnf_find(pairs, json, "data", sizeof("data") - 1);
 
-      coglink_parse_track(data, json); /* Defines track_info */
+      struct coglink_track *track_info = malloc(sizeof(struct coglink_track));
+
+      coglink_new_parse_track(track_info, data, json); /* Defines track_info */
 
       response->type = COGLINK_LOAD_TYPE_TRACK;
       response->data = track_info;
@@ -339,7 +341,9 @@ int coglink_parse_load_tracks_response(struct coglink_load_tracks_response *resp
         char *track_path[] = { "data", "tracks", i_str };
         jsmnf_pair *track_pair = jsmnf_find_path(pairs, json, track_path, 3);
 
-        coglink_parse_track(track_pair, json); /* Defines track_info */
+        struct coglink_track *track_info = malloc(sizeof(struct coglink_track));
+
+        coglink_new_parse_track(track_info, track_pair, json);
 
         data->tracks->array[i] = track_info;
       }
@@ -373,9 +377,12 @@ int coglink_parse_load_tracks_response(struct coglink_load_tracks_response *resp
         char *track_path[] = { "data", i_str };
         jsmnf_pair *track_pair = jsmnf_find_path(pairs, json, track_path, 2);
 
-        coglink_parse_track(track_pair, json); /* Defines track_info */
+        struct coglink_track *track_info = malloc(sizeof(struct coglink_track));
+        track_info->info = malloc(sizeof(struct coglink_partial_track));
 
-        data->array[i] = *track_info;
+        coglink_new_parse_track(track_info, track_pair, json);
+
+        data->array[i] = track_info;
       }
 
       response->type = COGLINK_LOAD_TYPE_SEARCH;
@@ -454,7 +461,7 @@ void coglink_free_load_tracks_response(struct coglink_load_tracks_response *resp
       struct coglink_load_tracks_search_response *data = response->data;
 
       for (size_t i = 0; i < data->size; i++) {
-        free(data->array[i].info);
+        free(data->array[i]->info);
       }
 
       free(data->array);
@@ -587,6 +594,81 @@ void coglink_free_voice_server_update(struct coglink_voice_server_update *voiceS
   free(voiceServerUpdate->token);
   free(voiceServerUpdate->endpoint);
   free(voiceServerUpdate);
+}
+
+struct coglink_guild_create *coglink_parse_guild_create(const char *json, size_t length) {
+  jsmn_parser parser;
+  jsmntok_t *toks = NULL;
+  unsigned num_tokens = 0;
+
+  jsmn_init(&parser);
+  int r = jsmn_parse_auto(&parser, json, length, &toks, &num_tokens);
+  if (r <= 0) {
+    ERROR("[coglink:jsmn-find] Failed to parse JSON.");
+
+    return NULL;
+  }
+
+  jsmnf_loader loader;
+  jsmnf_pair *pairs = NULL;
+  unsigned num_pairs = 0;
+
+  jsmnf_init(&loader);
+  r = jsmnf_load_auto(&loader, json, toks, num_tokens, &pairs, &num_pairs);
+  if (r <= 0) {
+    ERROR("[coglink:jsmn-find] Failed to load jsmn-find.");
+
+    return NULL;
+  }
+
+  jsmnf_pair *id = jsmnf_find(pairs, json, "id", sizeof("id") - 1);
+
+  struct coglink_guild_create *guild_create = malloc(sizeof(struct coglink_guild_create));
+  
+  u64snowflake guild_id = 0;
+  PAIR_TO_SIZET(json, id, idStr, guild_id, 18 + 1);
+
+  guild_create->guild_id = guild_id;
+  guild_create->pairs = pairs;
+
+  free(toks);
+
+  return guild_create;
+}
+
+void coglink_free_guild_create(struct coglink_guild_create *guild_create) {
+  free(guild_create);
+}
+
+int coglink_parse_single_user_guild_create(jsmnf_pair *pairs, const char *json, char *i_str, u64snowflake bot_id, struct coglink_single_user_guild_create *response) {
+  char *path[] = { "voice_states", i_str, "user_id" };
+  NEW_FIND_FIELD_PATH(json, pairs, user_id_token, "user_id", 3);
+
+  u64snowflake user_id = 0;
+  PAIR_TO_SIZET(json, user_id_token, user_id_str, user_id, 18 + 1);
+
+  if (user_id == bot_id) {
+    path[2] = "session_id";
+    NEW_FIND_FIELD_PATH(json, pairs, session_id, "session_id", 3);
+
+    response->session_id = malloc(session_id->v.len + 1);
+    snprintf(response->session_id, session_id->v.len + 1, "%.*s", (int)session_id->v.len, json + session_id->v.pos);
+
+    response->type = 1;
+    response->user_id = user_id;
+
+    return COGLINK_SUCCESS;
+  } else {
+    path[2] = "channel_id";
+    NEW_FIND_FIELD_PATH(json, pairs, channel_id, "channel_id", 3);
+
+    PAIR_TO_SIZET(json, channel_id, channel_id_str, response->vc_id, 18 + 1);
+
+    response->user_id = user_id;
+    response->type = 2;
+
+    return COGLINK_SUCCESS;
+  }
 }
 
 void *coglink_parse_node_info(struct coglink_node_info *response, const char *json, size_t length) {

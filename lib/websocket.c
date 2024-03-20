@@ -227,6 +227,57 @@ enum discord_event_scheduler _coglink_handle_scheduler(struct discord *client, c
 
       break;
     }
+    case DISCORD_EV_GUILD_CREATE: {
+      struct coglink_guild_create *guild_create = coglink_parse_guild_create(data, length);
+
+      jsmnf_pair *voice_states = jsmnf_find(guild_create->pairs, data, "voice_states", sizeof("voice_states") - 1);
+
+      for (int i = 0; i < voice_states->size; i++) {
+        char i_str[16];
+        snprintf(i_str, sizeof(i_str), "%d", i);
+
+        struct coglink_single_user_guild_create single_guild_create;
+        int status = coglink_parse_single_user_guild_create(guild_create->pairs, data, i_str, c_client->bot_id, &single_guild_create);
+
+        if (status == COGLINK_FAILED) continue;
+
+        if (single_guild_create.type == 1) {
+          struct coglink_player *player = coglink_get_player(c_client, guild_create->guild_id);
+
+          if (player == NULL) continue;
+
+          player->voice_data = malloc(sizeof(struct coglink_voice_data));
+          /* todo: is it necessary after being sent to the node? */
+          player->voice_data->session_id = single_guild_create.session_id;
+        } else {
+          size_t i = 0;
+
+          do {
+            if (c_client->users->array[i].id == 0) {
+              c_client->users->array[i].id = single_guild_create.user_id;
+              c_client->users->array[i].channel_id = single_guild_create.vc_id;
+
+              continue;
+            }
+
+            i++;
+          } while (c_client->users->size != i);
+
+          c_client->users->array = realloc(c_client->users->array, (c_client->users->size + 1) * sizeof(struct coglink_user));
+          c_client->users->array[c_client->users->size].id = single_guild_create.user_id;
+          c_client->users->array[c_client->users->size].channel_id = single_guild_create.vc_id;
+          c_client->users->size++;
+
+          printf("user_id: %p (%zu) | %p (%zu)\n", (void *)&c_client->users->array[c_client->users->size - 1].id, c_client->users->array[c_client->users->size - 1].id, (void *)&single_guild_create.user_id, single_guild_create.user_id);
+
+          continue;
+        }
+      }
+
+      // coglink_free_guild_create(guild_create);
+
+      break;
+    }
     default: {
       return DISCORD_EVENT_MAIN_THREAD;
     }
@@ -244,10 +295,12 @@ int coglink_connect_nodes(struct coglink_client *c_client, struct discord *clien
   c_client->nodes = nodes;
   c_client->players = malloc(sizeof(struct coglink_players));
   c_client->players->array = malloc(sizeof(struct coglink_player));
+  memset(c_client->players->array, 0, sizeof(struct coglink_player));
   c_client->players->size = 0;
 
   c_client->users = malloc(sizeof(struct coglink_users));
   c_client->users->array = malloc(sizeof(struct coglink_user));
+  memset(c_client->users->array, 0, sizeof(struct coglink_user));
   c_client->users->size = 0;
 
   char bot_id_str[32];
