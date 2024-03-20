@@ -7,6 +7,7 @@
 
 #include "lavalink.h"
 #include "utils.h"
+#include "jsonb.h"
 
 #include "rest.h"
 
@@ -333,258 +334,163 @@ void coglink_free_decode_tracks(struct coglink_tracks *tracks) {
   free(tracks);
 }
 
-/* todo: use json-build by müller */
 int coglink_update_player(struct coglink_client *c_client, struct coglink_player *player, struct coglink_update_player_params *params) {
   struct coglink_node *node = &c_client->nodes->array[player->node];
 
   if (node->session_id == NULL) return COGLINK_NODE_OFFLINE;
 
-  size_t payload_size = (sizeof("{") - 1) + 1;
-  bool should_add_comma = false;
-  char *payload = malloc(payload_size);
-  payload[payload_size - 2] = '{';
-  payload[payload_size - 1] = '\0';
-
   size_t endpoint_size = (sizeof("/sessions//players/") - 1) + COGLINK_SESSION_ID_LENGTH + 19 + 1;
   char *endpoint = malloc(endpoint_size);
   snprintf(endpoint, endpoint_size, "/sessions/%s/players/%" PRIu64 "", node->session_id, player->guild_id);
 
+  struct pjsonb jsonber;
+  pjsonb_init(&jsonber);
+
   if (params->track) {
-    if (params->track->encoded) {
-      size_t track_size = (sizeof("\"track\":{\"encoded\":\"\"") - 1) + strlen(params->track->encoded) + 1;
+    pjson_enter_object(&jsonber, "track");
 
-      payload = realloc(payload, payload_size + track_size);
-      snprintf(payload + payload_size - 1, track_size, "\"track\":{\"encoded\":\"%s\"", params->track->encoded);
-      payload_size += track_size - 1;
+    if (params->track->encoded) pjsonb_set_string(&jsonber, "encoded", params->track->encoded);
+    if (params->track->identifier) pjsonb_set_string(&jsonber, "identifier", params->track->identifier);
+    if (params->track->userData) pjsonb_set_string(&jsonber, "userData", params->track->userData);
 
-      if (params->track->identifier || params->track->userData) {
-        payload = realloc(payload, payload_size + 1);
-        payload[payload_size - 1] = ',';
-        payload[payload_size] = '\0';
-        payload_size++;
-      }
-    }
-
-    if (params->track->identifier) {
-      size_t identifier_size = ((params->track->encoded ? 1 : 0) + (sizeof("\"identifier\":\"\"") - 1) + strlen(params->track->identifier) + 1);
-
-      payload = realloc(payload, payload_size + identifier_size);
-      snprintf(payload + payload_size - 1, identifier_size, "%s\"identifier\":\"%s\"", (params->track->encoded ? "," : ""), params->track->identifier);
-      payload_size += identifier_size - 1;
-
-      if (params->track->userData) {
-        payload = realloc(payload, payload_size + 1);
-        payload[payload_size - 1] = ',';
-        payload[payload_size] = '\0';
-        payload_size++;
-      }
-    }
-
-    if (params->track->userData) {
-      size_t userData_size = ((params->track->encoded || params->track->identifier ? 1 : 0) + (sizeof("\"userData\":\"\"") - 1) + strlen(params->track->userData) + 1);
-
-      payload = realloc(payload, payload_size + userData_size);
-      snprintf(payload + payload_size - 1, userData_size, "%s\"userData\":\"%s\"", (params->track->encoded || params->track->identifier ? "," : ""), params->track->userData);
-      payload_size += userData_size - 1;
-    }
-
-    payload = realloc(payload, payload_size + 1);
-    payload[payload_size - 1] = '}';
-    payload[payload_size] = '\0';
-    payload_size++;
-
-    should_add_comma = true;
+    pjson_leave_object(&jsonber);
   }
 
   if (params->position) {
-    size_t position_size = (should_add_comma ? (sizeof(",") - 1) : 0) + (sizeof("\"position\":") - 1) + 10 + 1;
-
-    payload = realloc(payload, payload_size + position_size);
-    snprintf(payload + payload_size - 1, position_size, "%s\"position\":%d", (should_add_comma ? "," : ""), params->position);
-    payload_size += position_size - 1;
-
-    should_add_comma = true;
+    pjsonb_set_int(&jsonber, "position", params->position);
   }
 
   if (params->endTime) {
-    size_t endTime_size = (should_add_comma ? (sizeof(",") - 1) : 0) + (sizeof("\"endTime\":") - 1) + 10 + 1;
-
-    payload = realloc(payload, payload_size + endTime_size);
-    snprintf(payload + payload_size - 1, endTime_size, "%s\"endTime\":%d", (should_add_comma ? "," : ""), params->endTime);
-    payload_size += endTime_size - 1;
-
-    should_add_comma = true;
+    pjsonb_set_int(&jsonber, "endTime", params->endTime);
   }
 
   if (params->volume) {
-    size_t volume_size = (should_add_comma ? (sizeof(",") - 1) : 0) + (sizeof("\"volume\":") - 1) + 10 + 1;
-
-    payload = realloc(payload, payload_size + volume_size);
-    snprintf(payload + payload_size - 1, volume_size, "%s\"volume\":%d", (should_add_comma ? "," : ""), params->volume);
-    payload_size += volume_size - 1;
-
-    should_add_comma = true;
+    pjsonb_set_int(&jsonber, "volume", params->volume);
   }
 
   if (params->paused) {
-    size_t paused_size = (should_add_comma ? (sizeof(",") - 1) : 0) + (sizeof("\"paused\":") - 1) + 5 + 1;
-
-    payload = realloc(payload, payload_size + paused_size);
-    snprintf(payload + payload_size - 1, paused_size, "%s\"paused\":%s", (should_add_comma ? "," : ""), (params->paused ? "true" : "false"));
-    payload_size += paused_size - 1;
-
-    should_add_comma = true;
+    pjsonb_set_bool(&jsonber, "paused", params->paused);
   }
 
   if (params->filters) {
-    size_t filters_size = (should_add_comma ? (sizeof(",") - 1) : 0) + (sizeof("\"filters\":") - 1) + 1 + 1;
-
-    payload = realloc(payload, payload_size + filters_size);
-    snprintf(payload + payload_size - 1, filters_size, "%s\"filters\":{", (should_add_comma ? "," : ""));
-    payload_size += filters_size - 1;
+    pjson_enter_object(&jsonber, "filters");
 
     if (params->filters->volume) {
-      size_t volume_size = (sizeof("\"volume\":") - 1) + 10 + 1;
-
-      payload = realloc(payload, payload_size + volume_size);
-      snprintf(payload + payload_size - 1, volume_size, "\"volume\":%f", params->filters->volume);
-      payload_size += volume_size - 1;
-
-      should_add_comma = true;
+      pjsonb_set_int(&jsonber, "volume", params->filters->volume);
     }
 
     if (params->filters->equalizer) {
-      size_t equalizer_size = (should_add_comma ? (sizeof(",") - 1) : 0) + (sizeof("\"equalizer\":[]") - 1) + (15 * (sizeof("{\"band\":-x.x,\"gain\":-x.x}") - 1)) + 1;
-
-      payload = realloc(payload, payload_size + equalizer_size);
-      snprintf(payload + payload_size - 1, equalizer_size, "%s\"equalizer\":[", (should_add_comma ? "," : ""));
-      payload_size += equalizer_size - 1;
+      pjson_enter_array(&jsonber, "equalizer");
 
       for (size_t i = 0; i < 15; i++) {
-        size_t equalizer_params_size = (sizeof("{\"band\":-x.x,\"gain\":-x.x}") - 1) + 10 + 1;
+        pjson_enter_object(&jsonber, NULL);
 
-        payload = realloc(payload, payload_size + equalizer_params_size);
-        snprintf(payload + payload_size - 1, equalizer_params_size, "{\"band\":%d,\"gain\":%f}", params->filters->equalizer[i].band, params->filters->equalizer[i].gain);
-        payload_size += equalizer_params_size - 1;
+        pjsonb_set_int(&jsonber, "band", params->filters->equalizer[i].band);
+        pjsonb_set_int(&jsonber, "gain", params->filters->equalizer[i].gain);
 
-        if (i < 15 - 1) {
-          payload = realloc(payload, payload_size + 1);
-          payload[payload_size - 1] = ',';
-          payload[payload_size] = '\0';
-          payload_size++;
-        }
+        pjson_leave_object(&jsonber);
       }
 
-      payload = realloc(payload, payload_size + 1);
-      payload[payload_size - 1] = ']';
-      payload[payload_size] = '\0';
-
-      should_add_comma = true;
+      pjson_leave_array(&jsonber);
     }
 
     if (params->filters->karaoke) {
-      size_t karaoke_size = (should_add_comma ? (sizeof(",") - 1) : 0) + (sizeof("\"karaoke\":{}") - 1) + (sizeof("{\"level\":-x.xxxxx,\"monoLevel\":-x.xxxxx,\"filterBand\":-x.xxxxx,\"filterWidth\":-x.xxxxx}") - 1) + 1;
+      pjson_enter_object(&jsonber, "karaoke");
 
-      payload = realloc(payload, payload_size + karaoke_size);
-      snprintf(payload + payload_size - 1, karaoke_size, "%s\"karaoke\":{\"level\":%f,\"monoLevel\":%f,\"filterBand\":%f,\"filterWidth\":%f}", (should_add_comma ? "," : ""), params->filters->karaoke->level, params->filters->karaoke->monoLevel, params->filters->karaoke->filterBand, params->filters->karaoke->filterWidth);
-      payload_size += karaoke_size - 1;
+      pjsonb_set_int(&jsonber, "level", params->filters->karaoke->level);
+      pjsonb_set_int(&jsonber, "monoLevel", params->filters->karaoke->monoLevel);
+      pjsonb_set_int(&jsonber, "filterBand", params->filters->karaoke->filterBand);
+      pjsonb_set_int(&jsonber, "filterWidth", params->filters->karaoke->filterWidth);
 
-      should_add_comma = true;
+      pjson_leave_object(&jsonber);
     }
 
     if (params->filters->timescale) {
-      size_t timescale_size = (should_add_comma ? (sizeof(",") - 1) : 0) + (sizeof("\"timescale\":{}") - 1) + (sizeof("{\"speed\":-x.xxxxx,\"pitch\":-x.xxxxx,\"rate\":-x.xxxxx}") - 1) + 1;
+      pjson_enter_object(&jsonber, "timescale");
 
-      payload = realloc(payload, payload_size + timescale_size);
-      snprintf(payload + payload_size - 1, timescale_size, "%s\"timescale\":{\"speed\":%f,\"pitch\":%f,\"rate\":%f}", (should_add_comma ? "," : ""), params->filters->timescale->speed, params->filters->timescale->pitch, params->filters->timescale->rate);
-      payload_size += timescale_size - 1;
+      pjsonb_set_int(&jsonber, "speed", params->filters->timescale->speed);
+      pjsonb_set_int(&jsonber, "pitch", params->filters->timescale->pitch);
+      pjsonb_set_int(&jsonber, "rate", params->filters->timescale->rate);
 
-      should_add_comma = true;
+      pjson_leave_object(&jsonber);
     }
 
     if (params->filters->tremolo) {
-      size_t tremolo_size = (should_add_comma ? (sizeof(",") - 1) : 0) + (sizeof("\"tremolo\":{}") - 1) + (sizeof("{\"frequency\":-x.xxxxx,\"depth\":-x.xxxxx}") - 1) + 1;
+      pjson_enter_object(&jsonber, "tremolo");
 
-      payload = realloc(payload, payload_size + tremolo_size);
-      snprintf(payload + payload_size - 1, tremolo_size, "%s\"tremolo\":{\"frequency\":%f,\"depth\":%f}", (should_add_comma ? "," : ""), params->filters->tremolo->frequency, params->filters->tremolo->depth);
-      payload_size += tremolo_size - 1;
+      pjsonb_set_int(&jsonber, "frequency", params->filters->tremolo->frequency);
+      pjsonb_set_int(&jsonber, "depth", params->filters->tremolo->depth);
 
-      should_add_comma = true;
+      pjson_leave_object(&jsonber);
     }
 
     if (params->filters->vibrato) {
-      size_t vibrato_size = (should_add_comma ? (sizeof(",") - 1) : 0) + (sizeof("\"vibrato\":{}") - 1) + (sizeof("{\"frequency\":-x.xxxxx,\"depth\":-x.xxxxx}") - 1) + 1;
+      pjson_enter_object(&jsonber, "vibrato");
 
-      payload = realloc(payload, payload_size + vibrato_size);
-      snprintf(payload + payload_size - 1, vibrato_size, "%s\"vibrato\":{\"frequency\":%f,\"depth\":%f}", (should_add_comma ? "," : ""), params->filters->vibrato->frequency, params->filters->vibrato->depth);
-      payload_size += vibrato_size - 1;
+      pjsonb_set_int(&jsonber, "frequency", params->filters->vibrato->frequency);
+      pjsonb_set_int(&jsonber, "depth", params->filters->vibrato->depth);
 
-      should_add_comma = true;
+      pjson_leave_object(&jsonber);
     }
 
     if (params->filters->rotation) {
-      size_t rotation_size = (should_add_comma ? (sizeof(",") - 1) : 0) + (sizeof("\"rotation\":{}") - 1) + (sizeof("{\"frequency\":-x.xxxxx,\"depth\":-x.xxxxx}") - 1) + 1;
+      pjson_enter_object(&jsonber, "rotation");
 
-      payload = realloc(payload, payload_size + rotation_size);
-      snprintf(payload + payload_size - 1, rotation_size, "%s\"rotation\":{\"frequency\":%f,\"depth\":%f}", (should_add_comma ? "," : ""), params->filters->rotation->frequency, params->filters->rotation->depth);
-      payload_size += rotation_size - 1;
+      pjsonb_set_int(&jsonber, "frequency", params->filters->rotation->frequency);
+      pjsonb_set_int(&jsonber, "depth", params->filters->rotation->depth);
 
-      should_add_comma = true;
+      pjson_leave_object(&jsonber);
     }
 
     if (params->filters->distortion) {
-      size_t distortion_size = (should_add_comma ? (sizeof(",") - 1) : 0) + (sizeof("\"distortion\":{}") - 1) + (sizeof("{\"sinOffset\":-x.xxxxx,\"sinScale\":-x.xxxxx,\"cosOffset\":-x.xxxxx,\"cosScale\":-x.xxxxx,\"tanOffset\":-x.xxxxx,\"tanScale\":-x.xxxxx,\"offset\":-x.xxxxx,\"scale\":-x.xxxxx}") - 1) + 1;
+      pjson_enter_object(&jsonber, "distortion");
 
-      payload = realloc(payload, payload_size + distortion_size);
-      snprintf(payload + payload_size - 1, distortion_size, "%s\"distortion\":{\"sinOffset\":%f,\"sinScale\":%f,\"cosOffset\":%f,\"cosScale\":%f,\"tanOffset\":%f,\"tanScale\":%f,\"offset\":%f,\"scale\":%f}", (should_add_comma ? "," : ""), params->filters->distortion->sinOffset, params->filters->distortion->sinScale, params->filters->distortion->cosOffset, params->filters->distortion->cosScale, params->filters->distortion->tanOffset, params->filters->distortion->tanScale, params->filters->distortion->offset, params->filters->distortion->scale);
-      payload_size += distortion_size - 1;
+      pjsonb_set_int(&jsonber, "sinOffset", params->filters->distortion->sinOffset);
+      pjsonb_set_int(&jsonber, "sinScale", params->filters->distortion->sinScale);
+      pjsonb_set_int(&jsonber, "cosOffset", params->filters->distortion->cosOffset);
+      pjsonb_set_int(&jsonber, "cosScale", params->filters->distortion->cosScale);
+      pjsonb_set_int(&jsonber, "tanOffset", params->filters->distortion->tanOffset);
+      pjsonb_set_int(&jsonber, "tanScale", params->filters->distortion->tanScale);
+      pjsonb_set_int(&jsonber, "offset", params->filters->distortion->offset);
+      pjsonb_set_int(&jsonber, "scale", params->filters->distortion->scale);
 
-      should_add_comma = true;
+      pjson_leave_object(&jsonber);
     }
 
     if (params->filters->channelMix) {
-      size_t channelMix_size = (should_add_comma ? (sizeof(",") - 1) : 0) + (sizeof("\"channelMix\":{}") - 1) + (sizeof("{\"leftToLeft\":-x.xxxxx,\"leftToRight\":-x.xxxxx,\"rightToLeft\":-x.xxxxx,\"rightToRight\":-x.xxxxx}") - 1) + 1;
+      pjson_enter_object(&jsonber, "channelMix");
 
-      payload = realloc(payload, payload_size + channelMix_size);
-      snprintf(payload + payload_size - 1, channelMix_size, "%s\"channelMix\":{\"leftToLeft\":%f,\"leftToRight\":%f,\"rightToLeft\":%f,\"rightToRight\":%f}", (should_add_comma ? "," : ""), params->filters->channelMix->leftToLeft, params->filters->channelMix->leftToRight, params->filters->channelMix->rightToLeft, params->filters->channelMix->rightToRight);
-      payload_size += channelMix_size - 1;
+      pjsonb_set_int(&jsonber, "leftToLeft", params->filters->channelMix->leftToLeft);
+      pjsonb_set_int(&jsonber, "leftToRight", params->filters->channelMix->leftToRight);
+      pjsonb_set_int(&jsonber, "rightToLeft", params->filters->channelMix->rightToLeft);
+      pjsonb_set_int(&jsonber, "rightToRight", params->filters->channelMix->rightToRight);
 
-      should_add_comma = true;
+      pjson_leave_object(&jsonber);
     }
 
     if (params->filters->lowPass) {
-      size_t lowPass_size = (should_add_comma ? (sizeof(",") - 1) : 0) + (sizeof("\"lowPass\":{}") - 1) + (sizeof("{\"smoothing\":-x.xxxxx}") - 1) + 1;
+      pjson_enter_object(&jsonber, "lowPass");
 
-      payload = realloc(payload, payload_size + lowPass_size);
-      snprintf(payload + payload_size - 1, lowPass_size, "%s\"lowPass\":{\"smoothing\":%f}", (should_add_comma ? "," : ""), params->filters->lowPass->smoothing);
-      payload_size += lowPass_size - 1;
+      pjsonb_set_int(&jsonber, "smoothing", params->filters->lowPass->smoothing);
 
-      should_add_comma = true;
+      pjson_leave_object(&jsonber);
     }
 
-    payload = realloc(payload, payload_size + 1);
-    payload[payload_size - 1] = '}';
-    payload[payload_size] = '\0';
-    payload_size++;
-
-    should_add_comma = true;
+    pjson_leave_object(&jsonber);
   }
 
-  payload = realloc(payload, payload_size + 1);
-  payload[payload_size - 1] = '}';
-  payload[payload_size] = '\0';
-  payload_size++;
+  pjsonb_end(&jsonber);
 
   /* todo: implement JSON parsing */
   _coglink_perform_request(node, &(struct coglink_request_params) {
     .endpoint = endpoint,
     .method = "PATCH",
-    .body = payload,
-    .body_length = payload_size - 1,
+    .body = jsonber.string,
+    .body_length = jsonber.position,
     .get_response = false
   }, NULL);
 
-  free(payload);
+  pjsonb_free(&jsonber);
   free(endpoint);
 
   return COGLINK_SUCCESS;
