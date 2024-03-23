@@ -89,7 +89,7 @@ void _ws_on_text(void *data, struct websockets *ws, struct ws_info *info, const 
             }
           };
 
-          coglink_update_player(c_info->c_client, player, &data);
+          coglink_update_player(c_info->c_client, player, &data, NULL);
         }
       }
 
@@ -268,13 +268,9 @@ enum discord_event_scheduler _coglink_handle_scheduler(struct discord *client, c
           c_client->users->array[c_client->users->size].channel_id = single_guild_create.vc_id;
           c_client->users->size++;
 
-          printf("user_id: %p (%zu) | %p (%zu)\n", (void *)&c_client->users->array[c_client->users->size - 1].id, c_client->users->array[c_client->users->size - 1].id, (void *)&single_guild_create.user_id, single_guild_create.user_id);
-
           continue;
         }
       }
-
-      // coglink_free_guild_create(guild_create);
 
       break;
     }

@@ -144,7 +144,7 @@ int coglink_decode_tracks(struct coglink_client *c_client, struct coglink_player
 
 void coglink_free_decode_tracks(struct coglink_tracks *tracks);
 
-int coglink_update_player(struct coglink_client *c_client, struct coglink_player *player, struct coglink_update_player_params *params);
+int coglink_update_player(struct coglink_client *c_client, struct coglink_player *player, struct coglink_update_player_params *params, struct coglink_update_player_response *response);
 
 void coglink_destroy_player(struct coglink_client *c_client, struct coglink_player *player);
 
