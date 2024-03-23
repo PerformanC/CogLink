@@ -22,6 +22,7 @@ struct coglink_node {
   uint64_t tstamp;
   CURLM *mhandle;
   struct websockets *ws;
+  struct _coglink_websocket_data *ws_data;
 };
 
 struct coglink_nodes {

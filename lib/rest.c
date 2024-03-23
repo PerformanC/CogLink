@@ -206,9 +206,8 @@ int coglink_load_tracks(struct coglink_client *c_client, struct coglink_player *
   return status;
 }
 
-/* todo: decentralize from a player */
-int coglink_decode_track(struct coglink_client *c_client, struct coglink_player *player, char *track, struct coglink_track *response) {
-  struct coglink_node *node = &c_client->nodes->array[player->node];
+int coglink_decode_track(struct coglink_client *c_client, struct coglink_node *node, char *track, struct coglink_track *response) {
+  (void) c_client; /* Standard */
 
   size_t endpoint_size = (sizeof("/decodetrack?encodedTrack=") - 1) + strlen(track) + 1;
   char *endpoint = malloc(endpoint_size);
@@ -253,8 +252,12 @@ int coglink_decode_track(struct coglink_client *c_client, struct coglink_player 
   return COGLINK_SUCCESS;
 }
 
-int coglink_decode_tracks(struct coglink_client *c_client, struct coglink_player *player, struct coglink_decode_tracks_params *params, struct coglink_tracks *response) {
-  struct coglink_node *node = &c_client->nodes->array[player->node];
+void coglink_free_decode_track(struct coglink_track *track) {
+  // free(track->info);
+}
+
+int coglink_decode_tracks(struct coglink_client *c_client, struct coglink_node *node, struct coglink_decode_tracks_params *params, struct coglink_tracks *response) {
+  (void) c_client; /* Standard */
 
   char *endpoint = "/decodetracks";
   char *body = malloc(1 + 1);
@@ -263,6 +266,7 @@ int coglink_decode_tracks(struct coglink_client *c_client, struct coglink_player
 
   for (size_t i = 0; i < params->size; i++) {
     size_t track_size = strlen(params->array[i]) + 1;
+
     body = realloc(body, body_length + track_size + 1);
     snprintf(body + body_length, track_size + 1, "\"%s\",", params->array[i]);
     body_length += track_size;

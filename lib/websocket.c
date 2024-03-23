@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <pthread.h>
 
 #include <concord/discord.h>
 #include <concord/discord-internal.h>
@@ -62,7 +63,11 @@ void _ws_on_text(void *data, struct websockets *ws, struct ws_info *info, const 
       break;
     }
     case COGLINK_TRACK_START: {
-      if (c_info->c_client->events->on_track_start) c_info->c_client->events->on_track_start((struct coglink_track_start_payload *)payload);
+      struct coglink_track_start_payload *track_start = (struct coglink_track_start_payload *)payload;
+
+      if (c_info->c_client->events->on_track_start) c_info->c_client->events->on_track_start(track_start);
+
+      coglink_free_track(track_start->track);
 
       break;
     }
@@ -95,15 +100,29 @@ void _ws_on_text(void *data, struct websockets *ws, struct ws_info *info, const 
 
       if (c_info->c_client->events->on_track_end) c_info->c_client->events->on_track_end(track_end);
 
+      coglink_free_track(track_end->track);
+
       break;
     }
     case COGLINK_TRACK_EXCEPTION: {
-      if (c_info->c_client->events->on_track_excetion) c_info->c_client->events->on_track_excetion((struct coglink_track_exception_payload *)payload);
+      struct coglink_track_exception_payload *track_exception = (struct coglink_track_exception_payload *)payload;
+
+      if (c_info->c_client->events->on_track_excetion) c_info->c_client->events->on_track_excetion(track_exception);
+
+      coglink_free_track(track_exception->track);
+      free(track_exception->exception->cause);
+      free(track_exception->exception->message);
+      free(track_exception->exception->severity);
+      free(track_exception->exception);
 
       break;
     }
     case COGLINK_TRACK_STUCK: {
-      if (c_info->c_client->events->on_track_stuck) c_info->c_client->events->on_track_stuck((struct coglink_track_stuck_payload *)payload);
+      struct coglink_track_stuck_payload *track_stuck = (struct coglink_track_stuck_payload *)payload;
+
+      if (c_info->c_client->events->on_track_stuck) c_info->c_client->events->on_track_stuck(track_stuck);
+
+      coglink_free_track(track_stuck->track);
 
       break;
     }
@@ -118,6 +137,8 @@ void _ws_on_text(void *data, struct websockets *ws, struct ws_info *info, const 
       break;
     }
   }
+
+  free(payload);
 }
 
 /* todo: replace for direct events (?) */
@@ -306,41 +327,69 @@ int coglink_connect_nodes(struct coglink_client *c_client, struct discord *clien
     struct coglink_node *node_info = &c_client->nodes->array[i];
 
     char hostname[128 + 19 + 4 + 1];
-    snprintf(hostname, sizeof(hostname), "ws%s://%s%s%d/v4/websocket", node_info->ssl ? "s" : "", node_info->hostname, node_info->port ? ":" : "", node_info->port);
+    snprintf(hostname, sizeof(hostname), "ws%s://%s%s%d/v4/websocket", nodes->array[i].ssl ? "s" : "", nodes->array[i].hostname, nodes->array[i].port ? ":" : "", nodes->array[i].port);
 
-    node_info->mhandle = curl_multi_init();
-    node_info->tstamp = 0;
+    nodes->array[i].mhandle = curl_multi_init();
+    nodes->array[i].tstamp = 0;
 
-    struct _coglink_websocket_data *c_info = malloc(sizeof(struct _coglink_websocket_data));
-    c_info->c_client = c_client;
-    c_info->node_id = i;
+    nodes->array[i].ws_data = malloc(sizeof(struct _coglink_websocket_data));
+    nodes->array[i].ws_data->c_client = c_client;
+    nodes->array[i].ws_data->node_id = i;
 
     struct ws_callbacks callbacks = {
-      .data = c_info,
+      .data = nodes->array[i].ws_data,
       // .on_connect = _ws_on_connect,
       .on_text = _ws_on_text,
       .on_close = _ws_on_close 
     };
 
-    nodes->array[i].ws = ws_init(&callbacks, client->gw.mhandle, NULL);
+    struct ws_attr attr = {
+      .conf = &client->gw.conf
+    };
+
+    nodes->array[i].ws = ws_init(&callbacks, client->gw.mhandle, &attr);
 
     /* todo: use libcurl (official) websocket client */
-    ws_set_url(node_info->ws, hostname, NULL);
-    ws_start(node_info->ws);
+    ws_set_url(nodes->array[i].ws, hostname, NULL);
+    ws_start(nodes->array[i].ws);
 
-    if (c_client->allow_resuming && c_client->nodes != NULL) ws_add_header(node_info->ws, "Session-Id", node_info->session_id);
-    ws_add_header(node_info->ws, "Authorization", node_info->password);
-    ws_add_header(node_info->ws, "Num-Shards", c_client->num_shards);
-    ws_add_header(node_info->ws, "User-Id", bot_id_str);
+    // if (c_client->allow_resuming && c_client->nodes != NULL) ws_add_header(nodes->array[i].ws, "Session-Id", nodes->array[i].session_id);
+    ws_add_header(nodes->array[i].ws, "Authorization", nodes->array[i].password);
+    ws_add_header(nodes->array[i].ws, "Num-Shards", c_client->num_shards);
+    ws_add_header(nodes->array[i].ws, "User-Id", bot_id_str);
     /* NodeLink/FrequenC Client-Name format */
-    ws_add_header(node_info->ws, "Client-Name", "Coglink/3.0.0 (https://github.com/PerformanC/CogLink)");
-    ws_add_header(node_info->ws, "Sec-WebSocket-Protocol", "13"); /* If not set, will be undefined */
+    ws_add_header(nodes->array[i].ws, "Client-Name", "Coglink/3.0.0 (https://github.com/PerformanC/CogLink)");
+    ws_add_header(nodes->array[i].ws, "Sec-WebSocket-Protocol", "13"); /* If not set, will be undefined */
 
-    io_poller_curlm_add(client->io_poller, node_info->mhandle, _IO_poller, node_info);
+    io_poller_curlm_add(client->io_poller, nodes->array[i].mhandle, _IO_poller, node_info);
   }
 
   discord_set_data(client, c_client);
   discord_set_event_scheduler(client, _coglink_handle_scheduler);
 
   return COGLINK_SUCCESS;
+}
+
+void coglink_cleanup(struct coglink_client *c_client, struct discord *client) {
+  for (size_t i = 0;i < c_client->nodes->size;i++) {
+    free(c_client->nodes->array[i].session_id);
+    ws_cleanup(c_client->nodes->array[i].ws);
+    curl_multi_cleanup(c_client->nodes->array[i].mhandle);
+
+    free(c_client->nodes->array[i].ws_data);
+  }
+
+  tablec_cleanup(&coglink_hashtable);
+
+  for (size_t i = 0;i < c_client->players->size;i++) {
+    if (c_client->players->array[i].voice_data != NULL) free(c_client->players->array[i].voice_data);
+    if (c_client->players->array[i].queue->array != NULL) free(c_client->players->array[i].queue->array);
+    free(c_client->players->array[i].queue);
+  }
+
+  free(c_client->players->array);
+  free(c_client->players);
+
+  free(c_client->users->array);
+  free(c_client->users);
 }
