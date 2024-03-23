@@ -9,14 +9,14 @@
 
 #include "codecs.h"
 
-void *coglink_parse_websocket_data(int *event_type, const char *json, size_t length) {
+void *coglink_parse_websocket_data(int *event_type, const char *json, size_t json_length) {
   *event_type = COGLINK_PARSE_ERROR;
 
   jsmn_parser parser;
   jsmntok_t tokens[64];
 
   jsmn_init(&parser);
-  int r = jsmn_parse(&parser, json, length, tokens, sizeof(tokens));
+  int r = jsmn_parse(&parser, json, json_length, tokens, sizeof(tokens));
 
   if (r < 0) {
     ERROR("[coglink:jsmn-find] Failed to parse JSON.");
@@ -279,17 +279,22 @@ void *coglink_parse_websocket_data(int *event_type, const char *json, size_t len
   return NULL;
 }
 
-int coglink_parse_load_tracks_response(struct coglink_load_tracks_response *response, const char *json, size_t length) {
+void coglink_free_track(struct coglink_track *track) {
+  free(track->info);
+  free(track);
+}
+
+int coglink_parse_load_tracks_response(struct coglink_load_tracks_response *response, const char *json, size_t json_length) {
   jsmn_parser parser;
   jsmntok_t *toks = NULL;
   unsigned num_tokens = 0;
 
   jsmn_init(&parser);
-  int r = jsmn_parse_auto(&parser, json, length, &toks, &num_tokens);
+  int r = jsmn_parse_auto(&parser, json, json_length, &toks, &num_tokens);
   if (r <= 0) {
     ERROR("[coglink:jsmn-find] Failed to parse JSON.");
 
-    return COGLINK_FAILED;
+    return COGLINK_PARSE_FAILED;
   }
 
   jsmnf_loader loader;
@@ -301,11 +306,11 @@ int coglink_parse_load_tracks_response(struct coglink_load_tracks_response *resp
   if (r <= 0) {
     ERROR("[coglink:jsmn-find] Failed to load jsmn-find.");
 
-    return COGLINK_FAILED;
+    return COGLINK_PARSE_FAILED;
   }
 
   jsmnf_pair *loadType = jsmnf_find(pairs, json, "loadType", sizeof("loadType") - 1);
-  if (!loadType) return COGLINK_FAILED;
+  if (!loadType) return COGLINK_PARSE_FAILED;
 
   response->type = COGLINK_LOAD_TYPE_EMPTY;
   response->data = NULL;
@@ -487,12 +492,12 @@ void coglink_free_load_tracks_response(struct coglink_load_tracks_response *resp
   }
 }
 
-struct coglink_voice_state *coglink_parse_voice_state(const char *json, size_t length) {
+struct coglink_voice_state *coglink_parse_voice_state(const char *json, size_t json_length) {
   jsmn_parser parser;
   jsmntok_t tokens[128];
 
   jsmn_init(&parser);
-  int r = jsmn_parse(&parser, json, length, tokens, sizeof(tokens));
+  int r = jsmn_parse(&parser, json, json_length, tokens, sizeof(tokens));
 
   if (r < 0) {
     ERROR("[coglink:jsmn-find] Failed to parse JSON.");
@@ -543,12 +548,12 @@ void coglink_free_voice_state(struct coglink_voice_state *voiceState) {
   free(voiceState);
 }
 
-struct coglink_voice_server_update *coglink_parse_voice_server_update(const char *json, size_t length) {
+struct coglink_voice_server_update *coglink_parse_voice_server_update(const char *json, size_t json_length) {
   jsmn_parser parser;
   jsmntok_t tokens[128];
 
   jsmn_init(&parser);
-  int r = jsmn_parse(&parser, json, length, tokens, sizeof(tokens));
+  int r = jsmn_parse(&parser, json, json_length, tokens, sizeof(tokens));
 
   if (r < 0) {
     ERROR("[coglink:jsmn-find] Failed to parse JSON.");
@@ -596,13 +601,13 @@ void coglink_free_voice_server_update(struct coglink_voice_server_update *voiceS
   free(voiceServerUpdate);
 }
 
-struct coglink_guild_create *coglink_parse_guild_create(const char *json, size_t length) {
+struct coglink_guild_create *coglink_parse_guild_create(const char *json, size_t json_length) {
   jsmn_parser parser;
   jsmntok_t *toks = NULL;
   unsigned num_tokens = 0;
 
   jsmn_init(&parser);
-  int r = jsmn_parse_auto(&parser, json, length, &toks, &num_tokens);
+  int r = jsmn_parse_auto(&parser, json, json_length, &toks, &num_tokens);
   if (r <= 0) {
     ERROR("[coglink:jsmn-find] Failed to parse JSON.");
 
@@ -671,17 +676,17 @@ int coglink_parse_single_user_guild_create(jsmnf_pair *pairs, const char *json, 
   }
 }
 
-void *coglink_parse_update_player_response(struct coglink_update_player_response *response, const char *json, size_t length) {
+int coglink_parse_update_player_response(struct coglink_update_player_response *response, const char *json, size_t json_length) {
   jsmn_parser parser;
   jsmntok_t tokens[128];
 
   jsmn_init(&parser);
-  int r = jsmn_parse(&parser, json, length, tokens, sizeof(tokens));
+  int r = jsmn_parse(&parser, json, json_length, tokens, sizeof(tokens));
 
   if (r < 0) {
     ERROR("[coglink:jsmn-find] Failed to parse JSON.");
 
-    return NULL;
+    return COGLINK_PARSE_FAILED;
   }
 
   jsmnf_loader loader;
@@ -693,63 +698,62 @@ void *coglink_parse_update_player_response(struct coglink_update_player_response
   if (r < 0) {
     FATAL("[coglink:jsmn-find] Failed to load jsmn-find.");
 
-    return NULL;
+    return COGLINK_PARSE_FAILED;
   }
 
   jsmnf_pair *track = jsmnf_find(pairs, json, "track", sizeof("track") - 1);
-  if (!track) return NULL;
-
-  jsmnf_pair *position = jsmnf_find(pairs, json, "position", sizeof("position") - 1);
-  if (!position) return NULL;
-
-  jsmnf_pair *endTime = jsmnf_find(pairs, json, "endTime", sizeof("endTime") - 1);
-  if (!endTime) return NULL;
+  if (!track) return COGLINK_PARSE_FAILED;
 
   jsmnf_pair *volume = jsmnf_find(pairs, json, "volume", sizeof("volume") - 1);
-  if (!volume) return NULL;
+  if (!volume) return COGLINK_PARSE_FAILED;
 
   jsmnf_pair *paused = jsmnf_find(pairs, json, "paused", sizeof("paused") - 1);
-  if (!paused) return NULL;
+  if (!paused) return COGLINK_PARSE_FAILED;
+
+  jsmnf_pair *state = jsmnf_find(pairs, json, "state", sizeof("state") - 1);
+  if (!state) return COGLINK_PARSE_FAILED;
 
   jsmnf_pair *filters = jsmnf_find(pairs, json, "filters", sizeof("filters") - 1);
-  if (!filters) return NULL;
+  if (!filters) return COGLINK_PARSE_FAILED;
 
-  response->track = malloc(sizeof(struct coglink_update_player_track_params));
+  response->track = malloc(sizeof(struct coglink_track));
+  response->track->info = malloc(sizeof(struct coglink_partial_track));
+  response->state = malloc(sizeof(struct coglink_update_player_state));
   response->filters = malloc(sizeof(struct coglink_update_player_filters_params));
 
-  jsmnf_pair *encoded = jsmnf_find(track, json, "encoded", sizeof("encoded") - 1);
-  if (!encoded) return NULL;
-
-  jsmnf_pair *identifier = jsmnf_find(track, json, "identifier", sizeof("identifier") - 1);
-  if (!identifier) return NULL;
-
-  jsmnf_pair *userData = jsmnf_find(track, json, "userData", sizeof("userData") - 1);
-  if (!userData) return NULL;
-
-  response->track->encoded = malloc(encoded->v.len + 1);
-  snprintf(response->track->encoded, encoded->v.len + 1, "%.*s", (int)encoded->v.len, json + encoded->v.pos);
-
-  response->track->identifier = malloc(identifier->v.len + 1);
-  snprintf(response->track->identifier, identifier->v.len + 1, "%.*s", (int)identifier->v.len, json + identifier->v.pos);
-
-  response->track->userData = malloc(userData->v.len + 1);
-  snprintf(response->track->userData, userData->v.len + 1, "%.*s", (int)userData->v.len, json + userData->v.pos);
-
-  PAIR_TO_SIZET(json, position, positionStr, response->position, 8);
-  PAIR_TO_SIZET(json, endTime, endTimeStr, response->endTime, 8);
+  coglink_new_parse_track(response->track, track, json);
+  
   PAIR_TO_SIZET(json, volume, volumeStr, response->volume, 8);
   if (json[paused->v.pos] == 't') response->paused = true;
   else response->paused = false;
+
+  jsmnf_pair *state_time = jsmnf_find(state, json, "time", sizeof("time") - 1);
+  if (!state_time) return COGLINK_PARSE_FAILED;
+
+  jsmnf_pair *state_position = jsmnf_find(state, json, "position", sizeof("position") - 1);
+  if (!state_position) return COGLINK_PARSE_FAILED;
+
+  jsmnf_pair *state_connected = jsmnf_find(state, json, "connected", sizeof("connected") - 1);
+  if (!state_connected) return COGLINK_PARSE_FAILED;
+
+  jsmnf_pair *state_ping = jsmnf_find(state, json, "ping", sizeof("ping") - 1);
+  if (!state_ping) return COGLINK_PARSE_FAILED;
+
+  PAIR_TO_SIZET(json, state_time, state_timeStr, response->state->time, 16);
+  PAIR_TO_SIZET(json, state_position, state_positionStr, response->state->position, 16);
+  if (json[state_connected->v.pos] == 't') response->state->connected = true;
+  else response->state->connected = false;
+  PAIR_TO_SIZET(json, state_ping, state_pingStr, response->state->ping, 8);
 
   jsmnf_pair *filters_equalizer = jsmnf_find(filters, json, "equalizer", sizeof("equalizer") - 1);
   if (filters_equalizer) {
     response->filters->equalizer = malloc(sizeof(struct coglink_update_player_filters_equalizer_params));
 
     jsmnf_pair *band = jsmnf_find(filters, json, "band", sizeof("band") - 1);
-    if (!band) return NULL;
+    if (!band) return COGLINK_PARSE_FAILED;
 
     jsmnf_pair *gain = jsmnf_find(filters, json, "gain", sizeof("gain") - 1);
-    if (!gain) return NULL;
+    if (!gain) return COGLINK_PARSE_FAILED;
 
     PAIR_TO_SIZET(json, band, bandStr, response->filters->equalizer->band, 8);
     response->filters->equalizer->gain = atof(json + gain->v.pos);
@@ -760,16 +764,16 @@ void *coglink_parse_update_player_response(struct coglink_update_player_response
     response->filters->karaoke = malloc(sizeof(struct coglink_update_player_filters_karaoke_params));
 
     jsmnf_pair *level = jsmnf_find(filters, json, "level", sizeof("level") - 1);
-    if (!level) return NULL;
+    if (!level) return COGLINK_PARSE_FAILED;
 
     jsmnf_pair *monoLevel = jsmnf_find(filters, json, "monoLevel", sizeof("monoLevel") - 1);
-    if (!monoLevel) return NULL;
+    if (!monoLevel) return COGLINK_PARSE_FAILED;
 
     jsmnf_pair *filterBand = jsmnf_find(filters, json, "filterBand", sizeof("filterBand") - 1);
-    if (!filterBand) return NULL;
+    if (!filterBand) return COGLINK_PARSE_FAILED;
 
     jsmnf_pair *filterWidth = jsmnf_find(filters, json, "filterWidth", sizeof("filterWidth") - 1);
-    if (!filterWidth) return NULL;
+    if (!filterWidth) return COGLINK_PARSE_FAILED;
 
     response->filters->karaoke->level = atof(json + level->v.pos);
     response->filters->karaoke->monoLevel = atof(json + monoLevel->v.pos);
@@ -782,13 +786,13 @@ void *coglink_parse_update_player_response(struct coglink_update_player_response
     response->filters->timescale = malloc(sizeof(struct coglink_update_player_filters_timescale_params));
 
     jsmnf_pair *speed = jsmnf_find(filters, json, "speed", sizeof("speed") - 1);
-    if (!speed) return NULL;
+    if (!speed) return COGLINK_PARSE_FAILED;
 
     jsmnf_pair *pitch = jsmnf_find(filters, json, "pitch", sizeof("pitch") - 1);
-    if (!pitch) return NULL;
+    if (!pitch) return COGLINK_PARSE_FAILED;
 
     jsmnf_pair *rate = jsmnf_find(filters, json, "rate", sizeof("rate") - 1);
-    if (!rate) return NULL;
+    if (!rate) return COGLINK_PARSE_FAILED;
 
     response->filters->timescale->speed = atof(json + speed->v.pos);
     response->filters->timescale->pitch = atof(json + pitch->v.pos);
@@ -800,10 +804,10 @@ void *coglink_parse_update_player_response(struct coglink_update_player_response
     response->filters->tremolo = malloc(sizeof(struct coglink_update_player_filters_tremolo_params));
 
     jsmnf_pair *frequency = jsmnf_find(filters, json, "frequency", sizeof("frequency") - 1);
-    if (!frequency) return NULL;
+    if (!frequency) return COGLINK_PARSE_FAILED;
 
     jsmnf_pair *depth = jsmnf_find(filters, json, "depth", sizeof("depth") - 1);
-    if (!depth) return NULL;
+    if (!depth) return COGLINK_PARSE_FAILED;
 
     response->filters->tremolo->frequency = atof(json + frequency->v.pos);
     response->filters->tremolo->depth = atof(json + depth->v.pos);
@@ -814,10 +818,10 @@ void *coglink_parse_update_player_response(struct coglink_update_player_response
     response->filters->vibrato = malloc(sizeof(struct coglink_update_player_filters_vibrato_params));
 
     jsmnf_pair *frequency = jsmnf_find(filters, json, "frequency", sizeof("frequency") - 1);
-    if (!frequency) return NULL;
+    if (!frequency) return COGLINK_PARSE_FAILED;
 
     jsmnf_pair *depth = jsmnf_find(filters, json, "depth", sizeof("depth") - 1);
-    if (!depth) return NULL;
+    if (!depth) return COGLINK_PARSE_FAILED;
 
     response->filters->vibrato->frequency = atof(json + frequency->v.pos);
     response->filters->vibrato->depth = atof(json + depth->v.pos);
@@ -828,10 +832,10 @@ void *coglink_parse_update_player_response(struct coglink_update_player_response
     response->filters->rotation = malloc(sizeof(struct coglink_update_player_filters_rotation_params));
 
     jsmnf_pair *frequency = jsmnf_find(filters, json, "frequency", sizeof("frequency") - 1);
-    if (!frequency) return NULL;
+    if (!frequency) return COGLINK_PARSE_FAILED;
 
     jsmnf_pair *depth = jsmnf_find(filters, json, "depth", sizeof("depth") - 1);
-    if (!depth) return NULL;
+    if (!depth) return COGLINK_PARSE_FAILED;
 
     response->filters->rotation->frequency = atof(json + frequency->v.pos);
     response->filters->rotation->depth = atof(json + depth->v.pos);
@@ -842,28 +846,28 @@ void *coglink_parse_update_player_response(struct coglink_update_player_response
     response->filters->distortion = malloc(sizeof(struct coglink_update_player_filters_distortion_params));
 
     jsmnf_pair *sinOffset = jsmnf_find(filters, json, "sinOffset", sizeof("sinOffset") - 1);
-    if (!sinOffset) return NULL;
+    if (!sinOffset) return COGLINK_PARSE_FAILED;
 
     jsmnf_pair *sinScale = jsmnf_find(filters, json, "sinScale", sizeof("sinScale") - 1);
-    if (!sinScale) return NULL;
+    if (!sinScale) return COGLINK_PARSE_FAILED;
 
     jsmnf_pair *cosOffset = jsmnf_find(filters, json, "cosOffset", sizeof("cosOffset") - 1);
-    if (!cosOffset) return NULL;
+    if (!cosOffset) return COGLINK_PARSE_FAILED;
 
     jsmnf_pair *cosScale = jsmnf_find(filters, json, "cosScale", sizeof("cosScale") - 1);
-    if (!cosScale) return NULL;
+    if (!cosScale) return COGLINK_PARSE_FAILED;
 
     jsmnf_pair *tanOffset = jsmnf_find(filters, json, "tanOffset", sizeof("tanOffset") - 1);
-    if (!tanOffset) return NULL;
+    if (!tanOffset) return COGLINK_PARSE_FAILED;
 
     jsmnf_pair *tanScale = jsmnf_find(filters, json, "tanScale", sizeof("tanScale") - 1);
-    if (!tanScale) return NULL;
+    if (!tanScale) return COGLINK_PARSE_FAILED;
 
     jsmnf_pair *offset = jsmnf_find(filters, json, "offset", sizeof("offset") - 1);
-    if (!offset) return NULL;
+    if (!offset) return COGLINK_PARSE_FAILED;
 
     jsmnf_pair *scale = jsmnf_find(filters, json, "scale", sizeof("scale") - 1);
-    if (!scale) return NULL;
+    if (!scale) return COGLINK_PARSE_FAILED;
 
     response->filters->distortion->sinOffset = atof(json + sinOffset->v.pos);
     response->filters->distortion->sinScale = atof(json + sinScale->v.pos);
@@ -880,16 +884,16 @@ void *coglink_parse_update_player_response(struct coglink_update_player_response
     response->filters->channelMix = malloc(sizeof(struct coglink_update_player_filters_channelMix_params));
 
     jsmnf_pair *leftToLeft = jsmnf_find(filters, json, "leftToLeft", sizeof("leftToLeft") - 1);
-    if (!leftToLeft) return NULL;
+    if (!leftToLeft) return COGLINK_PARSE_FAILED;
 
     jsmnf_pair *leftToRight = jsmnf_find(filters, json, "leftToRight", sizeof("leftToRight") - 1);
-    if (!leftToRight) return NULL;
+    if (!leftToRight) return COGLINK_PARSE_FAILED;
 
     jsmnf_pair *rightToLeft = jsmnf_find(filters, json, "rightToLeft", sizeof("rightToLeft") - 1);
-    if (!rightToLeft) return NULL;
+    if (!rightToLeft) return COGLINK_PARSE_FAILED;
 
     jsmnf_pair *rightToRight = jsmnf_find(filters, json, "rightToRight", sizeof("rightToRight") - 1);
-    if (!rightToRight) return NULL;
+    if (!rightToRight) return COGLINK_PARSE_FAILED;
 
     response->filters->channelMix->leftToLeft = atof(json + leftToLeft->v.pos);
     response->filters->channelMix->leftToRight = atof(json + leftToRight->v.pos);
@@ -902,20 +906,28 @@ void *coglink_parse_update_player_response(struct coglink_update_player_response
     response->filters->lowPass = malloc(sizeof(struct coglink_update_player_filters_lowPass_params));
 
     jsmnf_pair *smoothing = jsmnf_find(filters, json, "smoothing", sizeof("smoothing") - 1);
-    if (!smoothing) return NULL;
+    if (!smoothing) return COGLINK_PARSE_FAILED;
 
     response->filters->lowPass->smoothing = atof(json + smoothing->v.pos);
   }
 
-  return (void *)1;
-}  
+  return COGLINK_SUCCESS;
+}
 
-void *coglink_parse_node_info(struct coglink_node_info *response, const char *json, size_t length) {
+void coglink_free_update_player_response(struct coglink_update_player_response *response) {
+  coglink_free_track(response->track);
+  free(response->track);
+  free(response->state);
+  free(response->filters);
+  free(response);
+}
+
+void *coglink_parse_node_info(struct coglink_node_info *response, const char *json, size_t json_length) {
   jsmn_parser parser;
   jsmntok_t tokens[128];
 
   jsmn_init(&parser);
-  int r = jsmn_parse(&parser, json, length, tokens, sizeof(tokens));
+  int r = jsmn_parse(&parser, json, json_length, tokens, sizeof(tokens));
 
   if (r < 0) {
     ERROR("[coglink:jsmn-find] Failed to parse JSON.");
@@ -1060,12 +1072,12 @@ void coglink_free_node_info(struct coglink_node_info *response) {
   free(response->filters);
 }
 
-void *coglink_parse_stats(struct coglink_stats_payload *response, const char *json, size_t length) {
+void *coglink_parse_stats(struct coglink_stats_payload *response, const char *json, size_t json_length) {
   jsmn_parser parser;
   jsmntok_t tokens[128];
 
   jsmn_init(&parser);
-  int r = jsmn_parse(&parser, json, length, tokens, sizeof(tokens));
+  int r = jsmn_parse(&parser, json, json_length, tokens, sizeof(tokens));
 
   if (r < 0) {
     ERROR("[coglink:jsmn-find] Failed to parse JSON.");

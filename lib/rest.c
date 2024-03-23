@@ -188,7 +188,7 @@ int coglink_load_tracks(struct coglink_client *c_client, struct coglink_player *
   char *endpoint = malloc(endpoint_size);
   snprintf(endpoint, endpoint_size, "/loadtracks?identifier=%s", identifier);
 
-  struct coglink_response *res = malloc(sizeof(struct coglink_response));
+  struct coglink_response res = { 0 };
 
   _coglink_perform_request(node, &(struct coglink_request_params) {
     .endpoint = endpoint,
@@ -196,13 +196,12 @@ int coglink_load_tracks(struct coglink_client *c_client, struct coglink_player *
     .body = NULL,
     .body_length = 0,
     .get_response = true
-  }, res);
+  }, &res);
 
-  int status = coglink_parse_load_tracks_response(response, res->body, res->size);
+  int status = coglink_parse_load_tracks_response(response, res.body, res.size);
 
   free(endpoint);
-  free(res->body);
-  free(res);
+  free(res.body);
   
   return status;
 }
@@ -215,19 +214,19 @@ int coglink_decode_track(struct coglink_client *c_client, struct coglink_player 
   char *endpoint = malloc(endpoint_size);
   snprintf(endpoint, endpoint_size, "/decodetrack?encodedTrack=%s", track);
 
-  struct coglink_response *res = malloc(sizeof(struct coglink_response));
+  struct coglink_response res = { 0 };
 
   _coglink_perform_request(node, &(struct coglink_request_params) {
     .endpoint = endpoint,
     .method = "GET",
     .get_response = true
-  }, res);
+  }, &res);
 
   jsmn_parser parser;
   jsmntok_t tokens[64];
 
   jsmn_init(&parser);
-  int r = jsmn_parse(&parser, res->body, res->size, tokens, sizeof(tokens));
+  int r = jsmn_parse(&parser, res.body, res.size, tokens, sizeof(tokens));
 
   if (r < 0) {
     ERROR("[coglink:jsmn-find] Failed to parse JSON.");
@@ -239,7 +238,7 @@ int coglink_decode_track(struct coglink_client *c_client, struct coglink_player 
   jsmnf_pair pairs[64];
 
   jsmnf_init(&loader);
-  r = jsmnf_load(&loader, res->body, tokens, parser.toknext, pairs, sizeof(pairs) / sizeof(*pairs));
+  r = jsmnf_load(&loader, res.body, tokens, parser.toknext, pairs, sizeof(pairs) / sizeof(*pairs));
 
   if (r < 0) {
     FATAL("[coglink:jsmn-find] Failed to load jsmn-find.");
@@ -247,7 +246,7 @@ int coglink_decode_track(struct coglink_client *c_client, struct coglink_player 
     return COGLINK_FAILED;
   }
 
-  coglink_new_parse_track(response, pairs, res->body);
+  coglink_new_parse_track(response, pairs, res.body);
 
   free(endpoint);
 
@@ -271,7 +270,7 @@ int coglink_decode_tracks(struct coglink_client *c_client, struct coglink_player
 
   body[body_length - 1] = ']';
 
-  struct coglink_response *res = malloc(sizeof(struct coglink_response));
+  struct coglink_response res = { 0 };
 
   _coglink_perform_request(node, &(struct coglink_request_params) {
     .endpoint = endpoint,
@@ -279,14 +278,14 @@ int coglink_decode_tracks(struct coglink_client *c_client, struct coglink_player
     .body = body,
     .body_length = body_length,
     .get_response = true
-  }, res);
+  }, &res);
 
   jsmn_parser parser;
   jsmntok_t *toks = NULL;
   unsigned num_tokens = 0;
 
   jsmn_init(&parser);
-  int r = jsmn_parse_auto(&parser, res->body, res->size, &toks, &num_tokens);
+  int r = jsmn_parse_auto(&parser, res.body, res.size, &toks, &num_tokens);
   if (r <= 0) {
     ERROR("[coglink:jsmn-find] Failed to parse JSON.");
 
@@ -298,7 +297,7 @@ int coglink_decode_tracks(struct coglink_client *c_client, struct coglink_player
   unsigned num_pairs = 0;
 
   jsmnf_init(&loader);
-  r = jsmnf_load_auto(&loader, res->body, toks, num_tokens, &pairs, &num_pairs);
+  r = jsmnf_load_auto(&loader, res.body, toks, num_tokens, &pairs, &num_pairs);
   if (r <= 0) {
     ERROR("[coglink:jsmn-find] Failed to load jsmn-find.");
 
@@ -312,12 +311,11 @@ int coglink_decode_tracks(struct coglink_client *c_client, struct coglink_player
     response->array[i] = malloc(sizeof(struct coglink_track));
     response->array[i]->info = malloc(sizeof(struct coglink_partial_track));
 
-    coglink_new_parse_track(response->array[i], pairs, res->body);
+    coglink_new_parse_track(response->array[i], pairs, res.body);
   }
 
   free(body);
-  free(res->body);
-  free(res);
+  free(res.body);
   free(toks);
   free(pairs);
 
@@ -481,7 +479,7 @@ int coglink_update_player(struct coglink_client *c_client, struct coglink_player
 
   pjsonb_end(&jsonber);
 
-  struct coglink_response *res = malloc(sizeof(struct coglink_response));
+  struct coglink_response res = { 0 };
 
   _coglink_perform_request(node, &(struct coglink_request_params) {
     .endpoint = endpoint,
@@ -489,17 +487,18 @@ int coglink_update_player(struct coglink_client *c_client, struct coglink_player
     .body = jsonber.string,
     .body_length = jsonber.position,
     .get_response = true
-  }, res);
+  }, &res);
+
+  int status = COGLINK_SUCCESS;
 
   if (response)
-    coglink_parse_update_player_response(response, jsonber.string, jsonber.position);
+    status = coglink_parse_update_player_response(response, res.body, res.size);
 
-  free(res->body);
-  free(res);
+  free(res.body);
   pjsonb_free(&jsonber);
   free(endpoint);
 
-  return COGLINK_SUCCESS;
+  return status;
 }
 
 void coglink_destroy_player(struct coglink_client *c_client, struct coglink_player *player) {
@@ -532,7 +531,7 @@ int coglink_get_node_info(struct coglink_client *c_client, struct coglink_node *
   char endpoint[(sizeof("/info") - 1) + 1];
   snprintf(endpoint, sizeof(endpoint), "/info");
 
-  struct coglink_response *res = malloc(sizeof(struct coglink_response));
+  struct coglink_response res = { 0 };
 
   _coglink_perform_request(node, &(struct coglink_request_params) {
     .endpoint = endpoint,
@@ -540,12 +539,11 @@ int coglink_get_node_info(struct coglink_client *c_client, struct coglink_node *
     .body = NULL,
     .body_length = 0,
     .get_response = true
-  }, res);
+  }, &res);
 
-  coglink_parse_node_info(info, res->body, res->size);
+  coglink_parse_node_info(info, res.body, res.size);
 
-  free(res->body);
-  free(res);
+  free(res.body);
 
   return COGLINK_SUCCESS;
 }
@@ -556,7 +554,7 @@ char *coglink_get_node_version(struct coglink_client *c_client, struct coglink_n
   char endpoint[(sizeof("/version") - 1) + 1];
   snprintf(endpoint, sizeof(endpoint), "/version");
 
-  struct coglink_response *res = malloc(sizeof(struct coglink_response));
+  struct coglink_response res = { 0 };
 
   _coglink_perform_request(node, &(struct coglink_request_params) {
     .endpoint = endpoint,
@@ -565,13 +563,12 @@ char *coglink_get_node_version(struct coglink_client *c_client, struct coglink_n
     .body_length = 0,
     .get_response = true,
     .unversioned = true
-  }, res);
+  }, &res);
 
-  char *version = malloc(res->size + 1);
-  strcpy(version, res->body);
+  char *version = malloc(res.size + 1);
+  strcpy(version, res.body);
 
-  free(res->body);
-  free(res);
+  free(res.body);
 
   return version;
 }
@@ -586,7 +583,7 @@ int coglink_get_stats(struct coglink_client *c_client, struct coglink_node *node
   char endpoint[(sizeof("/stats") - 1) + 1];
   snprintf(endpoint, sizeof(endpoint), "/stats");
 
-  struct coglink_response *res = malloc(sizeof(struct coglink_response));
+  struct coglink_response res = { 0 };
 
   _coglink_perform_request(node, &(struct coglink_request_params) {
     .endpoint = endpoint,
@@ -594,12 +591,11 @@ int coglink_get_stats(struct coglink_client *c_client, struct coglink_node *node
     .body = NULL,
     .body_length = 0,
     .get_response = true
-  }, res);
+  }, &res);
 
-  coglink_parse_stats(stats, res->body, res->size);
+  coglink_parse_stats(stats, res.body, res.size);
 
-  free(res->body);
-  free(res);
+  free(res.body);
 
   return COGLINK_SUCCESS;
 }
