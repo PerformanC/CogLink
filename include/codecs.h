@@ -209,6 +209,17 @@ struct coglink_guild_create {
   jsmnf_pair *pairs;
 };
 
+/* coglink_parse_update_player_respnse */
+
+struct coglink_update_player_response {
+  struct coglink_update_player_track_params *track;
+  int position;
+  int endTime;
+  int volume;
+  bool paused;
+  struct coglink_update_player_filters_params *filters;
+};
+
 /* coglink_parse_single_user_guild_create */
 
 struct coglink_single_user_guild_create {
@@ -421,6 +432,8 @@ struct coglink_guild_create *coglink_parse_guild_create(const char *json, size_t
 void coglink_free_guild_create(struct coglink_guild_create *guild_create);
 
 int coglink_parse_single_user_guild_create(jsmnf_pair *pairs, const char *json, char *i_str, u64snowflake bot_id, struct coglink_single_user_guild_create *response);
+
+void *coglink_parse_update_player_response(struct coglink_update_player_response *response, const char *json, size_t length);
 
 void *coglink_parse_node_info(struct coglink_node_info *response, const char *json, size_t length);
 

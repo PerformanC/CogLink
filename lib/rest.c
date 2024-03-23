@@ -334,7 +334,7 @@ void coglink_free_decode_tracks(struct coglink_tracks *tracks) {
   free(tracks);
 }
 
-int coglink_update_player(struct coglink_client *c_client, struct coglink_player *player, struct coglink_update_player_params *params) {
+int coglink_update_player(struct coglink_client *c_client, struct coglink_player *player, struct coglink_update_player_params *params, struct coglink_update_player_response *response) {
   struct coglink_node *node = &c_client->nodes->array[player->node];
 
   if (node->session_id == NULL) return COGLINK_NODE_OFFLINE;
@@ -481,15 +481,21 @@ int coglink_update_player(struct coglink_client *c_client, struct coglink_player
 
   pjsonb_end(&jsonber);
 
-  /* todo: implement JSON parsing */
+  struct coglink_response *res = malloc(sizeof(struct coglink_response));
+
   _coglink_perform_request(node, &(struct coglink_request_params) {
     .endpoint = endpoint,
     .method = "PATCH",
     .body = jsonber.string,
     .body_length = jsonber.position,
-    .get_response = false
-  }, NULL);
+    .get_response = true
+  }, res);
 
+  if (response)
+    coglink_parse_update_player_response(response, jsonber.string, jsonber.position);
+
+  free(res->body);
+  free(res);
   pjsonb_free(&jsonber);
   free(endpoint);
 
