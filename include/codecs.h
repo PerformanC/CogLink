@@ -209,14 +209,20 @@ struct coglink_guild_create {
   jsmnf_pair *pairs;
 };
 
-/* coglink_parse_update_player_respnse */
+/* coglink_parse_update_player_response */
+
+struct coglink_update_player_state {
+  int time;
+  int position;
+  bool connected;
+  int ping;
+};
 
 struct coglink_update_player_response {
-  struct coglink_update_player_track_params *track;
-  int position;
-  int endTime;
+  struct coglink_track *track;
   int volume;
   bool paused;
+  struct coglink_update_player_state *state;
   struct coglink_update_player_filters_params *filters;
 };
 
@@ -374,7 +380,6 @@ struct coglink_node_info {
   NEW_FIND_FIELD_PATH(json, pairs, sourceName, "sourceName", 2);                                                                              \
   snprintf(track_info->info->sourceName, sizeof(track_info->info->sourceName), "%.*s", (int)sourceName->v.len, json + sourceName->v.pos);
 
-
 #define coglink_parse_partial_track(pairs, json)                                                                              \
   struct coglink_partial_track *track_info = malloc(sizeof(struct coglink_partial_track));                                    \
                                                                                                                               \
@@ -413,32 +418,36 @@ struct coglink_node_info {
   FIND_FIELD(json, sourceName, "sourceName");                                                                  \
   snprintf(track_info->sourceName, sizeof(track_info->sourceName), "%.*s", (int)sourceName->v.len, json + sourceName->v.pos);
 
-void *coglink_parse_websocket_data(int *type, const char *json, size_t length);
+void *coglink_parse_websocket_data(int *type, const char *json, size_t json_length);
 
-int coglink_parse_load_tracks_response(struct coglink_load_tracks_response *response, const char *json, size_t length);
+void coglink_free_track(struct coglink_track *track);
+
+int coglink_parse_load_tracks_response(struct coglink_load_tracks_response *response, const char *json, size_t json_length);
 
 void coglink_free_load_tracks_response(struct coglink_load_tracks_response *response);
 
-struct coglink_voice_state *coglink_parse_voice_state(const char *json, size_t length);
+struct coglink_voice_state *coglink_parse_voice_state(const char *json, size_t json_length);
 
 void coglink_free_voice_state(struct coglink_voice_state *voiceState);
 
-struct coglink_voice_server_update *coglink_parse_voice_server_update(const char *json, size_t length);
+struct coglink_voice_server_update *coglink_parse_voice_server_update(const char *json, size_t json_length);
 
 void coglink_free_voice_server_update(struct coglink_voice_server_update *voiceServerUpdate);
 
-struct coglink_guild_create *coglink_parse_guild_create(const char *json, size_t length);
+struct coglink_guild_create *coglink_parse_guild_create(const char *json, size_t json_length);
 
 void coglink_free_guild_create(struct coglink_guild_create *guild_create);
 
 int coglink_parse_single_user_guild_create(jsmnf_pair *pairs, const char *json, char *i_str, u64snowflake bot_id, struct coglink_single_user_guild_create *response);
 
-void *coglink_parse_update_player_response(struct coglink_update_player_response *response, const char *json, size_t length);
+int coglink_parse_update_player_response(struct coglink_update_player_response *response, const char *json, size_t json_length);
 
-void *coglink_parse_node_info(struct coglink_node_info *response, const char *json, size_t length);
+void coglink_free_update_player_response(struct coglink_update_player_response *response);
+
+void *coglink_parse_node_info(struct coglink_node_info *response, const char *json, size_t json_length);
 
 void coglink_free_node_info(struct coglink_node_info *node_info);
 
-void *coglink_parse_stats(struct coglink_stats_payload *response, const char *json, size_t length);
+void *coglink_parse_stats(struct coglink_stats_payload *response, const char *json, size_t json_length);
 
 #endif

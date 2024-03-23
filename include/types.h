@@ -1,6 +1,7 @@
 #ifndef COGLINK_TYPES_H
 #define COGLINK_TYPES_H
 
+#define COGLINK_PARSE_FAILED   -6
 #define COGLINK_NODE_OFFLINE   -5
 #define COGLINK_CURL_ERROR     -4
 #define COGLINK_NOT_FOUND      -3

@@ -18,9 +18,7 @@ void pjsonb_init(struct pjsonb *builder) {
 }
 
 void pjsonb_end(struct pjsonb *builder) {
-  builder->string = realloc(builder->string, builder->position + 2);
-  builder->string[builder->position] = '}';
-  builder->position++;
+  builder->string[builder->position - 1] = '}';
 }
 
 void pjsonb_free(struct pjsonb *builder) {
@@ -75,8 +73,8 @@ void pjson_leave_object(struct pjsonb *builder) {
   if (builder->key_state == PJSONB_TO_CLOSE) {
     builder->string[builder->position - 1] = '}';
     builder->string = realloc(builder->string, builder->position + 1);
-    builder->position++;
     builder->string[builder->position] = ',';
+    builder->position++;
   } else {
     builder->string = realloc(builder->string, builder->position + 2 + 1);
     builder->position += snprintf(builder->string + builder->position, 2 + 1, "},");
