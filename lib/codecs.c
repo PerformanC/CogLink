@@ -467,6 +467,7 @@ void coglink_free_load_tracks_response(struct coglink_load_tracks_response *resp
 
       for (size_t i = 0; i < data->size; i++) {
         free(data->array[i]->info);
+        free(data->array[i]);
       }
 
       free(data->array);
@@ -528,24 +529,24 @@ struct coglink_voice_state *coglink_parse_voice_state(const char *json, size_t j
   jsmnf_pair *session_id = jsmnf_find(pairs, json, "session_id", sizeof("session_id") - 1);
   if (!session_id) return NULL;
 
-  struct coglink_voice_state *voiceState = malloc(sizeof(struct coglink_voice_state));
+  struct coglink_voice_state *voice_state = malloc(sizeof(struct coglink_voice_state));
 
-  PAIR_TO_SIZET(json, guild_id, guild_id_str, voiceState->guild_id, 18);
-  PAIR_TO_SIZET(json, channel_id, channel_id_str, voiceState->channel_id, 18);
+  PAIR_TO_SIZET(json, guild_id, guild_id_str, voice_state->guild_id, 18);
+  PAIR_TO_SIZET(json, channel_id, channel_id_str, voice_state->channel_id, 18);
   if (channel_id) {
-    PAIR_TO_SIZET(json, user_id, user_id_str, voiceState->user_id, 18);
+    PAIR_TO_SIZET(json, user_id, user_id_str, voice_state->user_id, 18);
   } else {
-    voiceState->user_id = 0;
+    voice_state->user_id = 0;
   }
-  voiceState->session_id = malloc(session_id->v.len + 1);
-  snprintf(voiceState->session_id, session_id->v.len + 1, "%.*s", (int)session_id->v.len, json + session_id->v.pos);
+  voice_state->session_id = malloc(session_id->v.len + 1);
+  snprintf(voice_state->session_id, session_id->v.len + 1, "%.*s", (int)session_id->v.len, json + session_id->v.pos);
 
-  return voiceState;
+  return voice_state;
 }
 
-void coglink_free_voice_state(struct coglink_voice_state *voiceState) {
-  free(voiceState->session_id);
-  free(voiceState);
+void coglink_free_voice_state(struct coglink_voice_state *voice_state) {
+  // free(voice_state->session_id);
+  free(voice_state);
 }
 
 struct coglink_voice_server_update *coglink_parse_voice_server_update(const char *json, size_t json_length) {
@@ -642,6 +643,7 @@ struct coglink_guild_create *coglink_parse_guild_create(const char *json, size_t
 }
 
 void coglink_free_guild_create(struct coglink_guild_create *guild_create) {
+  free(guild_create->pairs);
   free(guild_create);
 }
 
