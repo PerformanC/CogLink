@@ -247,13 +247,14 @@ int coglink_decode_track(struct coglink_client *c_client, struct coglink_node *n
 
   coglink_new_parse_track(response, pairs, res.body);
 
+  free(res.body);
   free(endpoint);
 
   return COGLINK_SUCCESS;
 }
 
 void coglink_free_decode_track(struct coglink_track *track) {
-  // free(track->info);
+  /* N/A */
 }
 
 int coglink_decode_tracks(struct coglink_client *c_client, struct coglink_node *node, struct coglink_decode_tracks_params *params, struct coglink_tracks *response) {

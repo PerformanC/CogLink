@@ -428,7 +428,7 @@ void coglink_free_load_tracks_response(struct coglink_load_tracks_response *resp
 
 struct coglink_voice_state *coglink_parse_voice_state(const char *json, size_t json_length);
 
-void coglink_free_voice_state(struct coglink_voice_state *voiceState);
+void coglink_free_voice_state(struct coglink_voice_state *voice_state);
 
 struct coglink_voice_server_update *coglink_parse_voice_server_update(const char *json, size_t json_length);
 

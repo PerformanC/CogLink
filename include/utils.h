@@ -42,6 +42,7 @@
 #define PAIR_TO_SIZET(json, pair, fieldName, outputName, size) \
   char fieldName[size];                                        \
   memcpy(fieldName, json + pair->v.pos, pair->v.len);          \
+  fieldName[pair->v.len] = '\0';                               \
                                                                \
   outputName = strtoull(fieldName, NULL, 10);
 

@@ -153,11 +153,17 @@ enum discord_event_scheduler _coglink_handle_scheduler(struct discord *client, c
         if (c_client->bot_id == voice_state->user_id) {
           struct coglink_player *player = coglink_get_player(c_client, voice_state->guild_id);
 
-          if (player == NULL) return DISCORD_EVENT_MAIN_THREAD;
+          if (player == NULL) {
+            coglink_free_voice_state(voice_state);
+
+            break;
+          }
 
           player->voice_data = malloc(sizeof(struct coglink_voice_data));
           /* todo: is it necessary after being sent to the node? */
           player->voice_data->session_id = voice_state->session_id;
+
+          coglink_free_voice_state(voice_state);
         } else {
           size_t i = 0;
 
@@ -165,7 +171,9 @@ enum discord_event_scheduler _coglink_handle_scheduler(struct discord *client, c
             if (c_client->users->array[i].id == 0) {
               c_client->users->array[i].channel_id = voice_state->channel_id;
 
-              return DISCORD_EVENT_MAIN_THREAD;
+              coglink_free_voice_state(voice_state);
+
+              break;
             }
 
             i++;
@@ -176,7 +184,7 @@ enum discord_event_scheduler _coglink_handle_scheduler(struct discord *client, c
           c_client->users->array[c_client->users->size].channel_id = voice_state->channel_id;
           c_client->users->size++;
 
-          return DISCORD_EVENT_IGNORE;
+          coglink_free_voice_state(voice_state);
         }
       } else {
         size_t i = 0;
@@ -186,13 +194,15 @@ enum discord_event_scheduler _coglink_handle_scheduler(struct discord *client, c
             c_client->users->array[i].id = 0;
             c_client->users->array[i].channel_id = 0;
 
-            return DISCORD_EVENT_IGNORE;
+            coglink_free_voice_state(voice_state);
+
+            return DISCORD_EVENT_MAIN_THREAD;
           }
 
           i++;
         }
 
-        return DISCORD_EVENT_IGNORE;
+        coglink_free_voice_state(voice_state);
       }
 
       break;
@@ -293,6 +303,8 @@ enum discord_event_scheduler _coglink_handle_scheduler(struct discord *client, c
         }
       }
 
+      coglink_free_guild_create(guild_create);
+
       break;
     }
     default: {
@@ -353,7 +365,7 @@ int coglink_connect_nodes(struct coglink_client *c_client, struct discord *clien
     ws_set_url(nodes->array[i].ws, hostname, NULL);
     ws_start(nodes->array[i].ws);
 
-    // if (c_client->allow_resuming && c_client->nodes != NULL) ws_add_header(nodes->array[i].ws, "Session-Id", nodes->array[i].session_id);
+    if (c_client->allow_resuming && c_client->nodes != NULL) ws_add_header(nodes->array[i].ws, "Session-Id", nodes->array[i].session_id);
     ws_add_header(nodes->array[i].ws, "Authorization", nodes->array[i].password);
     ws_add_header(nodes->array[i].ws, "Num-Shards", c_client->num_shards);
     ws_add_header(nodes->array[i].ws, "User-Id", bot_id_str);
@@ -382,8 +394,19 @@ void coglink_cleanup(struct coglink_client *c_client, struct discord *client) {
   tablec_cleanup(&coglink_hashtable);
 
   for (size_t i = 0;i < c_client->players->size;i++) {
-    if (c_client->players->array[i].voice_data != NULL) free(c_client->players->array[i].voice_data);
-    if (c_client->players->array[i].queue->array != NULL) free(c_client->players->array[i].queue->array);
+    if (c_client->players->array[i].voice_data != NULL) {
+      free(c_client->players->array[i].voice_data->session_id);
+      free(c_client->players->array[i].voice_data);
+    }
+
+    if (c_client->players->array[i].queue->array != NULL) {
+      for (size_t j = 0;j < c_client->players->array[i].queue->size;j++) {
+        free(c_client->players->array[i].queue->array[j]);
+      }
+
+      free(c_client->players->array[i].queue->array);
+    }
+
     free(c_client->players->array[i].queue);
   }
 
