@@ -2,7 +2,6 @@
 #define COGLINK_LAVALINK_EVENTS_H
 
 #include "lavalink.h"
-// #include "utils.h"
 #include "codecs.h"
 
 struct coglink_events {

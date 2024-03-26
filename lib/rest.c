@@ -206,6 +206,10 @@ int coglink_load_tracks(struct coglink_client *c_client, struct coglink_player *
   return status;
 }
 
+void coglink_free_load_tracks(struct coglink_load_tracks_response *response) {
+  coglink_free_load_tracks_response(response);
+}
+
 int coglink_decode_track(struct coglink_client *c_client, struct coglink_node *node, char *track, struct coglink_track *response) {
   (void) c_client; /* Standard */
 
@@ -254,7 +258,8 @@ int coglink_decode_track(struct coglink_client *c_client, struct coglink_node *n
 }
 
 void coglink_free_decode_track(struct coglink_track *track) {
-  /* N/A */
+  free(track->encoded);
+  free(track->info);
 }
 
 int coglink_decode_tracks(struct coglink_client *c_client, struct coglink_node *node, struct coglink_decode_tracks_params *params, struct coglink_tracks *response) {

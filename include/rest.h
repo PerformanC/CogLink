@@ -37,7 +37,6 @@ struct coglink_decode_tracks_params {
 
 struct coglink_update_player_track_params {
   char *encoded;
-  /* todo: remove (?) */
   char *identifier;
   char *userData;
 };
