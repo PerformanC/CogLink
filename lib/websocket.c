@@ -42,28 +42,47 @@ void _ws_on_text(void *data, struct websockets *ws, struct ws_info *info, const 
   if (c_info->c_client->events->on_raw && c_info->c_client->events->on_raw(c_info->c_client, text, length) != COGLINK_PROCEED) return;
 
   int type;
-  void *payload = coglink_parse_websocket_data(&type, text, length);
+  void *payload;
+  int status = coglink_parse_websocket_data(text, length, &payload, &type);
+
+  if (status < 0) {
+    DEBUG("[coglink] Failed to parse WebSocket data: %s", text);
+
+    return;
+  }
 
   switch (type) {
     case COGLINK_READY: {
-      c_info->c_client->nodes->array[c_info->node_id].session_id = ((struct coglink_ready_payload *)payload)->session_id;
+      struct coglink_ready_payload *ready = payload;
 
-      if (c_info->c_client->events->on_ready) c_info->c_client->events->on_ready((struct coglink_ready_payload *)payload);
+      c_info->c_client->nodes->array[c_info->node_id].session_id = ready->session_id;
+
+      if (c_info->c_client->events->on_ready) c_info->c_client->events->on_ready(ready);
 
       break;
     }
     case COGLINK_PLAYER_UPDATE: {
-      if (c_info->c_client->events->on_player_update) c_info->c_client->events->on_player_update((struct coglink_player_update_payload *)payload);
+      struct coglink_player_update_payload *player_update = payload;
+
+      if (c_info->c_client->events->on_player_update) c_info->c_client->events->on_player_update(player_update);
+
+      free(player_update->state);
 
       break;
     }
     case COGLINK_STATS: {
-      if (c_info->c_client->events->on_stats) c_info->c_client->events->on_stats((struct coglink_stats_payload *)payload);
+      struct coglink_stats_payload *stats = payload;
+
+      if (c_info->c_client->events->on_stats) c_info->c_client->events->on_stats(stats);
+
+      free(stats->memory);
+      free(stats->cpu);
+      free(stats->frameStats);
 
       break;
     }
     case COGLINK_TRACK_START: {
-      struct coglink_track_start_payload *track_start = (struct coglink_track_start_payload *)payload;
+      struct coglink_track_start_payload *track_start = payload;
 
       if (c_info->c_client->events->on_track_start) c_info->c_client->events->on_track_start(track_start);
 
@@ -72,12 +91,15 @@ void _ws_on_text(void *data, struct websockets *ws, struct ws_info *info, const 
       break;
     }
     case COGLINK_TRACK_END: {
-      struct coglink_track_end_payload *track_end = (struct coglink_track_end_payload *)payload;
+      struct coglink_track_end_payload *track_end = payload;
 
       struct coglink_player *player = coglink_get_player(c_info->c_client, track_end->guildId);
 
       if (player == NULL) {
         DEBUG("[coglink] Player not found for guild %" PRIu64 "", track_end->guildId);
+
+        coglink_free_track(track_end->track);
+        free(track_end);
 
         return;
       }
@@ -105,14 +127,13 @@ void _ws_on_text(void *data, struct websockets *ws, struct ws_info *info, const 
       break;
     }
     case COGLINK_TRACK_EXCEPTION: {
-      struct coglink_track_exception_payload *track_exception = (struct coglink_track_exception_payload *)payload;
+      struct coglink_track_exception_payload *track_exception = payload;
 
       if (c_info->c_client->events->on_track_excetion) c_info->c_client->events->on_track_excetion(track_exception);
 
       coglink_free_track(track_exception->track);
       free(track_exception->exception->cause);
       free(track_exception->exception->message);
-      free(track_exception->exception->severity);
       free(track_exception->exception);
 
       break;
@@ -127,12 +148,11 @@ void _ws_on_text(void *data, struct websockets *ws, struct ws_info *info, const 
       break;
     }
     case COGLINK_WEBSOCKET_CLOSED: {
-      if (c_info->c_client->events->on_websocket_closed) c_info->c_client->events->on_websocket_closed((struct coglink_websocket_closed_payload *)payload);
+      struct coglink_websocket_closed_payload *websocket_closed = payload;
 
-      break;
-    }
-    case COGLINK_PARSE_ERROR: {
-      DEBUG("[coglink] Failed to parse WebSocket data: %s", text);
+      if (c_info->c_client->events->on_websocket_closed) c_info->c_client->events->on_websocket_closed(websocket_closed);
+
+      free(websocket_closed->reason);
 
       break;
     }
@@ -141,7 +161,6 @@ void _ws_on_text(void *data, struct websockets *ws, struct ws_info *info, const 
   free(payload);
 }
 
-/* todo: replace for direct events (?) */
 enum discord_event_scheduler _coglink_handle_scheduler(struct discord *client, const char data[], size_t length, enum discord_gateway_events event) {
   struct coglink_client *c_client = discord_get_data(client);
 
@@ -382,7 +401,7 @@ int coglink_connect_nodes(struct coglink_client *c_client, struct discord *clien
   return COGLINK_SUCCESS;
 }
 
-void coglink_cleanup(struct coglink_client *c_client, struct discord *client) {
+void coglink_cleanup(struct coglink_client *c_client) {
   for (size_t i = 0;i < c_client->nodes->size;i++) {
     free(c_client->nodes->array[i].session_id);
     ws_cleanup(c_client->nodes->array[i].ws);

@@ -80,8 +80,7 @@ struct coglink_partial_tracks {
 };
 
 struct coglink_track {
-  /* todo: use dynamic */
-  char encoded[512];
+  char *encoded;
   struct coglink_partial_track *info;
 };
 
@@ -97,19 +96,31 @@ struct coglink_track_start_payload {
 
 #define COGLINK_TRACK_START 41
 
-/* todo: dynamic allocation but demanding copy if used for longer */
+enum coglink_track_end_reason {
+  COGLINK_TRACK_END_REASON_FINISHED,
+  COGLINK_TRACK_END_REASON_LOAD_FAILED,
+  COGLINK_TRACK_END_REASON_STOPPED,
+  COGLINK_TRACK_END_REASON_REPLACED,
+  COGLINK_TRACK_END_REASON_CLEANUP
+};
+
 struct coglink_track_end_payload {
   u64snowflake guildId;
   struct coglink_track *track;
-  char reason[16];
+  enum coglink_track_end_reason reason;
 };
 
 #define COGLINK_TRACK_END 42
 
+enum coglink_exception_severity {
+  COGLINK_EXCEPTION_SEVERITY_COMMON,
+  COGLINK_EXCEPTION_SEVERITY_SUSPICIOUS,
+  COGLINK_EXCEPTION_SEVERITY_FAULT
+};
+
 struct coglink_exception_payload {
   char *message;
-  /* todo: use enums */
-  char *severity;
+  enum coglink_exception_severity severity;
   char *cause;
 };
 
@@ -131,7 +142,7 @@ struct coglink_track_stuck_payload {
 
 struct coglink_websocket_closed_payload {
   int code;
-  char reason[256];
+  char *reason;
   bool byRemote;
 };
 
@@ -149,14 +160,12 @@ enum coglink_load_type {
 
 struct coglink_load_tracks_response {
   enum coglink_load_type type;
-  /* todo: implement it without voiding (?) */
   void *data;
 };
 
 /* same as coglink_track */
 struct coglink_load_tracks_track_response {
-  /* todo: use dynamic */
-  char encoded[512];
+  char *encoded;
   struct coglink_partial_track *info;
 };
 
@@ -179,9 +188,15 @@ struct coglink_load_tracks_search_response {
 
 /* Empty will not allocate data */
 
+enum coglink_load_tracks_error_severity {
+  COGLINK_LOAD_TRACKS_ERROR_SEVERITY_COMMON,
+  COGLINK_LOAD_TRACKS_ERROR_SEVERITY_SUSPICIOUS,
+  COGLINK_LOAD_TRACKS_ERROR_SEVERITY_FAULT
+};
+
 struct coglink_load_tracks_error_response {
   char *message;
-  char *severity;
+  enum coglink_load_tracks_error_severity severity;
   char *cause;
 };
 
@@ -273,152 +288,60 @@ struct coglink_node_info {
   struct coglink_node_info_filters *filters;
 };
 
-#define coglink_parse_track(pairs, json)                                                                                                  \
-  struct coglink_track *track_info = malloc(sizeof(struct coglink_track));                                                                \
-  track_info->info = malloc(sizeof(struct coglink_partial_track));                                                                        \
-                                                                                                                                          \
+#define coglink_new_parse_track(track_info, pairs, json)                                                                                  \
   char *path[] = { "encoded", NULL };                                                                                                     \
-  FIND_FIELD_PATH(json, pairs, encoded, "encoded", 1);                                                                                    \
-  snprintf(track_info->encoded, sizeof(track_info->encoded), "%.*s", (int)encoded->v.len, json + encoded->v.pos);                         \
+  NEW_FIND_FIELD_PATH(json, pairs, encoded, "encoded", 1);                                                                                \
+  track_info->encoded = malloc(encoded->v.len + 1);                                                                                       \
+  snprintf(track_info->encoded, encoded->v.len + 1, "%.*s", (int)encoded->v.len, json + encoded->v.pos);                                  \
                                                                                                                                           \
   path[0] = "info";                                                                                                                       \
   path[1] = "identifier";                                                                                                                 \
-  FIND_FIELD_PATH(json, pairs, identifier, "identifier", 2);                                                                              \
+  NEW_FIND_FIELD_PATH(json, pairs, identifier, "identifier", 2);                                                                          \
   snprintf(track_info->info->identifier, sizeof(track_info->info->identifier), "%.*s", (int)identifier->v.len, json + identifier->v.pos); \
                                                                                                                                           \
   path[1] = "isSeekable";                                                                                                                 \
-  FIND_FIELD_PATH(json, pairs, isSeekable, "isSeekable", 2);                                                                              \
+  NEW_FIND_FIELD_PATH(json, pairs, isSeekable, "isSeekable", 2);                                                                          \
   if (json[isSeekable->v.pos] == 't') track_info->info->isSeekable = true;                                                                \
   else track_info->info->isSeekable = false;                                                                                              \
                                                                                                                                           \
   path[1] = "author";                                                                                                                     \
-  FIND_FIELD_PATH(json, pairs, author, "author", 2);                                                                                      \
+  NEW_FIND_FIELD_PATH(json, pairs, author, "author", 2);                                                                                  \
   snprintf(track_info->info->author, sizeof(track_info->info->author), "%.*s", (int)author->v.len, json + author->v.pos);                 \
                                                                                                                                           \
   path[1] = "length";                                                                                                                     \
-  FIND_FIELD_PATH(json, pairs, length, "length", 2);                                                                                      \
+  NEW_FIND_FIELD_PATH(json, pairs, length, "length", 2);                                                                                  \
   PAIR_TO_SIZET(json, length, lengthStr, track_info->info->length, 16);                                                                   \
                                                                                                                                           \
   path[1] = "isStream";                                                                                                                   \
-  FIND_FIELD_PATH(json, pairs, isStream, "isStream", 2);                                                                                  \
+  NEW_FIND_FIELD_PATH(json, pairs, isStream, "isStream", 2);                                                                              \
   if (json[isStream->v.pos] == 't') track_info->info->isStream = true;                                                                    \
   else track_info->info->isStream = false;                                                                                                \
                                                                                                                                           \
   path[1] = "position";                                                                                                                   \
-  FIND_FIELD_PATH(json, pairs, position, "position", 2);                                                                                  \
+  NEW_FIND_FIELD_PATH(json, pairs, position, "position", 2);                                                                              \
   PAIR_TO_SIZET(json, position, positionStr, track_info->info->position, 16);                                                             \
                                                                                                                                           \
   path[1] = "title";                                                                                                                      \
-  FIND_FIELD_PATH(json, pairs, title, "title", 2);                                                                                        \
+  NEW_FIND_FIELD_PATH(json, pairs, title, "title", 2);                                                                                    \
   snprintf(track_info->info->title, sizeof(track_info->info->title), "%.*s", (int)title->v.len, json + title->v.pos);                     \
                                                                                                                                           \
   path[1] = "uri";                                                                                                                        \
-  FIND_FIELD_PATH(json, pairs, uri, "uri", 2);                                                                                            \
+  NEW_FIND_FIELD_PATH(json, pairs, uri, "uri", 2);                                                                                        \
   snprintf(track_info->info->uri, sizeof(track_info->info->uri), "%.*s", (int)uri->v.len, json + uri->v.pos);                             \
                                                                                                                                           \
   path[1] = "isrc";                                                                                                                       \
-  FIND_FIELD_PATH(json, pairs, isrc, "isrc", 2);                                                                                          \
+  NEW_FIND_FIELD_PATH(json, pairs, isrc, "isrc", 2);                                                                                      \
   snprintf(track_info->info->isrc, sizeof(track_info->info->isrc), "%.*s", (int)isrc->v.len, json + isrc->v.pos);                         \
                                                                                                                                           \
   path[1] = "artworkUrl";                                                                                                                 \
-  FIND_FIELD_PATH(json, pairs, artworkUrl, "artworkUrl", 2);                                                                              \
+  NEW_FIND_FIELD_PATH(json, pairs, artworkUrl, "artworkUrl", 2);                                                                          \
   snprintf(track_info->info->artworkUrl, sizeof(track_info->info->artworkUrl), "%.*s", (int)artworkUrl->v.len, json + artworkUrl->v.pos); \
                                                                                                                                           \
   path[1] = "sourceName";                                                                                                                 \
-  FIND_FIELD_PATH(json, pairs, sourceName, "sourceName", 2);                                                                              \
+  NEW_FIND_FIELD_PATH(json, pairs, sourceName, "sourceName", 2);                                                                          \
   snprintf(track_info->info->sourceName, sizeof(track_info->info->sourceName), "%.*s", (int)sourceName->v.len, json + sourceName->v.pos);
 
-#define coglink_new_parse_track(track_info, pairs, json)                                                                                                  \
-  char *path[] = { "encoded", NULL };                                                                                                     \
-  NEW_FIND_FIELD_PATH(json, pairs, encoded, "encoded", 1);                                                                                    \
-  snprintf(track_info->encoded, sizeof(track_info->encoded), "%.*s", (int)encoded->v.len, json + encoded->v.pos);                         \
-                                                                                                                                          \
-  path[0] = "info";                                                                                                                       \
-  path[1] = "identifier";                                                                                                                 \
-  NEW_FIND_FIELD_PATH(json, pairs, identifier, "identifier", 2);                                                                              \
-  snprintf(track_info->info->identifier, sizeof(track_info->info->identifier), "%.*s", (int)identifier->v.len, json + identifier->v.pos); \
-                                                                                                                                          \
-  path[1] = "isSeekable";                                                                                                                 \
-  NEW_FIND_FIELD_PATH(json, pairs, isSeekable, "isSeekable", 2);                                                                              \
-  if (json[isSeekable->v.pos] == 't') track_info->info->isSeekable = true;                                                                \
-  else track_info->info->isSeekable = false;                                                                                              \
-                                                                                                                                          \
-  path[1] = "author";                                                                                                                     \
-  NEW_FIND_FIELD_PATH(json, pairs, author, "author", 2);                                                                                      \
-  snprintf(track_info->info->author, sizeof(track_info->info->author), "%.*s", (int)author->v.len, json + author->v.pos);                 \
-                                                                                                                                          \
-  path[1] = "length";                                                                                                                     \
-  NEW_FIND_FIELD_PATH(json, pairs, length, "length", 2);                                                                                      \
-  PAIR_TO_SIZET(json, length, lengthStr, track_info->info->length, 16);                                                                   \
-                                                                                                                                          \
-  path[1] = "isStream";                                                                                                                   \
-  NEW_FIND_FIELD_PATH(json, pairs, isStream, "isStream", 2);                                                                                  \
-  if (json[isStream->v.pos] == 't') track_info->info->isStream = true;                                                                    \
-  else track_info->info->isStream = false;                                                                                                \
-                                                                                                                                          \
-  path[1] = "position";                                                                                                                   \
-  NEW_FIND_FIELD_PATH(json, pairs, position, "position", 2);                                                                                  \
-  PAIR_TO_SIZET(json, position, positionStr, track_info->info->position, 16);                                                             \
-                                                                                                                                          \
-  path[1] = "title";                                                                                                                      \
-  NEW_FIND_FIELD_PATH(json, pairs, title, "title", 2);                                                                                        \
-  snprintf(track_info->info->title, sizeof(track_info->info->title), "%.*s", (int)title->v.len, json + title->v.pos);                     \
-                                                                                                                                          \
-  path[1] = "uri";                                                                                                                        \
-  NEW_FIND_FIELD_PATH(json, pairs, uri, "uri", 2);                                                                                            \
-  snprintf(track_info->info->uri, sizeof(track_info->info->uri), "%.*s", (int)uri->v.len, json + uri->v.pos);                             \
-                                                                                                                                          \
-  path[1] = "isrc";                                                                                                                       \
-  NEW_FIND_FIELD_PATH(json, pairs, isrc, "isrc", 2);                                                                                          \
-  snprintf(track_info->info->isrc, sizeof(track_info->info->isrc), "%.*s", (int)isrc->v.len, json + isrc->v.pos);                         \
-                                                                                                                                          \
-  path[1] = "artworkUrl";                                                                                                                 \
-  NEW_FIND_FIELD_PATH(json, pairs, artworkUrl, "artworkUrl", 2);                                                                              \
-  snprintf(track_info->info->artworkUrl, sizeof(track_info->info->artworkUrl), "%.*s", (int)artworkUrl->v.len, json + artworkUrl->v.pos); \
-                                                                                                                                          \
-  path[1] = "sourceName";                                                                                                                 \
-  NEW_FIND_FIELD_PATH(json, pairs, sourceName, "sourceName", 2);                                                                              \
-  snprintf(track_info->info->sourceName, sizeof(track_info->info->sourceName), "%.*s", (int)sourceName->v.len, json + sourceName->v.pos);
-
-#define coglink_parse_partial_track(pairs, json)                                                                              \
-  struct coglink_partial_track *track_info = malloc(sizeof(struct coglink_partial_track));                                    \
-                                                                                                                              \
-  FIND_FIELD(json, identifier, "identifier");                                                                  \
-  snprintf(track_info->identifier, sizeof(track_info->identifier), "%.*s", (int)identifier->v.len, json + identifier->v.pos); \
-                                                                                                                              \
-  FIND_FIELD(json, isSeekable, "isSeekable");                                                                  \
-  if (json[isSeekable->v.pos] == 't') track_info->isSeekable = true;                                                          \
-  else track_info->isSeekable = false;                                                                                        \
-                                                                                                                              \
-  FIND_FIELD(json, author, "author");                                                                          \
-  snprintf(track_info->author, sizeof(track_info->author), "%.*s", (int)author->v.len, json + author->v.pos);                 \
-                                                                                                                              \
-  FIND_FIELD(json, length, "length");                                                                          \
-  PAIR_TO_SIZET(json, length, lengthStr, track_info->length, 16);                                                             \
-                                                                                                                              \
-  FIND_FIELD(json, isStream, "isStream");                                                                      \
-  if (json[isStream->v.pos] == 't') track_info->isStream = true;                                                              \
-  else track_info->isStream = false;                                                                                          \
-                                                                                                                              \
-  FIND_FIELD(json, position, "position");                                                                      \
-  PAIR_TO_SIZET(json, position, positionStr, track_info->position, 16);                                                       \
-                                                                                                                              \
-  FIND_FIELD(json, title, "title");                                                                            \
-  snprintf(track_info->title, sizeof(track_info->title), "%.*s", (int)title->v.len, json + title->v.pos);                     \
-                                                                                                                              \
-  FIND_FIELD(json, uri, "uri");                                                                                \
-  snprintf(track_info->uri, sizeof(track_info->uri), "%.*s", (int)uri->v.len, json + uri->v.pos);                             \
-                                                                                                                              \
-  FIND_FIELD(json, isrc, "isrc");                                                                              \
-  snprintf(track_info->isrc, sizeof(track_info->isrc), "%.*s", (int)isrc->v.len, json + isrc->v.pos);                         \
-                                                                                                                              \
-  FIND_FIELD(json, artworkUrl, "artworkUrl");                                                                  \
-  snprintf(track_info->artworkUrl, sizeof(track_info->artworkUrl), "%.*s", (int)artworkUrl->v.len, json + artworkUrl->v.pos); \
-                                                                                                                              \
-  FIND_FIELD(json, sourceName, "sourceName");                                                                  \
-  snprintf(track_info->sourceName, sizeof(track_info->sourceName), "%.*s", (int)sourceName->v.len, json + sourceName->v.pos);
-
-void *coglink_parse_websocket_data(int *type, const char *json, size_t json_length);
+int coglink_parse_websocket_data(const char *json, size_t json_length, void **response, int *event_type);
 
 void coglink_free_track(struct coglink_track *track);
 
@@ -444,10 +367,10 @@ int coglink_parse_update_player_response(struct coglink_update_player_response *
 
 void coglink_free_update_player_response(struct coglink_update_player_response *response);
 
-void *coglink_parse_node_info(struct coglink_node_info *response, const char *json, size_t json_length);
+int coglink_parse_node_info(struct coglink_node_info *response, const char *json, size_t json_length);
 
 void coglink_free_node_info(struct coglink_node_info *node_info);
 
-void *coglink_parse_stats(struct coglink_stats_payload *response, const char *json, size_t json_length);
+int coglink_parse_stats(struct coglink_stats_payload *response, const char *json, size_t json_length);
 
 #endif

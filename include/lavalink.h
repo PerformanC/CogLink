@@ -16,7 +16,6 @@ struct coglink_node {
   bool ssl;
   /* Public info */
   char *session_id;
-  /* todo: use a smaller struct */
   struct coglink_stats_payload *stats;
   /* Internal */
   uint64_t tstamp;
@@ -36,10 +35,10 @@ struct coglink_client {
   char *num_shards;
   struct coglink_events *events;
   /* Public info */
-  /* todo: replace for a TableC hashtable? */
   struct coglink_nodes *nodes;
   struct coglink_players *players;
   struct coglink_users *users;
+  /* Internal (passed options) */
   bool allow_resuming;
   bool allow_caching_voice_channel_ids;
 };
