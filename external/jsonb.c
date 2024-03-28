@@ -26,8 +26,17 @@ void pjsonb_free(struct pjsonb *builder) {
 }
 
 void pjsonb_set_int(struct pjsonb *builder, const char *key, int value) {
-  int key_length = strlen(key);
   int value_length = snprintf(NULL, 0, "%d", value);
+
+  if (key == NULL) {
+    builder->string = realloc(builder->string, builder->position + value_length + 1);
+    builder->position += snprintf(builder->string + builder->position, value_length + 1, "%d,", value);
+    builder->key_state = PJSONB_TO_CLOSE;
+
+    return;
+  }
+
+  int key_length = strlen(key);
 
   builder->string = realloc(builder->string, builder->position + value_length + 4 + key_length);
   builder->position += snprintf(builder->string + builder->position, value_length + 4 + key_length, "\"%s\":%d,", key, value);
@@ -35,8 +44,17 @@ void pjsonb_set_int(struct pjsonb *builder, const char *key, int value) {
 }
 
 void pjsonb_set_float(struct pjsonb *builder, const char *key, float value) {
-  int key_length = strlen(key);
   int value_length = snprintf(NULL, 0, "%f", value);
+
+  if (key == NULL) {
+    builder->string = realloc(builder->string, builder->position + value_length + 1);
+    builder->position += snprintf(builder->string + builder->position, value_length + 1, "%f,", value);
+    builder->key_state = PJSONB_TO_CLOSE;
+
+    return;
+  }
+
+  int key_length = strlen(key);
 
   builder->string = realloc(builder->string, builder->position + value_length + 4 + key_length);
   builder->position += snprintf(builder->string + builder->position, value_length + 4 + key_length, "\"%s\":%f,", key, value);
@@ -44,8 +62,17 @@ void pjsonb_set_float(struct pjsonb *builder, const char *key, float value) {
 }
 
 void pjsonb_set_bool(struct pjsonb *builder, const char *key, int value) {
-  int key_length = strlen(key);
   int value_length = strlen(value ? "true" : "false");
+
+  if (key == NULL) {
+    builder->string = realloc(builder->string, builder->position + value_length + 1);
+    builder->position += snprintf(builder->string + builder->position, value_length + 1, "%s,", value ? "true" : "false");
+    builder->key_state = PJSONB_TO_CLOSE;
+
+    return;
+  }
+
+  int key_length = strlen(key);
 
   builder->string = realloc(builder->string, builder->position + value_length + 4 + key_length);
   builder->position += snprintf(builder->string + builder->position, value_length + 4 + key_length, "\"%s\":%s,", key, value ? "true" : "false");
@@ -53,8 +80,17 @@ void pjsonb_set_bool(struct pjsonb *builder, const char *key, int value) {
 }
 
 void pjsonb_set_string(struct pjsonb *builder, const char *key, const char *value) {
-  int key_length = strlen(key);
   int value_length = strlen(value);
+
+  if (key == NULL) {
+    builder->string = realloc(builder->string, builder->position + value_length + 3);
+    builder->position += snprintf(builder->string + builder->position, value_length + 3, "\"%s\",", value);
+    builder->key_state = PJSONB_TO_CLOSE;
+
+    return;
+  }
+
+  int key_length = strlen(key);
 
   builder->string = realloc(builder->string, builder->position + value_length + 6 + key_length);
   builder->position += snprintf(builder->string + builder->position, value_length + 6 + key_length, "\"%s\":\"%s\",", key, value);

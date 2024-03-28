@@ -3,16 +3,7 @@
 
 #define COGLINK_SESSION_ID_LENGTH 16
 
-#define FIND_FIELD(json, field, fieldName)                                       \
-  jsmnf_pair *field = jsmnf_find(pairs, json, fieldName, sizeof(fieldName) - 1); \
-                                                                                 \
-  if (field == NULL) {                                                           \
-    ERROR("[coglink] Failed to find field: %s", fieldName);                      \
-                                                                                 \
-    return NULL;                                                                 \
-  }
-
-#define NEW_FIND_FIELD(json, field, fieldName)                                   \
+#define FIND_FIELD(pairs, json, field, fieldName)                                \
   jsmnf_pair *field = jsmnf_find(pairs, json, fieldName, sizeof(fieldName) - 1); \
                                                                                  \
   if (field == NULL) {                                                           \
@@ -21,16 +12,7 @@
     return COGLINK_FAILED;                                                       \
   }
 
-#define FIND_FIELD_PATH(json, pairs, field, fieldName, pathSize)    \
-  jsmnf_pair *field = jsmnf_find_path(pairs, json, path, pathSize); \
-                                                                    \
-  if (field == NULL) {                                              \
-    ERROR("[coglink] Failed to find field: %s", fieldName);         \
-                                                                    \
-    return NULL;                                                    \
-  }
-
-#define NEW_FIND_FIELD_PATH(json, pairs, field, fieldName, pathSize) \
+#define FIND_FIELD_PATH(json, pairs, field, fieldName, pathSize) \
   jsmnf_pair *field = jsmnf_find_path(pairs, json, path, pathSize);  \
                                                                      \
   if (field == NULL) {                                               \
@@ -45,6 +27,11 @@
   fieldName[pair->v.len] = '\0';                               \
                                                                \
   outputName = strtoull(fieldName, NULL, 10);
+
+#define PAIR_TO_D_STRING(json, pair, output)         \
+  output = malloc((pair->v.len + 1) * sizeof(char)); \
+  memcpy(output, json + pair->v.pos, pair->v.len);   \
+  output[pair->v.len] = '\0';
 
 #ifdef COGLINK_DEBUG
   #define FATAL(...)          \
