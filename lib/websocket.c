@@ -16,6 +16,11 @@
 
 #include "websocket.h"
 
+struct _coglink_websocket_data {
+  struct coglink_client *c_client;
+  size_t node_id;
+};
+
 struct tablec_ht coglink_hashtable;
 
 int _IO_poller(struct io_poller *io, CURLM *multi, void *data) {
@@ -166,31 +171,33 @@ enum discord_event_scheduler _coglink_handle_scheduler(struct discord *client, c
 
   switch (event) {
     case DISCORD_EV_VOICE_STATE_UPDATE: {
-      struct coglink_voice_state *voice_state = coglink_parse_voice_state(data, length);
+      struct coglink_voice_state voice_state;
+      
+      if (coglink_parse_voice_state(data, length, &voice_state) == COGLINK_FAILED) return DISCORD_EVENT_MAIN_THREAD;
 
-      if (voice_state->channel_id) {
-        if (c_client->bot_id == voice_state->user_id) {
-          struct coglink_player *player = coglink_get_player(c_client, voice_state->guild_id);
+      if (voice_state.channel_id) {
+        if (c_client->bot_id == voice_state.user_id) {
+          struct coglink_player *player = coglink_get_player(c_client, voice_state.guild_id);
 
           if (player == NULL) {
-            coglink_free_voice_state(voice_state);
+            coglink_free_voice_state(&voice_state);
 
             break;
           }
 
-          player->voice_data = malloc(sizeof(struct coglink_voice_data));
+          player->voice_data = malloc(sizeof(struct coglink_player_voice_data));
           /* todo: is it necessary after being sent to the node? */
-          player->voice_data->session_id = voice_state->session_id;
+          player->voice_data->session_id = voice_state.session_id;
 
-          coglink_free_voice_state(voice_state);
+          coglink_free_voice_state(&voice_state);
         } else {
           size_t i = 0;
 
           while (c_client->users->size != i) {
             if (c_client->users->array[i].id == 0) {
-              c_client->users->array[i].channel_id = voice_state->channel_id;
+              c_client->users->array[i].channel_id = voice_state.channel_id;
 
-              coglink_free_voice_state(voice_state);
+              coglink_free_voice_state(&voice_state);
 
               break;
             }
@@ -199,21 +206,21 @@ enum discord_event_scheduler _coglink_handle_scheduler(struct discord *client, c
           }
 
           c_client->users->array = realloc(c_client->users->array, (c_client->users->size + 1) * sizeof(struct coglink_user));
-          c_client->users->array[c_client->users->size].id = voice_state->user_id;
-          c_client->users->array[c_client->users->size].channel_id = voice_state->channel_id;
+          c_client->users->array[c_client->users->size].id = voice_state.user_id;
+          c_client->users->array[c_client->users->size].channel_id = voice_state.channel_id;
           c_client->users->size++;
 
-          coglink_free_voice_state(voice_state);
+          coglink_free_voice_state(&voice_state);
         }
       } else {
         size_t i = 0;
 
         while (c_client->users->size > i) {
-          if (c_client->users->array[i].id == voice_state->user_id) {
+          if (c_client->users->array[i].id == voice_state.user_id) {
             c_client->users->array[i].id = 0;
             c_client->users->array[i].channel_id = 0;
 
-            coglink_free_voice_state(voice_state);
+            coglink_free_voice_state(&voice_state);
 
             return DISCORD_EVENT_MAIN_THREAD;
           }
@@ -221,20 +228,22 @@ enum discord_event_scheduler _coglink_handle_scheduler(struct discord *client, c
           i++;
         }
 
-        coglink_free_voice_state(voice_state);
+        coglink_free_voice_state(&voice_state);
       }
 
       break;
     }
     case DISCORD_EV_VOICE_SERVER_UPDATE: {
-      struct coglink_voice_server_update *voice_server_update = coglink_parse_voice_server_update(data, length);
+      struct coglink_voice_server_update voice_server_update;
+      
+      if (coglink_parse_voice_server_update(data, length, &voice_server_update) == COGLINK_FAILED) return DISCORD_EVENT_MAIN_THREAD;
 
-      struct coglink_player *player = coglink_get_player(c_client, voice_server_update->guild_id);
+      struct coglink_player *player = coglink_get_player(c_client, voice_server_update.guild_id);
 
       if (player == NULL) {
-        DEBUG("[coglink] Player not found for guild %" PRIu64 "", voice_server_update->guild_id);
+        DEBUG("[coglink] Player not found for guild %" PRIu64 "", voice_server_update.guild_id);
 
-        coglink_free_voice_server_update(voice_server_update);
+        coglink_free_voice_server_update(&voice_server_update);
 
         return DISCORD_EVENT_IGNORE;
       }
@@ -242,7 +251,7 @@ enum discord_event_scheduler _coglink_handle_scheduler(struct discord *client, c
       struct coglink_node *node = &c_client->nodes->array[player->node];
 
       char url_path[(sizeof("/sessions//players/") - 1) + 16 + 19 + 1]; 
-      snprintf(url_path, sizeof(url_path), "/sessions/%s/players/%" PRIu64 "", node->session_id, voice_server_update->guild_id);
+      snprintf(url_path, sizeof(url_path), "/sessions/%s/players/%" PRIu64 "", node->session_id, voice_server_update.guild_id);
 
       /* todo: is that redudancy needed for readability? */
       size_t payload_size = (
@@ -252,16 +261,16 @@ enum discord_event_scheduler _coglink_handle_scheduler(struct discord *client, c
             "\"endpoint\":\"\","
             "\"sessionId\":\"\""
           "}"
-        "}") - 1) + strlen(voice_server_update->token) + strlen(voice_server_update->endpoint) + strlen(player->voice_data->session_id) + 1);
+        "}") - 1) + strlen(voice_server_update.token) + strlen(voice_server_update.endpoint) + strlen(player->voice_data->session_id) + 1);
       char *payload = malloc(payload_size * sizeof(char));
-      snprintf(payload, payload_size,
+      snprintf(payload, payload_size * sizeof(char),
         "{"
           "\"voice\":{"
             "\"token\":\"%s\","
             "\"endpoint\":\"%s\","
             "\"sessionId\":\"%s\""
           "}"
-        "}", voice_server_update->token, voice_server_update->endpoint, player->voice_data->session_id);
+        "}", voice_server_update.token, voice_server_update.endpoint, player->voice_data->session_id);
 
       _coglink_perform_request(node, &(struct coglink_request_params) {
         .endpoint = url_path,
@@ -273,30 +282,32 @@ enum discord_event_scheduler _coglink_handle_scheduler(struct discord *client, c
 
       free(payload);
 
-      coglink_free_voice_server_update(voice_server_update);
+      coglink_free_voice_server_update(&voice_server_update);
 
       break;
     }
     case DISCORD_EV_GUILD_CREATE: {
-      struct coglink_guild_create *guild_create = coglink_parse_guild_create(data, length);
+      struct coglink_guild_create guild_create;
 
-      jsmnf_pair *voice_states = jsmnf_find(guild_create->pairs, data, "voice_states", sizeof("voice_states") - 1);
+      if (coglink_parse_guild_create(data, length, &guild_create) == COGLINK_FAILED) return DISCORD_EVENT_MAIN_THREAD;
+
+      FIND_FIELD(guild_create.pairs, data, voice_states, "voice_states");
 
       for (int i = 0; i < voice_states->size; i++) {
         char i_str[16];
         snprintf(i_str, sizeof(i_str), "%d", i);
 
         struct coglink_single_user_guild_create single_guild_create;
-        int status = coglink_parse_single_user_guild_create(guild_create->pairs, data, i_str, c_client->bot_id, &single_guild_create);
+        int status = coglink_parse_single_user_guild_create(guild_create.pairs, data, i_str, c_client->bot_id, &single_guild_create);
 
         if (status == COGLINK_FAILED) continue;
 
         if (single_guild_create.type == 1) {
-          struct coglink_player *player = coglink_get_player(c_client, guild_create->guild_id);
+          struct coglink_player *player = coglink_get_player(c_client, guild_create.guild_id);
 
           if (player == NULL) continue;
 
-          player->voice_data = malloc(sizeof(struct coglink_voice_data));
+          player->voice_data = malloc(sizeof(struct coglink_player_voice_data));
           /* todo: is it necessary after being sent to the node? */
           player->voice_data->session_id = single_guild_create.session_id;
         } else {
@@ -322,7 +333,7 @@ enum discord_event_scheduler _coglink_handle_scheduler(struct discord *client, c
         }
       }
 
-      coglink_free_guild_create(guild_create);
+      coglink_free_guild_create(&guild_create);
 
       break;
     }

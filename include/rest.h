@@ -3,6 +3,12 @@
 
 #include <concord/types.h>
 
+struct coglink_player_voice_data {
+  char *token;
+  char *endpoint;
+  char *session_id;
+};
+
 struct coglink_player_queue {
   char **array;
   size_t size;
@@ -11,7 +17,7 @@ struct coglink_player_queue {
 struct coglink_player {
   size_t node;
   u64snowflake guild_id;
-  struct coglink_voice_data *voice_data;
+  struct coglink_player_voice_data *voice_data;
   struct coglink_player_queue *queue;
 };
 
@@ -126,7 +132,6 @@ struct coglink_player *coglink_create_player(struct coglink_client *c_client, u6
 
 struct coglink_player *coglink_get_player(struct coglink_client *c_client, u64snowflake guild_id);
 
-/* Experimental */
 struct coglink_player_queue *coglink_get_player_queue(struct coglink_client *c_client, struct coglink_player *player);
 
 int coglink_add_track_to_queue(struct coglink_client *c_client, struct coglink_player *player, char *track);
@@ -134,8 +139,6 @@ int coglink_add_track_to_queue(struct coglink_client *c_client, struct coglink_p
 int coglink_remove_track_from_queue(struct coglink_client *c_client, struct coglink_player *player, size_t position);
 
 int coglink_remove_player(struct coglink_client *c_client, struct coglink_player *player);
-
-int coglink_load_tracks(struct coglink_client *c_client, struct coglink_player *player, char *identifier, struct coglink_load_tracks_response *response);
 
 int coglink_decode_track(struct coglink_client *c_client, struct coglink_node *node, char *track, struct coglink_track *response);
 
@@ -145,15 +148,13 @@ int coglink_decode_tracks(struct coglink_client *c_client, struct coglink_node *
 
 void coglink_free_decode_tracks(struct coglink_tracks *track);
 
-void coglink_free_decode_tracks(struct coglink_tracks *tracks);
-
-int coglink_update_player(struct coglink_client *c_client, struct coglink_player *player, struct coglink_update_player_params *params, struct coglink_update_player_response *response);
+int coglink_update_player(struct coglink_client *c_client, struct coglink_player *player, struct coglink_update_player_params *params, struct coglink_update_player *response);
 
 void coglink_destroy_player(struct coglink_client *c_client, struct coglink_player *player);
 
 int coglink_get_node_info(struct coglink_client *c_client, struct coglink_node *node, struct coglink_node_info *info);
 
-char *coglink_get_node_version(struct coglink_client *c_client, struct coglink_node *node);
+int coglink_get_node_version(struct coglink_client *c_client, struct coglink_node *node, char **version);
 
 void coglink_free_node_version(char *version);
 
