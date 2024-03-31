@@ -26,12 +26,12 @@ void pjsonb_set_bool(struct pjsonb *builder, const char *key, int value);
 
 void pjsonb_set_string(struct pjsonb *builder, const char *key, const char *value);
 
-void pjson_enter_object(struct pjsonb *builder, const char *key);
+void pjsonb_enter_object(struct pjsonb *builder, const char *key);
 
-void pjson_leave_object(struct pjsonb *builder);
+void pjsonb_leave_object(struct pjsonb *builder);
 
-void pjson_enter_array(struct pjsonb *builder, const char *key);
+void pjsonb_enter_array(struct pjsonb *builder, const char *key);
 
-void pjson_leave_array(struct pjsonb *builder);
+void pjsonb_leave_array(struct pjsonb *builder);
 
 #endif

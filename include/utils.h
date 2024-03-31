@@ -30,8 +30,10 @@
 
 #define PAIR_TO_D_STRING(json, pair, output)         \
   output = malloc((pair->v.len + 1) * sizeof(char)); \
-  memcpy(output, json + pair->v.pos, pair->v.len);   \
-  output[pair->v.len] = '\0';
+  snprintf(output, pair->v.len + 1, "%.*s", (int)pair->v.len, json + pair->v.pos);
+
+#define FREE_NULLABLE(ptr)   \
+  if (ptr != NULL) free(ptr);
 
 #ifdef COGLINK_DEBUG
   #define FATAL(...)          \
@@ -67,6 +69,6 @@ struct coglink_response {
   size_t size;
 };
 
-int _coglink_perform_request(struct coglink_node *nodeInfo, struct coglink_request_params *req, struct coglink_response *res);
+int _coglink_perform_request(struct coglink_node *node_info, struct coglink_request_params *req, struct coglink_response *res);
 
 #endif
