@@ -47,7 +47,9 @@ struct coglink_user *coglink_get_user(struct coglink_client *c_client, u64snowfl
   return NULL;
 }
 
-int coglink_join_voice_channel(struct discord *client, u64snowflake guild_id, u64snowflake channel_id) {
+int coglink_join_voice_channel(struct coglink_client *c_client, struct discord *client, u64snowflake guild_id, u64snowflake channel_id) {
+  (void) c_client; /* Standard */
+
   char payload[((sizeof("{"
     "\"op\":4,"
     "\"d\":{"
@@ -55,7 +57,7 @@ int coglink_join_voice_channel(struct discord *client, u64snowflake guild_id, u6
       "\"channel_id\":\"\","
       "\"self_mute\":false,"
       "\"self_deaf\":true"
-    "}") - 1) + (19 * 2) + 1)];
+    "}") - 1) + ((19 * 2) + 1) + 1)];
 
   size_t payload_size = snprintf(payload, sizeof(payload),
     "{"
@@ -71,10 +73,42 @@ int coglink_join_voice_channel(struct discord *client, u64snowflake guild_id, u6
   if (!ws_send_text(client->gw.ws, NULL, payload, payload_size)) {
     FATAL("[coglink:cws] Something went wrong while sending a payload with op 4 to Discord.");
 
-    return -1;
+    return COGLINK_FAILED;
   }
 
-  return 0;
+  return COGLINK_SUCCESS;
+}
+
+int coglink_leave_voice_channel(struct coglink_client *c_client, struct discord *client, u64snowflake guild_id) {
+  (void) c_client; /* Standard */
+
+  char payload[((sizeof("{"
+    "\"op\":4,"
+    "\"d\":{"
+      "\"guild_id\":\"\","
+      "\"channel_id\":null,"
+      "\"self_mute\":false,"
+      "\"self_deaf\":true"
+    "}") - 1) + (19 + 1) + 1)];
+
+  size_t payload_size = snprintf(payload, sizeof(payload),
+    "{"
+      "\"op\":4,"
+      "\"d\":{"
+        "\"guild_id\":%"PRIu64","
+        "\"channel_id\":null,"
+        "\"self_mute\":false,"
+        "\"self_deaf\":true"
+      "}"
+    "}", guild_id);
+
+  if (!ws_send_text(client->gw.ws, NULL, payload, payload_size)) {
+    FATAL("[coglink:cws] Something went wrong while sending a payload with op 4 to Discord.");
+
+    return COGLINK_FAILED;
+  }
+
+  return COGLINK_SUCCESS;
 }
 
 struct coglink_player *coglink_create_player(struct coglink_client *c_client, u64snowflake guild_id) {
@@ -105,7 +139,6 @@ struct coglink_player *coglink_create_player(struct coglink_client *c_client, u6
   c_client->players->array = realloc(c_client->players->array, sizeof(struct coglink_player) * (c_client->players->size + 1));
   c_client->players->size++;
 
-  /* todo: (?) use goto to reduce duplicated code */
   struct coglink_player *player = &c_client->players->array[c_client->players->size - 1];
   player->guild_id = guild_id;
   player->node = selected_node;
@@ -141,9 +174,7 @@ int coglink_add_track_to_queue(struct coglink_client *c_client, struct coglink_p
   queue->array = realloc(queue->array, sizeof(char *) * (queue->size + 1));
   queue->size++;
 
-  /* copy */
-  queue->array[queue->size - 1] = malloc((strlen(track) + 1) * sizeof(char));
-  strcpy(queue->array[queue->size - 1], track);
+  queue->array[queue->size - 1] = strdup(track);
 
   return COGLINK_SUCCESS;
 }
@@ -179,11 +210,7 @@ int coglink_remove_player(struct coglink_client *c_client, struct coglink_player
   return COGLINK_SUCCESS;
 }
 
-int coglink_load_tracks(struct coglink_client *c_client, struct coglink_player *player, char *identifier, struct coglink_load_tracks *response) {
-  struct coglink_node *node = &c_client->nodes->array[player->node];
-
-  if (node->session_id == NULL) return COGLINK_NODE_OFFLINE;
-
+int coglink_load_tracks(struct coglink_client *c_client, struct coglink_node *node, char *identifier, struct coglink_load_tracks *response) {
   size_t endpoint_size = (sizeof("/loadtracks?identifier=") - 1) + strlen(identifier) + 1;
   char *endpoint = malloc(endpoint_size * sizeof(char));
   snprintf(endpoint, endpoint_size * sizeof(char), "/loadtracks?identifier=%s", identifier);
@@ -253,11 +280,6 @@ int coglink_decode_track(struct coglink_client *c_client, struct coglink_node *n
   return COGLINK_SUCCESS;
 }
 
-void coglink_free_decode_track(struct coglink_track *track) {
-  free(track->encoded);
-  free(track->info);
-}
-
 int coglink_decode_tracks(struct coglink_client *c_client, struct coglink_node *node, struct coglink_decode_tracks_params *params, struct coglink_tracks *response) {
   (void) c_client; /* Standard */
 
@@ -265,13 +287,13 @@ int coglink_decode_tracks(struct coglink_client *c_client, struct coglink_node *
   struct pjsonb jsonber;
   pjsonb_init(&jsonber);
 
-  pjson_enter_array(&jsonber, "tracks");
+  pjsonb_enter_array(&jsonber, "tracks");
 
   for (size_t i = 0; i < params->size; i++) {
     pjsonb_set_string(&jsonber, NULL, params->array[i]);
   }
 
-  pjson_leave_array(&jsonber);
+  pjsonb_leave_array(&jsonber);
 
   pjsonb_end(&jsonber);
 
@@ -328,16 +350,6 @@ int coglink_decode_tracks(struct coglink_client *c_client, struct coglink_node *
   return COGLINK_SUCCESS;
 }
 
-void coglink_free_decode_tracks(struct coglink_tracks *tracks) {
-  for (size_t i = 0; i < tracks->size; i++) {
-    free(tracks->array[i]->encoded);
-    free(tracks->array[i]);
-  }
-
-  free(tracks->array);
-  free(tracks);
-}
-
 int coglink_update_player(struct coglink_client *c_client, struct coglink_player *player, struct coglink_update_player_params *params, struct coglink_update_player *response) {
   struct coglink_node *node = &c_client->nodes->array[player->node];
 
@@ -351,13 +363,13 @@ int coglink_update_player(struct coglink_client *c_client, struct coglink_player
   pjsonb_init(&jsonber);
 
   if (params->track) {
-    pjson_enter_object(&jsonber, "track");
+    pjsonb_enter_object(&jsonber, "track");
 
     if (params->track->encoded) pjsonb_set_string(&jsonber, "encoded", params->track->encoded);
     if (params->track->identifier) pjsonb_set_string(&jsonber, "identifier", params->track->identifier);
     if (params->track->userData) pjsonb_set_string(&jsonber, "userData", params->track->userData);
 
-    pjson_leave_object(&jsonber);
+    pjsonb_leave_object(&jsonber);
   }
 
   if (params->position) {
@@ -377,77 +389,77 @@ int coglink_update_player(struct coglink_client *c_client, struct coglink_player
   }
 
   if (params->filters) {
-    pjson_enter_object(&jsonber, "filters");
+    pjsonb_enter_object(&jsonber, "filters");
 
     if (params->filters->volume) {
       pjsonb_set_int(&jsonber, "volume", params->filters->volume);
     }
 
     if (params->filters->equalizer) {
-      pjson_enter_array(&jsonber, "equalizer");
+      pjsonb_enter_array(&jsonber, "equalizer");
 
       for (size_t i = 0; i < 15; i++) {
-        pjson_enter_object(&jsonber, NULL);
+        pjsonb_enter_object(&jsonber, NULL);
 
         pjsonb_set_int(&jsonber, "band", params->filters->equalizer[i].band);
         pjsonb_set_int(&jsonber, "gain", params->filters->equalizer[i].gain);
 
-        pjson_leave_object(&jsonber);
+        pjsonb_leave_object(&jsonber);
       }
 
-      pjson_leave_array(&jsonber);
+      pjsonb_leave_array(&jsonber);
     }
 
     if (params->filters->karaoke) {
-      pjson_enter_object(&jsonber, "karaoke");
+      pjsonb_enter_object(&jsonber, "karaoke");
 
       pjsonb_set_int(&jsonber, "level", params->filters->karaoke->level);
       pjsonb_set_int(&jsonber, "monoLevel", params->filters->karaoke->monoLevel);
       pjsonb_set_int(&jsonber, "filterBand", params->filters->karaoke->filterBand);
       pjsonb_set_int(&jsonber, "filterWidth", params->filters->karaoke->filterWidth);
 
-      pjson_leave_object(&jsonber);
+      pjsonb_leave_object(&jsonber);
     }
 
     if (params->filters->timescale) {
-      pjson_enter_object(&jsonber, "timescale");
+      pjsonb_enter_object(&jsonber, "timescale");
 
       pjsonb_set_int(&jsonber, "speed", params->filters->timescale->speed);
       pjsonb_set_int(&jsonber, "pitch", params->filters->timescale->pitch);
       pjsonb_set_int(&jsonber, "rate", params->filters->timescale->rate);
 
-      pjson_leave_object(&jsonber);
+      pjsonb_leave_object(&jsonber);
     }
 
     if (params->filters->tremolo) {
-      pjson_enter_object(&jsonber, "tremolo");
+      pjsonb_enter_object(&jsonber, "tremolo");
 
       pjsonb_set_int(&jsonber, "frequency", params->filters->tremolo->frequency);
       pjsonb_set_int(&jsonber, "depth", params->filters->tremolo->depth);
 
-      pjson_leave_object(&jsonber);
+      pjsonb_leave_object(&jsonber);
     }
 
     if (params->filters->vibrato) {
-      pjson_enter_object(&jsonber, "vibrato");
+      pjsonb_enter_object(&jsonber, "vibrato");
 
       pjsonb_set_int(&jsonber, "frequency", params->filters->vibrato->frequency);
       pjsonb_set_int(&jsonber, "depth", params->filters->vibrato->depth);
 
-      pjson_leave_object(&jsonber);
+      pjsonb_leave_object(&jsonber);
     }
 
     if (params->filters->rotation) {
-      pjson_enter_object(&jsonber, "rotation");
+      pjsonb_enter_object(&jsonber, "rotation");
 
       pjsonb_set_int(&jsonber, "frequency", params->filters->rotation->frequency);
       pjsonb_set_int(&jsonber, "depth", params->filters->rotation->depth);
 
-      pjson_leave_object(&jsonber);
+      pjsonb_leave_object(&jsonber);
     }
 
     if (params->filters->distortion) {
-      pjson_enter_object(&jsonber, "distortion");
+      pjsonb_enter_object(&jsonber, "distortion");
 
       pjsonb_set_int(&jsonber, "sinOffset", params->filters->distortion->sinOffset);
       pjsonb_set_int(&jsonber, "sinScale", params->filters->distortion->sinScale);
@@ -458,29 +470,29 @@ int coglink_update_player(struct coglink_client *c_client, struct coglink_player
       pjsonb_set_int(&jsonber, "offset", params->filters->distortion->offset);
       pjsonb_set_int(&jsonber, "scale", params->filters->distortion->scale);
 
-      pjson_leave_object(&jsonber);
+      pjsonb_leave_object(&jsonber);
     }
 
     if (params->filters->channelMix) {
-      pjson_enter_object(&jsonber, "channelMix");
+      pjsonb_enter_object(&jsonber, "channelMix");
 
       pjsonb_set_int(&jsonber, "leftToLeft", params->filters->channelMix->leftToLeft);
       pjsonb_set_int(&jsonber, "leftToRight", params->filters->channelMix->leftToRight);
       pjsonb_set_int(&jsonber, "rightToLeft", params->filters->channelMix->rightToLeft);
       pjsonb_set_int(&jsonber, "rightToRight", params->filters->channelMix->rightToRight);
 
-      pjson_leave_object(&jsonber);
+      pjsonb_leave_object(&jsonber);
     }
 
     if (params->filters->lowPass) {
-      pjson_enter_object(&jsonber, "lowPass");
+      pjsonb_enter_object(&jsonber, "lowPass");
 
       pjsonb_set_int(&jsonber, "smoothing", params->filters->lowPass->smoothing);
 
-      pjson_leave_object(&jsonber);
+      pjsonb_leave_object(&jsonber);
     }
 
-    pjson_leave_object(&jsonber);
+    pjsonb_leave_object(&jsonber);
   }
 
   pjsonb_end(&jsonber);
@@ -495,10 +507,7 @@ int coglink_update_player(struct coglink_client *c_client, struct coglink_player
     .get_response = true
   }, &res);
 
-  int status = COGLINK_SUCCESS;
-
-  if (response)
-    status = coglink_parse_update_player(response, res.body, res.size);
+  int status = coglink_parse_update_player(response, res.body, res.size);
 
   free(res.body);
   pjsonb_free(&jsonber);
@@ -547,14 +556,14 @@ int coglink_get_node_info(struct coglink_client *c_client, struct coglink_node *
     .get_response = true
   }, &res);
 
-  coglink_parse_node_info(info, res.body, res.size);
+  int status = coglink_parse_node_info(info, res.body, res.size);
 
   free(res.body);
 
-  return COGLINK_SUCCESS;
+  return status;
 }
 
-int coglink_get_node_version(struct coglink_client *c_client, struct coglink_node *node, char **version) {
+int coglink_get_node_version(struct coglink_client *c_client, struct coglink_node *node, struct coglink_node_version *version) {
   (void) c_client; /* Standard */
 
   char endpoint[(sizeof("/version") - 1) + 1];
@@ -571,19 +580,14 @@ int coglink_get_node_version(struct coglink_client *c_client, struct coglink_nod
     .unversioned = true
   }, &res);
 
-  *version = malloc((res.size + 1) * sizeof(char));
-  strcpy(*version, res.body);
+  int status = coglink_parse_version(version, res.body, res.size);
 
   free(res.body);
 
-  return COGLINK_SUCCESS;
+  return status;
 }
 
-void coglink_free_node_version(char *version) {
-  free(version);
-}
-
-int coglink_get_stats(struct coglink_client *c_client, struct coglink_node *node, struct coglink_stats_payload *stats) {
+int coglink_get_stats(struct coglink_client *c_client, struct coglink_node *node, struct coglink_stats *stats) {
   (void) c_client; /* Standard */
 
   char endpoint[(sizeof("/stats") - 1) + 1];
@@ -599,11 +603,11 @@ int coglink_get_stats(struct coglink_client *c_client, struct coglink_node *node
     .get_response = true
   }, &res);
 
-  coglink_parse_stats(stats, res.body, res.size);
+  int status = coglink_parse_stats(stats, res.body, res.size);
 
   free(res.body);
 
-  return COGLINK_SUCCESS;
+  return status;
 }
 
 /* todo: support tunnelbroker endpoints (?) */

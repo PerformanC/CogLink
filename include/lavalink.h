@@ -16,7 +16,7 @@ struct coglink_node {
   bool ssl;
   /* Public info */
   char *session_id;
-  struct coglink_stats_payload *stats;
+  struct coglink_stats *stats;
   /* Internal */
   uint64_t tstamp;
   CURLM *mhandle;

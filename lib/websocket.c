@@ -58,7 +58,7 @@ void _ws_on_text(void *data, struct websockets *ws, struct ws_info *info, const 
 
   switch (type) {
     case COGLINK_READY: {
-      struct coglink_ready_payload *ready = payload;
+      struct coglink_ready *ready = payload;
 
       c_info->c_client->nodes->array[c_info->node_id].session_id = ready->session_id;
 
@@ -67,7 +67,7 @@ void _ws_on_text(void *data, struct websockets *ws, struct ws_info *info, const 
       break;
     }
     case COGLINK_PLAYER_UPDATE: {
-      struct coglink_player_update_payload *player_update = payload;
+      struct coglink_player_update *player_update = payload;
 
       if (c_info->c_client->events->on_player_update) c_info->c_client->events->on_player_update(player_update);
 
@@ -76,7 +76,7 @@ void _ws_on_text(void *data, struct websockets *ws, struct ws_info *info, const 
       break;
     }
     case COGLINK_STATS: {
-      struct coglink_stats_payload *stats = payload;
+      struct coglink_stats *stats = payload;
 
       if (c_info->c_client->events->on_stats) c_info->c_client->events->on_stats(stats);
 
@@ -87,7 +87,7 @@ void _ws_on_text(void *data, struct websockets *ws, struct ws_info *info, const 
       break;
     }
     case COGLINK_TRACK_START: {
-      struct coglink_track_start_payload *track_start = payload;
+      struct coglink_track_start *track_start = payload;
 
       if (c_info->c_client->events->on_track_start) c_info->c_client->events->on_track_start(track_start);
 
@@ -96,7 +96,7 @@ void _ws_on_text(void *data, struct websockets *ws, struct ws_info *info, const 
       break;
     }
     case COGLINK_TRACK_END: {
-      struct coglink_track_end_payload *track_end = payload;
+      struct coglink_track_end *track_end = payload;
 
       struct coglink_player *player = coglink_get_player(c_info->c_client, track_end->guildId);
 
@@ -132,7 +132,7 @@ void _ws_on_text(void *data, struct websockets *ws, struct ws_info *info, const 
       break;
     }
     case COGLINK_TRACK_EXCEPTION: {
-      struct coglink_track_exception_payload *track_exception = payload;
+      struct coglink_track_exception *track_exception = payload;
 
       if (c_info->c_client->events->on_track_excetion) c_info->c_client->events->on_track_excetion(track_exception);
 
@@ -144,7 +144,7 @@ void _ws_on_text(void *data, struct websockets *ws, struct ws_info *info, const 
       break;
     }
     case COGLINK_TRACK_STUCK: {
-      struct coglink_track_stuck_payload *track_stuck = (struct coglink_track_stuck_payload *)payload;
+      struct coglink_track_stuck *track_stuck = (struct coglink_track_stuck *)payload;
 
       if (c_info->c_client->events->on_track_stuck) c_info->c_client->events->on_track_stuck(track_stuck);
 
@@ -153,7 +153,7 @@ void _ws_on_text(void *data, struct websockets *ws, struct ws_info *info, const 
       break;
     }
     case COGLINK_WEBSOCKET_CLOSED: {
-      struct coglink_websocket_closed_payload *websocket_closed = payload;
+      struct coglink_websocket_closed *websocket_closed = payload;
 
       if (c_info->c_client->events->on_websocket_closed) c_info->c_client->events->on_websocket_closed(websocket_closed);
 
@@ -171,7 +171,7 @@ enum discord_event_scheduler _coglink_handle_scheduler(struct discord *client, c
 
   switch (event) {
     case DISCORD_EV_VOICE_STATE_UPDATE: {
-      struct coglink_voice_state voice_state;
+      struct coglink_voice_state voice_state = { 0 };
       
       if (coglink_parse_voice_state(data, length, &voice_state) == COGLINK_FAILED) return DISCORD_EVENT_MAIN_THREAD;
 
@@ -179,25 +179,17 @@ enum discord_event_scheduler _coglink_handle_scheduler(struct discord *client, c
         if (c_client->bot_id == voice_state.user_id) {
           struct coglink_player *player = coglink_get_player(c_client, voice_state.guild_id);
 
-          if (player == NULL) {
-            coglink_free_voice_state(&voice_state);
-
-            break;
-          }
+          if (player == NULL) break;
 
           player->voice_data = malloc(sizeof(struct coglink_player_voice_data));
           /* todo: is it necessary after being sent to the node? */
           player->voice_data->session_id = voice_state.session_id;
-
-          coglink_free_voice_state(&voice_state);
         } else {
           size_t i = 0;
 
           while (c_client->users->size != i) {
             if (c_client->users->array[i].id == 0) {
               c_client->users->array[i].channel_id = voice_state.channel_id;
-
-              coglink_free_voice_state(&voice_state);
 
               break;
             }
@@ -209,8 +201,6 @@ enum discord_event_scheduler _coglink_handle_scheduler(struct discord *client, c
           c_client->users->array[c_client->users->size].id = voice_state.user_id;
           c_client->users->array[c_client->users->size].channel_id = voice_state.channel_id;
           c_client->users->size++;
-
-          coglink_free_voice_state(&voice_state);
         }
       } else {
         size_t i = 0;
@@ -220,21 +210,17 @@ enum discord_event_scheduler _coglink_handle_scheduler(struct discord *client, c
             c_client->users->array[i].id = 0;
             c_client->users->array[i].channel_id = 0;
 
-            coglink_free_voice_state(&voice_state);
-
             return DISCORD_EVENT_MAIN_THREAD;
           }
 
           i++;
         }
-
-        coglink_free_voice_state(&voice_state);
       }
 
       break;
     }
     case DISCORD_EV_VOICE_SERVER_UPDATE: {
-      struct coglink_voice_server_update voice_server_update;
+      struct coglink_voice_server_update voice_server_update = { 0 };
       
       if (coglink_parse_voice_server_update(data, length, &voice_server_update) == COGLINK_FAILED) return DISCORD_EVENT_MAIN_THREAD;
 

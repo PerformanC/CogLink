@@ -9,53 +9,53 @@
 
 #define COGLINK_PARSE_ERROR -1
 
-struct coglink_ready_payload {
+struct coglink_ready {
   char *session_id;
   bool resumed;
 };
 
 #define COGLINK_READY 0
 
-struct coglink_player_state_payload {
+struct coglink_player_state {
   int time;
   int position;
   bool connected;
   int ping;
 };
 
-struct coglink_player_update_payload {
+struct coglink_player_update {
   u64snowflake guildId;
-  struct coglink_player_state_payload *state;
+  struct coglink_player_state *state;
 };
 
 #define COGLINK_PLAYER_UPDATE 2
 
-struct coglink_stats_memory_payload {
+struct coglink_stats_memory {
   int free;
   int used;
   int allocated;
   int reservable;
 };
 
-struct coglink_stats_cpu_payload {
+struct coglink_stats_cpu {
   int cores;
   int systemLoad;
   int lavalinkLoad;
 };
 
-struct coglink_stats_frame_stats_payload {
+struct coglink_stats_frame_stats {
   int sent;
   int nulled;
   int deficit;
 };
 
-struct coglink_stats_payload {
+struct coglink_stats {
   int players;
   int playingPlayers;
   int uptime;
-  struct coglink_stats_memory_payload *memory;
-  struct coglink_stats_cpu_payload *cpu;
-  struct coglink_stats_frame_stats_payload *frameStats;
+  struct coglink_stats_memory *memory;
+  struct coglink_stats_cpu *cpu;
+  struct coglink_stats_frame_stats *frameStats;
 };
 
 #define COGLINK_STATS 3
@@ -84,7 +84,7 @@ struct coglink_tracks {
   size_t size;
 };
 
-struct coglink_track_start_payload {
+struct coglink_track_start {
   u64snowflake guildId;
   struct coglink_track *track;
 };
@@ -99,7 +99,7 @@ enum coglink_track_end_reason {
   COGLINK_TRACK_END_REASON_CLEANUP
 };
 
-struct coglink_track_end_payload {
+struct coglink_track_end {
   u64snowflake guildId;
   struct coglink_track *track;
   enum coglink_track_end_reason reason;
@@ -113,21 +113,21 @@ enum coglink_exception_severity {
   COGLINK_EXCEPTION_SEVERITY_FAULT
 };
 
-struct coglink_exception_payload {
+struct coglink_exception {
   char *message;
   enum coglink_exception_severity severity;
   char *cause;
 };
 
-struct coglink_track_exception_payload {
+struct coglink_track_exception {
   u64snowflake guildId;
   struct coglink_track *track;
-  struct coglink_exception_payload *exception;
+  struct coglink_exception *exception;
 };
 
 #define COGLINK_TRACK_EXCEPTION 43
 
-struct coglink_track_stuck_payload {
+struct coglink_track_stuck {
   u64snowflake guildId;
   struct coglink_track *track;
   int thresholdMs;
@@ -135,7 +135,7 @@ struct coglink_track_stuck_payload {
 
 #define COGLINK_TRACK_STUCK 44
 
-struct coglink_websocket_closed_payload {
+struct coglink_websocket_closed {
   int code;
   char *reason;
   bool byRemote;
@@ -283,6 +283,13 @@ struct coglink_node_info {
   struct coglink_node_info_filters *filters;
 };
 
+struct coglink_node_version {
+  int major;
+  int minor;
+  int patch;
+  char *preRelease;
+};
+
 #define coglink_parse_track(track_info, pairs, json)                                                                                      \
   char *path[] = { "encoded", NULL };                                                                                                     \
   FIND_FIELD_PATH(json, pairs, encoded, "encoded", 1);                                                                                    \
@@ -340,6 +347,8 @@ int coglink_parse_websocket_data(const char *json, size_t json_length, void **re
 
 void coglink_free_track(struct coglink_track *track);
 
+void coglink_free_tracks(struct coglink_tracks *tracks);
+
 int coglink_parse_load_tracks(struct coglink_load_tracks *response, const char *json, size_t json_length);
 
 void coglink_free_load_tracks(struct coglink_load_tracks *response);
@@ -366,6 +375,10 @@ int coglink_parse_node_info(struct coglink_node_info *response, const char *json
 
 void coglink_free_node_info(struct coglink_node_info *node_info);
 
-int coglink_parse_stats(struct coglink_stats_payload *response, const char *json, size_t json_length);
+int coglink_parse_stats(struct coglink_stats *response, const char *json, size_t json_length);
+
+int coglink_parse_version(struct coglink_node_version *response, const char *version, size_t version_length);
+
+void coglink_free_node_version(struct coglink_node_version *version);
 
 #endif
