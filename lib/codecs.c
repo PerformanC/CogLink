@@ -570,7 +570,7 @@ int coglink_parse_voice_state(const char *json, size_t json_length, struct cogli
   if (r < 0) {
     ERROR("[coglink:jsmn-find] Failed to parse JSON.");
 
-    return COGLINK_FAILED;
+    return COGLINK_PARSE_FAILED;
   }
 
   jsmnf_loader loader;
@@ -582,7 +582,7 @@ int coglink_parse_voice_state(const char *json, size_t json_length, struct cogli
   if (r < 0) {
     FATAL("[coglink:jsmn-find] Failed to load jsmn-find.");
 
-    return COGLINK_FAILED;
+    return COGLINK_PARSE_FAILED;
   }
 
   FIND_FIELD(pairs, json, guild_id, "guild_id");
@@ -618,7 +618,7 @@ int coglink_parse_voice_server_update(const char *json, size_t json_length, stru
   if (r < 0) {
     ERROR("[coglink:jsmn-find] Failed to parse JSON.");
 
-    return COGLINK_FAILED;
+    return COGLINK_PARSE_FAILED;
   }
 
   jsmnf_loader loader;
@@ -630,7 +630,7 @@ int coglink_parse_voice_server_update(const char *json, size_t json_length, stru
   if (r < 0) {
     FATAL("[coglink:jsmn-find] Failed to load jsmn-find.");
 
-    return COGLINK_FAILED;
+    return COGLINK_PARSE_FAILED;
   }
 
   FIND_FIELD(pairs, json, token, "token");
@@ -659,7 +659,7 @@ int coglink_parse_guild_create(const char *json, size_t json_length, struct cogl
   if (r <= 0) {
     ERROR("[coglink:jsmn-find] Failed to parse JSON.");
 
-    return COGLINK_FAILED;
+    return COGLINK_PARSE_FAILED;
   }
 
   jsmnf_loader loader;
@@ -671,7 +671,7 @@ int coglink_parse_guild_create(const char *json, size_t json_length, struct cogl
   if (r <= 0) {
     ERROR("[coglink:jsmn-find] Failed to load jsmn-find.");
 
-    return COGLINK_FAILED;
+    return COGLINK_PARSE_FAILED;
   }
 
   FIND_FIELD(pairs, json, id, "id");
@@ -1031,7 +1031,7 @@ int coglink_parse_stats(struct coglink_stats *response, const char *json, size_t
   if (r < 0) {
     ERROR("[coglink:jsmn-find] Failed to parse JSON.");
 
-    return COGLINK_FAILED;
+    return COGLINK_PARSE_FAILED;
   }
 
   jsmnf_loader loader;
@@ -1043,7 +1043,7 @@ int coglink_parse_stats(struct coglink_stats *response, const char *json, size_t
   if (r < 0) {
     FATAL("[coglink:jsmn-find] Failed to load jsmn-find.");
 
-    return COGLINK_FAILED;
+    return COGLINK_PARSE_FAILED;
   }
 
   FIND_FIELD(pairs, json, players, "players");
@@ -1105,7 +1105,7 @@ int coglink_parse_version(struct coglink_node_version *response, const char *ver
       } else if (dot_count == 2) {
         response->patch = atoi(version + last_info);
       } else {
-        return COGLINK_FAILED;
+        return COGLINK_PARSE_FAILED;
       }
 
       last_info = i + 1;
@@ -1114,7 +1114,7 @@ int coglink_parse_version(struct coglink_node_version *response, const char *ver
       if (dot_count == 2) {
         response->patch = atoi(version + last_info);
       } else {
-        return COGLINK_FAILED;
+        return COGLINK_PARSE_FAILED;
       }
 
       last_info = i + 1;
@@ -1125,7 +1125,7 @@ int coglink_parse_version(struct coglink_node_version *response, const char *ver
         memcpy(response->preRelease, version + last_info, version_length);
         response->preRelease[version_length] = '\0';
       } else {
-        return COGLINK_FAILED;
+        return COGLINK_PARSE_FAILED;
       }
 
       break;

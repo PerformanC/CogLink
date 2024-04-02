@@ -30,6 +30,16 @@ int _IO_poller(struct io_poller *io, CURLM *multi, void *data) {
   return !ws_multi_socket_run(node->ws, &node->tstamp) ? CCORD_DISCORD_CONNECTION : CCORD_OK;
 }
 
+void _ws_on_connect(void *data, struct websockets *ws, struct ws_info *info) {
+  (void)ws; (void)info;
+
+  struct _coglink_websocket_data *c_info = data;
+
+  if (c_info->c_client->events->on_connect == NULL) return;
+
+  c_info->c_client->events->on_connect(c_info->c_client, &c_info->c_client->nodes->array[c_info->node_id]);
+}
+
 void _ws_on_close(void *data, struct websockets *ws, struct ws_info *info, enum ws_close_reason wscode, const char *reason, size_t length) {
   (void)ws; (void)info; (void)length;
 
@@ -37,14 +47,14 @@ void _ws_on_close(void *data, struct websockets *ws, struct ws_info *info, enum 
 
   if (c_info->c_client->events->on_close == NULL) return;
 
-  c_info->c_client->events->on_close(wscode, reason);
+  c_info->c_client->events->on_close(c_info->c_client, &c_info->c_client->nodes->array[c_info->node_id], wscode, reason);
 }
 
 void _ws_on_text(void *data, struct websockets *ws, struct ws_info *info, const char *text, size_t length) {
   (void) ws; (void) info;
   struct _coglink_websocket_data *c_info = data;
 
-  if (c_info->c_client->events->on_raw && c_info->c_client->events->on_raw(c_info->c_client, text, length) != COGLINK_PROCEED) return;
+  if (c_info->c_client->events->on_raw && c_info->c_client->events->on_raw(c_info->c_client, &c_info->c_client->nodes->array[c_info->node_id], text, length) != COGLINK_PROCEED) return;
 
   int type;
   void *payload;
@@ -62,14 +72,14 @@ void _ws_on_text(void *data, struct websockets *ws, struct ws_info *info, const 
 
       c_info->c_client->nodes->array[c_info->node_id].session_id = ready->session_id;
 
-      if (c_info->c_client->events->on_ready) c_info->c_client->events->on_ready(ready);
+      if (c_info->c_client->events->on_ready) c_info->c_client->events->on_ready(c_info->c_client, &c_info->c_client->nodes->array[c_info->node_id], ready);
 
       break;
     }
     case COGLINK_PLAYER_UPDATE: {
       struct coglink_player_update *player_update = payload;
 
-      if (c_info->c_client->events->on_player_update) c_info->c_client->events->on_player_update(player_update);
+      if (c_info->c_client->events->on_player_update) c_info->c_client->events->on_player_update(c_info->c_client, &c_info->c_client->nodes->array[c_info->node_id], player_update);
 
       free(player_update->state);
 
@@ -78,7 +88,7 @@ void _ws_on_text(void *data, struct websockets *ws, struct ws_info *info, const 
     case COGLINK_STATS: {
       struct coglink_stats *stats = payload;
 
-      if (c_info->c_client->events->on_stats) c_info->c_client->events->on_stats(stats);
+      if (c_info->c_client->events->on_stats) c_info->c_client->events->on_stats(c_info->c_client, &c_info->c_client->nodes->array[c_info->node_id], stats);
 
       free(stats->memory);
       free(stats->cpu);
@@ -89,7 +99,7 @@ void _ws_on_text(void *data, struct websockets *ws, struct ws_info *info, const 
     case COGLINK_TRACK_START: {
       struct coglink_track_start *track_start = payload;
 
-      if (c_info->c_client->events->on_track_start) c_info->c_client->events->on_track_start(track_start);
+      if (c_info->c_client->events->on_track_start) c_info->c_client->events->on_track_start(c_info->c_client, &c_info->c_client->nodes->array[c_info->node_id], track_start);
 
       coglink_free_track(track_start->track);
 
@@ -125,7 +135,7 @@ void _ws_on_text(void *data, struct websockets *ws, struct ws_info *info, const 
         }
       }
 
-      if (c_info->c_client->events->on_track_end) c_info->c_client->events->on_track_end(track_end);
+      if (c_info->c_client->events->on_track_end) c_info->c_client->events->on_track_end(c_info->c_client, &c_info->c_client->nodes->array[c_info->node_id], track_end);
 
       coglink_free_track(track_end->track);
 
@@ -134,7 +144,7 @@ void _ws_on_text(void *data, struct websockets *ws, struct ws_info *info, const 
     case COGLINK_TRACK_EXCEPTION: {
       struct coglink_track_exception *track_exception = payload;
 
-      if (c_info->c_client->events->on_track_excetion) c_info->c_client->events->on_track_excetion(track_exception);
+      if (c_info->c_client->events->on_track_excetion) c_info->c_client->events->on_track_excetion(c_info->c_client, &c_info->c_client->nodes->array[c_info->node_id], track_exception);
 
       coglink_free_track(track_exception->track);
       free(track_exception->exception->cause);
@@ -146,7 +156,7 @@ void _ws_on_text(void *data, struct websockets *ws, struct ws_info *info, const 
     case COGLINK_TRACK_STUCK: {
       struct coglink_track_stuck *track_stuck = (struct coglink_track_stuck *)payload;
 
-      if (c_info->c_client->events->on_track_stuck) c_info->c_client->events->on_track_stuck(track_stuck);
+      if (c_info->c_client->events->on_track_stuck) c_info->c_client->events->on_track_stuck(c_info->c_client, &c_info->c_client->nodes->array[c_info->node_id], track_stuck);
 
       coglink_free_track(track_stuck->track);
 
@@ -155,7 +165,7 @@ void _ws_on_text(void *data, struct websockets *ws, struct ws_info *info, const 
     case COGLINK_WEBSOCKET_CLOSED: {
       struct coglink_websocket_closed *websocket_closed = payload;
 
-      if (c_info->c_client->events->on_websocket_closed) c_info->c_client->events->on_websocket_closed(websocket_closed);
+      if (c_info->c_client->events->on_websocket_closed) c_info->c_client->events->on_websocket_closed(c_info->c_client, &c_info->c_client->nodes->array[c_info->node_id], websocket_closed);
 
       free(websocket_closed->reason);
 
@@ -181,8 +191,12 @@ enum discord_event_scheduler _coglink_handle_scheduler(struct discord *client, c
 
           if (player == NULL) break;
 
+          if (player->voice_data != NULL) {
+            free(player->voice_data->session_id);
+            free(player->voice_data);
+          }
+
           player->voice_data = malloc(sizeof(struct coglink_player_voice_data));
-          /* todo: is it necessary after being sent to the node? */
           player->voice_data->session_id = voice_state.session_id;
         } else {
           size_t i = 0;
@@ -239,15 +253,7 @@ enum discord_event_scheduler _coglink_handle_scheduler(struct discord *client, c
       char url_path[(sizeof("/sessions//players/") - 1) + 16 + 19 + 1]; 
       snprintf(url_path, sizeof(url_path), "/sessions/%s/players/%" PRIu64 "", node->session_id, voice_server_update.guild_id);
 
-      /* todo: is that redudancy needed for readability? */
-      size_t payload_size = (
-        (sizeof("{"
-          "\"voice\":{"
-            "\"token\":\"\","
-            "\"endpoint\":\"\","
-            "\"sessionId\":\"\""
-          "}"
-        "}") - 1) + strlen(voice_server_update.token) + strlen(voice_server_update.endpoint) + strlen(player->voice_data->session_id) + 1);
+      size_t payload_size = (57 + strlen(voice_server_update.token) + strlen(voice_server_update.endpoint) + strlen(player->voice_data->session_id) + 1);
       char *payload = malloc(payload_size * sizeof(char));
       snprintf(payload, payload_size * sizeof(char),
         "{"
@@ -267,6 +273,10 @@ enum discord_event_scheduler _coglink_handle_scheduler(struct discord *client, c
       }, NULL);
 
       free(payload);
+
+      free(player->voice_data->session_id);
+      free(player->voice_data);
+      player->voice_data = NULL;
 
       coglink_free_voice_server_update(&voice_server_update);
 
@@ -293,8 +303,12 @@ enum discord_event_scheduler _coglink_handle_scheduler(struct discord *client, c
 
           if (player == NULL) continue;
 
+          if (player->voice_data != NULL) {
+            free(player->voice_data->session_id);
+            free(player->voice_data);
+          }
+
           player->voice_data = malloc(sizeof(struct coglink_player_voice_data));
-          /* todo: is it necessary after being sent to the node? */
           player->voice_data->session_id = single_guild_create.session_id;
         } else {
           size_t i = 0;
@@ -339,13 +353,11 @@ int coglink_connect_nodes(struct coglink_client *c_client, struct discord *clien
   
   c_client->nodes = nodes;
   c_client->players = malloc(sizeof(struct coglink_players));
-  c_client->players->array = malloc(sizeof(struct coglink_player));
-  memset(c_client->players->array, 0, sizeof(struct coglink_player));
+  c_client->players->array = calloc(sizeof(struct coglink_player), 1);
   c_client->players->size = 0;
 
   c_client->users = malloc(sizeof(struct coglink_users));
-  c_client->users->array = malloc(sizeof(struct coglink_user));
-  memset(c_client->users->array, 0, sizeof(struct coglink_user));
+  c_client->users->array = calloc(sizeof(struct coglink_user), 1);
   c_client->users->size = 0;
 
   char bot_id_str[32];
@@ -366,7 +378,7 @@ int coglink_connect_nodes(struct coglink_client *c_client, struct discord *clien
 
     struct ws_callbacks callbacks = {
       .data = nodes->array[i].ws_data,
-      // .on_connect = _ws_on_connect,
+      .on_connect = _ws_on_connect,
       .on_text = _ws_on_text,
       .on_close = _ws_on_close 
     };

@@ -50,14 +50,7 @@ struct coglink_user *coglink_get_user(struct coglink_client *c_client, u64snowfl
 int coglink_join_voice_channel(struct coglink_client *c_client, struct discord *client, u64snowflake guild_id, u64snowflake channel_id) {
   (void) c_client; /* Standard */
 
-  char payload[((sizeof("{"
-    "\"op\":4,"
-    "\"d\":{"
-      "\"guild_id\":\"\","
-      "\"channel_id\":\"\","
-      "\"self_mute\":false,"
-      "\"self_deaf\":true"
-    "}") - 1) + ((19 * 2) + 1) + 1)];
+  char payload[(83 + ((19 * 2) + 1) + 1)];
 
   size_t payload_size = snprintf(payload, sizeof(payload),
     "{"
@@ -82,14 +75,7 @@ int coglink_join_voice_channel(struct coglink_client *c_client, struct discord *
 int coglink_leave_voice_channel(struct coglink_client *c_client, struct discord *client, u64snowflake guild_id) {
   (void) c_client; /* Standard */
 
-  char payload[((sizeof("{"
-    "\"op\":4,"
-    "\"d\":{"
-      "\"guild_id\":\"\","
-      "\"channel_id\":null,"
-      "\"self_mute\":false,"
-      "\"self_deaf\":true"
-    "}") - 1) + (19 + 1) + 1)];
+  char payload[(82 + (19 + 1) + 1)];
 
   size_t payload_size = snprintf(payload, sizeof(payload),
     "{"
@@ -217,7 +203,7 @@ int coglink_load_tracks(struct coglink_client *c_client, struct coglink_node *no
 
   struct coglink_response res = { 0 };
 
-  _coglink_perform_request(node, &(struct coglink_request_params) {
+  int status = _coglink_perform_request(node, &(struct coglink_request_params) {
     .endpoint = endpoint,
     .method = "GET",
     .body = NULL,
@@ -225,7 +211,13 @@ int coglink_load_tracks(struct coglink_client *c_client, struct coglink_node *no
     .get_response = true
   }, &res);
 
-  int status = coglink_parse_load_tracks(response, res.body, res.size);
+  if (status != COGLINK_SUCCESS) {
+    free(endpoint);
+
+    return COGLINK_FAILED;
+  }
+
+  status = coglink_parse_load_tracks(response, res.body, res.size);
 
   free(endpoint);
   free(res.body);
@@ -242,11 +234,17 @@ int coglink_decode_track(struct coglink_client *c_client, struct coglink_node *n
 
   struct coglink_response res = { 0 };
 
-  _coglink_perform_request(node, &(struct coglink_request_params) {
+  int status = _coglink_perform_request(node, &(struct coglink_request_params) {
     .endpoint = endpoint,
     .method = "GET",
     .get_response = true
   }, &res);
+
+  if (status != COGLINK_SUCCESS) {
+    free(endpoint);
+
+    return COGLINK_FAILED;
+  }
 
   jsmn_parser parser;
   jsmntok_t tokens[64];
@@ -255,6 +253,9 @@ int coglink_decode_track(struct coglink_client *c_client, struct coglink_node *n
   int r = jsmn_parse(&parser, res.body, res.size, tokens, sizeof(tokens));
 
   if (r < 0) {
+    free(res.body);
+    free(endpoint);
+
     ERROR("[coglink:jsmn-find] Failed to parse JSON.");
 
     return COGLINK_FAILED;
@@ -267,10 +268,16 @@ int coglink_decode_track(struct coglink_client *c_client, struct coglink_node *n
   r = jsmnf_load(&loader, res.body, tokens, parser.toknext, pairs, sizeof(pairs) / sizeof(*pairs));
 
   if (r < 0) {
-    FATAL("[coglink:jsmn-find] Failed to load jsmn-find.");
+    free(res.body);
+    free(endpoint);
+
+    ERROR("[coglink:jsmn-find] Failed to load jsmn-find.");
 
     return COGLINK_FAILED;
   }
+
+  response = malloc(sizeof(struct coglink_track));
+  response->info = malloc(sizeof(struct coglink_track_info));
 
   coglink_parse_track(response, pairs, res.body);
 
@@ -299,7 +306,7 @@ int coglink_decode_tracks(struct coglink_client *c_client, struct coglink_node *
 
   struct coglink_response res = { 0 };
 
-  _coglink_perform_request(node, &(struct coglink_request_params) {
+  int status = _coglink_perform_request(node, &(struct coglink_request_params) {
     .endpoint = endpoint,
     .method = "POST",
     .body = jsonber.string,
@@ -308,6 +315,8 @@ int coglink_decode_tracks(struct coglink_client *c_client, struct coglink_node *
   }, &res);
 
   pjsonb_free(&jsonber);
+
+  if (status != COGLINK_SUCCESS) return COGLINK_FAILED;
 
   jsmn_parser parser;
   jsmntok_t *toks = NULL;
@@ -499,7 +508,7 @@ int coglink_update_player(struct coglink_client *c_client, struct coglink_player
 
   struct coglink_response res = { 0 };
 
-  _coglink_perform_request(node, &(struct coglink_request_params) {
+  int status = _coglink_perform_request(node, &(struct coglink_request_params) {
     .endpoint = endpoint,
     .method = "PATCH",
     .body = jsonber.string,
@@ -507,7 +516,15 @@ int coglink_update_player(struct coglink_client *c_client, struct coglink_player
     .get_response = true
   }, &res);
 
-  int status = coglink_parse_update_player(response, res.body, res.size);
+  if (status != COGLINK_SUCCESS) {
+    free(res.body);
+    pjsonb_free(&jsonber);
+    free(endpoint);
+
+    return status;
+  }
+
+  status = coglink_parse_update_player(response, res.body, res.size);
 
   free(res.body);
   pjsonb_free(&jsonber);
@@ -536,7 +553,11 @@ void coglink_destroy_player(struct coglink_client *c_client, struct coglink_play
   free(endpoint);
 }
 
-/* todo: implement update session (?) */
+/*
+  todo: implement update session (?)
+
+  Only useful once curl-websockets close event is fixed.
+*/
 
 int coglink_get_node_info(struct coglink_client *c_client, struct coglink_node *node, struct coglink_node_info *info) {
   (void) c_client; /* Standard */
@@ -548,7 +569,7 @@ int coglink_get_node_info(struct coglink_client *c_client, struct coglink_node *
 
   struct coglink_response res = { 0 };
 
-  _coglink_perform_request(node, &(struct coglink_request_params) {
+  int status = _coglink_perform_request(node, &(struct coglink_request_params) {
     .endpoint = endpoint,
     .method = "GET",
     .body = NULL,
@@ -556,7 +577,9 @@ int coglink_get_node_info(struct coglink_client *c_client, struct coglink_node *
     .get_response = true
   }, &res);
 
-  int status = coglink_parse_node_info(info, res.body, res.size);
+  if (status != COGLINK_SUCCESS) return status;
+
+  status = coglink_parse_node_info(info, res.body, res.size);
 
   free(res.body);
 
@@ -571,7 +594,7 @@ int coglink_get_node_version(struct coglink_client *c_client, struct coglink_nod
 
   struct coglink_response res = { 0 };
 
-  _coglink_perform_request(node, &(struct coglink_request_params) {
+  int status = _coglink_perform_request(node, &(struct coglink_request_params) {
     .endpoint = endpoint,
     .method = "GET",
     .body = NULL,
@@ -580,7 +603,9 @@ int coglink_get_node_version(struct coglink_client *c_client, struct coglink_nod
     .unversioned = true
   }, &res);
 
-  int status = coglink_parse_version(version, res.body, res.size);
+  if (status != COGLINK_SUCCESS) return status;
+
+  status = coglink_parse_version(version, res.body, res.size);
 
   free(res.body);
 
@@ -595,7 +620,7 @@ int coglink_get_stats(struct coglink_client *c_client, struct coglink_node *node
 
   struct coglink_response res = { 0 };
 
-  _coglink_perform_request(node, &(struct coglink_request_params) {
+  int status = _coglink_perform_request(node, &(struct coglink_request_params) {
     .endpoint = endpoint,
     .method = "GET",
     .body = NULL,
@@ -603,7 +628,9 @@ int coglink_get_stats(struct coglink_client *c_client, struct coglink_node *node
     .get_response = true
   }, &res);
 
-  int status = coglink_parse_stats(stats, res.body, res.size);
+  if (status != COGLINK_SUCCESS) return status;
+
+  status = coglink_parse_stats(stats, res.body, res.size);
 
   free(res.body);
 

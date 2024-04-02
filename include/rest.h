@@ -124,38 +124,220 @@ struct coglink_update_player_params {
   struct coglink_update_player_filters_params *filters;
 };
 
+/**
+ * @brief Retrieves a user from the client's user list cache.
+ * 
+ * @param c_client The CogLink client.
+ * @param user_id The ID of the user to retrieve.
+ * 
+ * @return The user if found, otherwise NULL.
+*/
 struct coglink_user *coglink_get_user(struct coglink_client *c_client, u64snowflake user_id);
 
+/**
+ * @brief Joins a voice channel.
+ * 
+ * @param c_client The CogLink client.
+ * @param client The Discord client created with discord_init.
+ * @param guild_id The ID of the guild.
+ * @param channel_id The ID of the channel.
+ * 
+ * @return COGLINK_SUCCESS if successful, otherwise COGLINK_FAILED.
+ * 
+ * @note c_client is not used. It is kept for consistency.
+*/
 int coglink_join_voice_channel(struct coglink_client *c_client, struct discord *client, u64snowflake guild_id, u64snowflake channel_id);
 
+/**
+ * @brief Leaves a voice channel.
+ * 
+ * @param c_client The CogLink client.
+ * @param client The Discord client created with discord_init.
+ * @param guild_id The ID of the guild.
+ * 
+ * @return COGLINK_SUCCESS if successful, otherwise COGLINK_FAILED.
+ * 
+ * @note c_client is not used. It is kept for consistency.
+*/
 int coglink_leave_voice_channel(struct coglink_client *c_client, struct discord *client, u64snowflake guild_id);
 
+/**
+ * @brief Creates a local player.
+ * 
+ * @param c_client The CogLink client.
+ * @param guild_id The ID of the guild.
+ * 
+ * @return The player if successful, otherwise NULL.
+ * 
+ * @note If the player already exists, it will return the existing player.
+*/
 struct coglink_player *coglink_create_player(struct coglink_client *c_client, u64snowflake guild_id);
 
+/**
+ * @brief Retrieves a local player.
+ * 
+ * @param c_client The CogLink client.
+ * @param guild_id The ID of the guild.
+ * 
+ * @return The player if found, otherwise NULL.
+*/
 struct coglink_player *coglink_get_player(struct coglink_client *c_client, u64snowflake guild_id);
 
+/**
+ * @brief Retrieves a player's queue.
+ * 
+ * @param c_client The CogLink client.
+ * @param player The player.
+ * 
+ * @return The player's queue.
+ * 
+ * @note c_client is not used. It is kept for consistency.
+*/
 struct coglink_player_queue *coglink_get_player_queue(struct coglink_client *c_client, struct coglink_player *player);
 
+/**
+ * @brief Adds a track to a player's queue.
+ * 
+ * @param c_client The CogLink client.
+ * @param player The player.
+ * @param track The track to add.
+ * 
+ * @return COGLINK_SUCCESS if successful, otherwise COGLINK_FAILED.
+ * 
+ * @note The track will be copied internally.
+*/
 int coglink_add_track_to_queue(struct coglink_client *c_client, struct coglink_player *player, char *track);
 
+/**
+ * @brief Removes a track from a player's queue.
+ * 
+ * @param c_client The CogLink client.
+ * @param player The player.
+ * @param position The position of the track to remove.
+ * 
+ * @return COGLINK_SUCCESS if successful, otherwise COGLINK_FAILED.
+*/
 int coglink_remove_track_from_queue(struct coglink_client *c_client, struct coglink_player *player, size_t position);
 
+/**
+ * @brief Removes a local player.
+ * 
+ * @param c_client The CogLink client.
+ * @param player The player to remove.
+ * 
+ * @return COGLINK_SUCCESS if successful, otherwise COGLINK_FAILED.
+*/
 int coglink_remove_player(struct coglink_client *c_client, struct coglink_player *player);
 
+/**
+ * @brief Performs a search request.
+ * 
+ * @param c_client The CogLink client.
+ * @param node_id The ID of the node.
+ * @param query The query to search for.
+ * @param response The response to store the results.
+ * 
+ * @return The node if found, otherwise NULL.
+ * 
+ * @note The response must be freed with coglink_free_load_tracks if not COGLINK_FAILED.
+*/
 int coglink_load_tracks(struct coglink_client *c_client, struct coglink_node *node, char *identifier, struct coglink_load_tracks *response);
 
+/**
+ * @brief Decodes a track.
+ * 
+ * @param c_client The CogLink client.
+ * @param node The node.
+ * @param track The track to decode.
+ * @param response The response to store the results.
+ * 
+ * @return COGLINK_SUCCESS if successful, otherwise COGLINK_FAILED.
+ * 
+ * @note The response must be freed with coglink_free_track if not COGLINK_FAILED.
+ * 
+ * @note c_client is not used. It is kept for consistency.
+*/
 int coglink_decode_track(struct coglink_client *c_client, struct coglink_node *node, char *track, struct coglink_track *response);
 
+/**
+ * @brief Decodes multiple tracks.
+ * 
+ * @param c_client The CogLink client.
+ * @param node The node.
+ * @param params The parameters to decode the tracks.
+ * @param response The response to store the results.
+ * 
+ * @return COGLINK_SUCCESS if successful, otherwise COGLINK_FAILED.
+ * 
+ * @note The response must be freed with coglink_free_tracks if not COGLINK_FAILED.
+ * @note c_client is not used. It is kept for consistency.
+*/
 int coglink_decode_tracks(struct coglink_client *c_client, struct coglink_node *node, struct coglink_decode_tracks_params *params, struct coglink_tracks *response);
 
+/**
+ * @brief Updates a player.
+ * 
+ * @param c_client The CogLink client.
+ * @param player The player to update.
+ * @param params The parameters to update the player.
+ * @param response The response to store the results.
+ * 
+ * @return COGLINK_SUCCESS if successful, otherwise COGLINK_FAILED.
+ * 
+ * @note The response must be freed with coglink_free_update_player if not COGLINK_FAILED.
+ */
 int coglink_update_player(struct coglink_client *c_client, struct coglink_player *player, struct coglink_update_player_params *params, struct coglink_update_player *response);
 
+/**
+ * @brief Destroys a player.
+ * 
+ * @param c_client The CogLink client.
+ * @param player The player to destroy.
+ * 
+ * @note This will NOT remove a player as a local player.
+*/
 void coglink_destroy_player(struct coglink_client *c_client, struct coglink_player *player);
 
+/**
+ * @brief Retrieves a node information.
+ * 
+ * @param c_client The CogLink client.
+ * @param node_id The ID of the node.
+ * @param info The information to store the results.
+ * 
+ * @return COGLINK_SUCCESS if successful, otherwise COGLINK_FAILED or COGLINK_PARSE_FAILED.
+ * 
+ * @note The info must be freed with coglink_free_node_info if not COGLINK_FAILED.
+ * @note c_client is not used. It is kept for consistency.
+*/
 int coglink_get_node_info(struct coglink_client *c_client, struct coglink_node *node, struct coglink_node_info *info);
 
+/**
+ * @brief Retrieves a node version.
+ * 
+ * @param c_client The CogLink client.
+ * @param node_id The ID of the node.
+ * @param version The version to store the results.
+ * 
+ * @return COGLINK_SUCCESS if successful, otherwise COGLINK_FAILED.
+ * 
+ * @note The version must be freed with coglink_free_node_version if not COGLINK_FAILED.
+ * @note c_client is not used. It is kept for consistency.
+ */
 int coglink_get_node_version(struct coglink_client *c_client, struct coglink_node *node, struct coglink_node_version *version);
 
+/**
+ * @brief Retrieves a node stats.
+ * 
+ * @param c_client The CogLink client.
+ * @param node_id The ID of the node.
+ * @param stats The stats to store the results.
+ * 
+ * @return COGLINK_SUCCESS if successful, otherwise COGLINK_FAILED.
+ * 
+ * @note The stats must be freed with coglink_free_stats if not COGLINK_FAILED.
+ * @note c_client is not used. It is kept for consistency.
+*/
 int coglink_get_stats(struct coglink_client *c_client, struct coglink_node *node, struct coglink_stats *stats);
 
 #endif
