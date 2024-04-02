@@ -37,11 +37,7 @@ int _coglink_perform_request(struct coglink_node *node_info, struct coglink_requ
   size_t url_size = (node_info->ssl ? 1 : 0) + (sizeof("http://:") - 1) + (req->unversioned ? 0 : (sizeof("/v4") - 1)) + strlen(node_info->hostname) + 4 + strlen(req->endpoint);
   char *full_url = malloc(url_size + 1);
 
-  if (req->unversioned) {
-    url_size = snprintf(full_url, url_size + 1, "http%s://%s:%d%s", node_info->ssl ? "s" : "", node_info->hostname, node_info->port, req->endpoint);
-  } else {
-    url_size = snprintf(full_url, url_size + 1, "http%s://%s:%d/v4%s", node_info->ssl ? "s" : "", node_info->hostname, node_info->port, req->endpoint);
-  }
+  url_size = snprintf(full_url, url_size + 1, "http%s://%s:%d%s%s", node_info->ssl ? "s" : "", node_info->hostname, node_info->port, req->unversioned ? "" : "/v4", req->endpoint);
 
   CURLcode c_res = curl_easy_setopt(curl, CURLOPT_URL, full_url);
 
@@ -83,8 +79,14 @@ int _coglink_perform_request(struct coglink_node *node_info, struct coglink_requ
 
   c_res = curl_easy_perform(curl);
   if (c_res != CURLE_OK) {
-    /* todo: return int errors over crashes */
-    FATAL("[coglink:libcurl] curl_easy_perform failed: %s", curl_easy_strerror(c_res));
+    ERROR("[coglink:libcurl] curl_easy_perform failed: %s", curl_easy_strerror(c_res));
+
+    curl_easy_cleanup(curl);
+    curl_slist_free_all(chunk);
+    free(authorization);
+    free(full_url);
+
+    return COGLINK_FAILED;
   }
 
   curl_easy_cleanup(curl);
