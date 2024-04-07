@@ -1,3 +1,8 @@
+/**
+ * @file include/websocket.h
+ * @brief Websocket client for the node.
+*/
+
 #ifndef COGLINK_LAVALINK_WEBSOCKET_H
 #define COGLINK_LAVALINK_WEBSOCKET_H
 

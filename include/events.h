@@ -1,3 +1,8 @@
+/**
+ * @file include/events.h
+ * @brief Events for the Lavalink and NodeLink client.
+*/
+
 #ifndef COGLINK_LAVALINK_EVENTS_H
 #define COGLINK_LAVALINK_EVENTS_H
 

@@ -1,3 +1,8 @@
+/**
+ * @file include/rest.h
+ * @brief REST API function for the node.
+*/
+
 #ifndef COGLINK_LAVALINK_REST_H
 #define COGLINK_LAVALINK_REST_H
 
@@ -248,8 +253,8 @@ int coglink_remove_player(struct coglink_client *c_client, struct coglink_player
  * @brief Performs a search request.
  * 
  * @param c_client The CogLink client.
- * @param node_id The ID of the node.
- * @param query The query to search for.
+ * @param node The node to load the tracks from.
+ * @param identifier The query/identifier to search for.
  * @param response The response to store the results.
  * 
  * @return The node if found, otherwise NULL.
@@ -320,6 +325,7 @@ void coglink_destroy_player(struct coglink_client *c_client, struct coglink_play
  * @param c_client The CogLink client.
  * @param node The node.
  * @param params The parameters to update the session.
+ * @param response The response to store the results.
  * 
  * @return COGLINK_SUCCESS if successful, otherwise COGLINK_FAILED.
  * 
@@ -332,7 +338,7 @@ int coglink_update_session(struct coglink_client *c_client, struct coglink_node 
  * @brief Retrieves a node information.
  * 
  * @param c_client The CogLink client.
- * @param node_id The ID of the node.
+ * @param node The node to retrieve the information.
  * @param info The information to store the results.
  * 
  * @return COGLINK_SUCCESS if successful, otherwise COGLINK_FAILED or COGLINK_PARSE_FAILED.
@@ -346,7 +352,7 @@ int coglink_get_node_info(struct coglink_client *c_client, struct coglink_node *
  * @brief Retrieves a node version.
  * 
  * @param c_client The CogLink client.
- * @param node_id The ID of the node.
+ * @param node The node to retrieve the version.
  * @param version The version to store the results.
  * 
  * @return COGLINK_SUCCESS if successful, otherwise COGLINK_FAILED.
@@ -360,7 +366,7 @@ int coglink_get_node_version(struct coglink_client *c_client, struct coglink_nod
  * @brief Retrieves a node stats.
  * 
  * @param c_client The CogLink client.
- * @param node_id The ID of the node.
+ * @param node The node to retrieve the stats.
  * @param stats The stats to store the results.
  * 
  * @return COGLINK_SUCCESS if successful, otherwise COGLINK_FAILED.

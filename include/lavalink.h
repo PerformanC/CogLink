@@ -1,3 +1,8 @@
+/**
+ * @file include/lavalink.h
+ * @brief Lavalink and NodeLink client main header.
+*/
+
 #ifndef COGLINK_LAVALINK_H
 #define COGLINK_LAVALINK_H
 
