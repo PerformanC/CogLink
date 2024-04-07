@@ -1,7 +1,7 @@
 *
 
-!guides
-!guides/*
+!example
+!example/*
 !include
 !include/*
 !lib

@@ -10,7 +10,7 @@ A Concord (C99) LavaLink/NodeLink client.
 
 ## Dependencies
 
-- [`Concord`](https://github.com/Cogmasters/Concord) >= 2.2.0
+- [`Concord`](https://github.com/Cogmasters/Concord)
 
 > [!NOTE]
 > CogLink only relies on dependencies already included in Concord.
