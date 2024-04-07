@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -153,6 +154,10 @@ struct coglink_player_queue *coglink_get_player_queue(struct coglink_client *c_c
   return player->queue;
 }
 
+struct coglink_node *coglink_get_player_node(struct coglink_client *c_client, struct coglink_player *player) {
+  return &c_client->nodes->array[player->node];
+}
+
 int coglink_add_track_to_queue(struct coglink_client *c_client, struct coglink_player *player, char *track) {
   struct coglink_player_queue *queue = coglink_get_player_queue(c_client, player);
 
@@ -160,7 +165,9 @@ int coglink_add_track_to_queue(struct coglink_client *c_client, struct coglink_p
   queue->array = realloc(queue->array, sizeof(char *) * (queue->size + 1));
   queue->size++;
 
-  queue->array[queue->size - 1] = strdup(track);
+  size_t track_size = strlen(track) + 1;
+  queue->array[queue->size - 1] = malloc(track_size);
+  snprintf(queue->array[queue->size - 1], track_size, "%s", track);
 
   return COGLINK_SUCCESS;
 }
@@ -197,6 +204,8 @@ int coglink_remove_player(struct coglink_client *c_client, struct coglink_player
 }
 
 int coglink_load_tracks(struct coglink_client *c_client, struct coglink_node *node, char *identifier, struct coglink_load_tracks *response) {
+  (void) c_client; /* Standard */
+
   size_t endpoint_size = (sizeof("/loadtracks?identifier=") - 1) + strlen(identifier) + 1;
   char *endpoint = malloc(endpoint_size * sizeof(char));
   snprintf(endpoint, endpoint_size * sizeof(char), "/loadtracks?identifier=%s", identifier);
@@ -316,7 +325,7 @@ int coglink_decode_tracks(struct coglink_client *c_client, struct coglink_node *
 
   pjsonb_free(&jsonber);
 
-  if (status != COGLINK_SUCCESS) return COGLINK_FAILED;
+  if (status != COGLINK_SUCCESS) return status;
 
   jsmn_parser parser;
   jsmntok_t *toks = NULL;
@@ -513,7 +522,7 @@ int coglink_update_player(struct coglink_client *c_client, struct coglink_player
     .method = "PATCH",
     .body = jsonber.string,
     .body_length = jsonber.position,
-    .get_response = true
+    .get_response = !!response
   }, &res);
 
   if (status != COGLINK_SUCCESS) {
@@ -524,7 +533,7 @@ int coglink_update_player(struct coglink_client *c_client, struct coglink_player
     return status;
   }
 
-  status = coglink_parse_update_player(response, res.body, res.size);
+  if (response) status = coglink_parse_update_player(response, res.body, res.size);
 
   free(res.body);
   pjsonb_free(&jsonber);
@@ -551,6 +560,53 @@ void coglink_destroy_player(struct coglink_client *c_client, struct coglink_play
   }, NULL);
 
   free(endpoint);
+}
+
+int coglink_update_session(struct coglink_client *c_client, struct coglink_node *node, struct coglink_update_session_params *params, struct coglink_update_session *response) {
+  (void) c_client; /* Standard */
+
+  if (node->session_id == NULL) return COGLINK_NODE_OFFLINE;
+
+  size_t endpoint_size = (sizeof("/sessions/") - 1) + COGLINK_SESSION_ID_LENGTH + 1;
+  char *endpoint = malloc(endpoint_size * sizeof(char));
+  snprintf(endpoint, endpoint_size * sizeof(char), "/sessions/%s", node->session_id);
+
+  struct pjsonb jsonber;
+  pjsonb_init(&jsonber);
+
+  if (params->resuming)
+    pjsonb_set_bool(&jsonber, "resuming", params->resuming);
+
+  if (params->timeout)
+    pjsonb_set_int(&jsonber, "timeout", params->timeout);
+
+  pjsonb_end(&jsonber);
+
+  struct coglink_response res = { 0 };
+
+  int status = _coglink_perform_request(node, &(struct coglink_request_params) {
+    .endpoint = endpoint,
+    .method = "PATCH",
+    .body = jsonber.string,
+    .body_length = jsonber.position,
+    .get_response = true
+  }, &res);
+
+  if (status != COGLINK_SUCCESS) {
+    free(res.body);
+    pjsonb_free(&jsonber);
+    free(endpoint);
+
+    return status;
+  }
+
+  status = coglink_parse_update_session(response, res.body, res.size);
+
+  free(res.body);
+  pjsonb_free(&jsonber);
+  free(endpoint);
+
+  return status;
 }
 
 /*

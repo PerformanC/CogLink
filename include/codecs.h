@@ -283,6 +283,11 @@ struct coglink_node_info {
   struct coglink_node_info_filters *filters;
 };
 
+struct coglink_update_session {
+  bool resuming;
+  int timeout;
+};
+
 struct coglink_node_version {
   int major;
   int minor;
@@ -376,6 +381,10 @@ int coglink_parse_node_info(struct coglink_node_info *response, const char *json
 void coglink_free_node_info(struct coglink_node_info *node_info);
 
 int coglink_parse_stats(struct coglink_stats *response, const char *json, size_t json_length);
+
+int coglink_parse_update_session(struct coglink_update_session *response, const char *json, size_t json_length);
+
+void coglink_free_update_session(struct coglink_update_session *update_session);
 
 int coglink_parse_version(struct coglink_node_version *response, const char *version, size_t version_length);
 

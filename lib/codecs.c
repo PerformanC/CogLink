@@ -519,9 +519,7 @@ void coglink_free_load_tracks(struct coglink_load_tracks *response) {
       free(data->info);
 
       for (size_t i = 0; i < data->tracks->size; i++) {
-        FREE_NULLABLE(data->tracks->array[i]->encoded);
-        free(data->tracks->array[i]->info);
-        free(data->tracks->array[i]);
+        coglink_free_track(data->tracks->array[i]);
       }
       
       free(data->tracks);
@@ -754,8 +752,6 @@ int coglink_parse_update_player(struct coglink_update_player *response, const ch
 
   response->track = malloc(sizeof(struct coglink_track));
   response->track->info = malloc(sizeof(struct coglink_track_info));
-  response->state = malloc(sizeof(struct coglink_update_player_state));
-  response->filters = malloc(sizeof(struct coglink_update_player_filters_params));
 
   coglink_parse_track(response->track, track, json);
   
@@ -767,12 +763,18 @@ int coglink_parse_update_player(struct coglink_update_player *response, const ch
   FIND_FIELD(pairs, json, state_connected, "connected");
   FIND_FIELD(pairs, json, state_ping, "ping");
 
+  response->state = malloc(sizeof(struct coglink_update_player_state));
   PAIR_TO_SIZET(json, state_time, state_timeStr, response->state->time, 16);
   PAIR_TO_SIZET(json, state_position, state_positionStr, response->state->position, 16);
   response->state->connected = json[state_connected->v.pos] == 't';
   PAIR_TO_SIZET(json, state_ping, state_pingStr, response->state->ping, 8);
 
+  response->filters = malloc(sizeof(struct coglink_update_player_filters_params));
+
   FIND_FIELD(pairs, json, filters_volume, "volume");
+  if (filters_volume) {
+    response->filters->volume = atof(json + filters_volume->v.pos);
+  }
 
   FIND_FIELD(filters, json, filters_equalizer, "equalizer");
   if (filters_equalizer) {
@@ -946,6 +948,7 @@ int coglink_parse_node_info(struct coglink_node_info *response, const char *json
   path[1] = "build";
   FIND_FIELD_PATH(json, pairs, build, "build", 2);
 
+  response->version = malloc(sizeof(struct coglink_node_info_version));
   PAIR_TO_D_STRING(json, semver, response->version->semver);
   PAIR_TO_SIZET(json, major, majorStr, response->version->major, 8);
   PAIR_TO_SIZET(json, minor, minorStr, response->version->minor, 8);
@@ -965,12 +968,14 @@ int coglink_parse_node_info(struct coglink_node_info *response, const char *json
   path[1] = "commitTime";
   FIND_FIELD_PATH(json, pairs, commitTime, "commitTime", 2);
 
+  response->git = malloc(sizeof(struct coglink_node_info_git));
   PAIR_TO_D_STRING(json, branch, response->git->branch);
   PAIR_TO_D_STRING(json, commit, response->git->commit);
 
   PAIR_TO_D_STRING(json, jvm, response->jvm);
   PAIR_TO_D_STRING(json, lavaplayer, response->lavaplayer);
 
+  response->sourceManagers = malloc(sizeof(struct coglink_node_info_sourceManagers));
   response->sourceManagers->size = sourceManagers->size;
   response->sourceManagers->array = malloc(sizeof(char *) * sourceManagers->size);
   for (int i = 0; i < (int)sourceManagers->size; i++) {
@@ -983,6 +988,7 @@ int coglink_parse_node_info(struct coglink_node_info *response, const char *json
     PAIR_TO_D_STRING(json, sourceManager, response->sourceManagers->array[i]);
   }
 
+  response->filters = malloc(sizeof(struct coglink_node_info_filters));
   response->filters->size = filters->size;
   response->filters->array = malloc(sizeof(char *) * filters->size);
   for (int i = 0; i < filters->size; i++) {
@@ -1005,6 +1011,7 @@ void coglink_free_node_info(struct coglink_node_info *response) {
   FREE_NULLABLE(response->version);
   FREE_NULLABLE(response->git->branch);
   FREE_NULLABLE(response->git->commit);
+  FREE_NULLABLE(response->git);
   FREE_NULLABLE(response->jvm);
   FREE_NULLABLE(response->lavaplayer);
 
@@ -1019,6 +1026,7 @@ void coglink_free_node_info(struct coglink_node_info *response) {
   }
   FREE_NULLABLE(response->filters->array);
   FREE_NULLABLE(response->filters);
+  FREE_NULLABLE(response);
 }
 
 int coglink_parse_stats(struct coglink_stats *response, const char *json, size_t json_length) {
@@ -1075,18 +1083,68 @@ int coglink_parse_stats(struct coglink_stats *response, const char *json, size_t
 
   /* frameStats is always null, so we don't need to parse it */
 
-  PAIR_TO_SIZET(json, players, playersStr,response->players, 8);
-  PAIR_TO_SIZET(json, playingPlayers, playingPlayersStr,response->playingPlayers, 16);
-  PAIR_TO_SIZET(json, uptime, uptimeStr,response->uptime, 8);
-  PAIR_TO_SIZET(json, lavaFree, freeStr,response->memory->free, 8);
-  PAIR_TO_SIZET(json, used, usedStr,response->memory->used, 8);
-  PAIR_TO_SIZET(json, allocated, allocatedStr,response->memory->allocated, 8);
-  PAIR_TO_SIZET(json, reservable, reservableStr,response->memory->reservable, 8);
-  PAIR_TO_SIZET(json, cores, coresStr,response->cpu->cores, 8);
-  PAIR_TO_SIZET(json, systemLoad, systemLoadStr,response->cpu->systemLoad, 8);
-  PAIR_TO_SIZET(json, lavalinkLoad, lavalinkLoadStr,response->cpu->lavalinkLoad, 8);
+  PAIR_TO_SIZET(json, players, playersStr, response->players, 8);
+
+  PAIR_TO_SIZET(json, playingPlayers, playingPlayersStr, response->playingPlayers, 16);
+
+  PAIR_TO_SIZET(json, uptime, uptimeStr, response->uptime, 8);
+
+  response->memory = malloc(sizeof(struct coglink_stats_memory));
+  PAIR_TO_SIZET(json, lavaFree, freeStr, response->memory->free, 8);
+  PAIR_TO_SIZET(json, used, usedStr, response->memory->used, 8);
+  PAIR_TO_SIZET(json, allocated, allocatedStr, response->memory->allocated, 8);
+  PAIR_TO_SIZET(json, reservable, reservableStr, response->memory->reservable, 8);
+
+  response->cpu = malloc(sizeof(struct coglink_stats_cpu));
+  PAIR_TO_SIZET(json, cores, coresStr, response->cpu->cores, 8);
+  PAIR_TO_SIZET(json, systemLoad, systemLoadStr, response->cpu->systemLoad, 8);
+  PAIR_TO_SIZET(json, lavalinkLoad, lavalinkLoadStr, response->cpu->lavalinkLoad, 8);
 
   return COGLINK_SUCCESS;
+}
+
+void coglink_free_stats(struct coglink_stats *response) {
+  FREE_NULLABLE(response->memory);
+  FREE_NULLABLE(response->cpu);
+  FREE_NULLABLE(response);
+}
+
+int coglink_parse_update_session(struct coglink_update_session *response, const char *json, size_t json_length) {
+  jsmn_parser parser;
+  jsmntok_t tokens[8];
+
+  jsmn_init(&parser);
+  int r = jsmn_parse(&parser, json, json_length, tokens, sizeof(tokens));
+
+  if (r < 0) {
+    ERROR("[coglink:jsmn-find] Failed to parse JSON.");
+
+    return COGLINK_PARSE_FAILED;
+  }
+
+  jsmnf_loader loader;
+  jsmnf_pair pairs[8];
+
+  jsmnf_init(&loader);
+  r = jsmnf_load(&loader, json, tokens, parser.toknext, pairs, sizeof(pairs) / sizeof(*pairs));
+
+  if (r < 0) {
+    FATAL("[coglink:jsmn-find] Failed to load jsmn-find.");
+
+    return COGLINK_PARSE_FAILED;
+  }
+
+  FIND_FIELD(pairs, json, resuming, "resuming");
+  FIND_FIELD(pairs, json, timeout, "timeout");
+
+  response->resuming = json[resuming->v.pos] == 't';
+  PAIR_TO_SIZET(json, timeout, timeoutStr, response->timeout, 8);
+
+  return COGLINK_SUCCESS;
+}
+
+void coglink_free_update_session(struct coglink_update_session *response) {
+  FREE_NULLABLE(response);
 }
 
 int coglink_parse_version(struct coglink_node_version *response, const char *version, size_t version_length) {

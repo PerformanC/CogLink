@@ -30,8 +30,8 @@ int _IO_poller(struct io_poller *io, CURLM *multi, void *data) {
   return !ws_multi_socket_run(node->ws, &node->tstamp) ? CCORD_DISCORD_CONNECTION : CCORD_OK;
 }
 
-void _ws_on_connect(void *data, struct websockets *ws, struct ws_info *info) {
-  (void)ws; (void)info;
+void _ws_on_connect(void *data, struct websockets *ws, struct ws_info *info, const char *protocols) {
+  (void)ws; (void)info; (void)protocols;
 
   struct _coglink_websocket_data *c_info = data;
 
@@ -179,6 +179,8 @@ void _ws_on_text(void *data, struct websockets *ws, struct ws_info *info, const 
 enum discord_event_scheduler _coglink_handle_scheduler(struct discord *client, const char data[], size_t length, enum discord_gateway_events event) {
   struct coglink_client *c_client = discord_get_data(client);
 
+  printf("Event: %d\n", event);
+
   switch (event) {
     case DISCORD_EV_VOICE_STATE_UPDATE: {
       struct coglink_voice_state voice_state = { 0 };
@@ -248,12 +250,12 @@ enum discord_event_scheduler _coglink_handle_scheduler(struct discord *client, c
         return DISCORD_EVENT_IGNORE;
       }
 
-      struct coglink_node *node = &c_client->nodes->array[player->node];
+      struct coglink_node *node = coglink_get_player_node(c_client, player);
 
       char url_path[(sizeof("/sessions//players/") - 1) + 16 + 19 + 1]; 
       snprintf(url_path, sizeof(url_path), "/sessions/%s/players/%" PRIu64 "", node->session_id, voice_server_update.guild_id);
 
-      size_t payload_size = (57 + strlen(voice_server_update.token) + strlen(voice_server_update.endpoint) + strlen(player->voice_data->session_id) + 1);
+      size_t payload_size = (51 + strlen(voice_server_update.token) + strlen(voice_server_update.endpoint) + strlen(player->voice_data->session_id) + 1);
       char *payload = malloc(payload_size * sizeof(char));
       snprintf(payload, payload_size * sizeof(char),
         "{"

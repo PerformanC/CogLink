@@ -124,6 +124,11 @@ struct coglink_update_player_params {
   struct coglink_update_player_filters_params *filters;
 };
 
+struct coglink_update_session_params {
+  bool resuming;
+  int timeout;
+};
+
 /**
  * @brief Retrieves a user from the client's user list cache.
  * 
@@ -196,6 +201,16 @@ struct coglink_player *coglink_get_player(struct coglink_client *c_client, u64sn
 struct coglink_player_queue *coglink_get_player_queue(struct coglink_client *c_client, struct coglink_player *player);
 
 /**
+ * @brief Retrieves a player's node.
+ * 
+ * @param c_client The CogLink client.
+ * @param player The player.
+ * 
+ * @return The player's node.
+*/
+struct coglink_node *coglink_get_player_node(struct coglink_client *c_client, struct coglink_player *player);
+
+/**
  * @brief Adds a track to a player's queue.
  * 
  * @param c_client The CogLink client.
@@ -240,6 +255,7 @@ int coglink_remove_player(struct coglink_client *c_client, struct coglink_player
  * @return The node if found, otherwise NULL.
  * 
  * @note The response must be freed with coglink_free_load_tracks if not COGLINK_FAILED.
+ * @note c_client is not used. It is kept for consistency.
 */
 int coglink_load_tracks(struct coglink_client *c_client, struct coglink_node *node, char *identifier, struct coglink_load_tracks *response);
 
@@ -297,6 +313,20 @@ int coglink_update_player(struct coglink_client *c_client, struct coglink_player
  * @note This will NOT remove a player as a local player.
 */
 void coglink_destroy_player(struct coglink_client *c_client, struct coglink_player *player);
+
+/**
+ * @brief Updates information about a session.
+ * 
+ * @param c_client The CogLink client.
+ * @param node The node.
+ * @param params The parameters to update the session.
+ * 
+ * @return COGLINK_SUCCESS if successful, otherwise COGLINK_FAILED.
+ * 
+ * @note The response must be freed with coglink_free_update_session if not COGLINK_FAILED.
+ * @note c_client is not used. It is kept for consistency.
+*/
+int coglink_update_session(struct coglink_client *c_client, struct coglink_node *node, struct coglink_update_session_params *params, struct coglink_update_session *response);
 
 /**
  * @brief Retrieves a node information.
