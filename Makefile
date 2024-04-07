@@ -3,7 +3,7 @@ CC = gcc
 PREFIX := /usr/local
 LIBDIR := $(PREFIX)/lib
 INCLUDEDIR := $(PREFIX)/include/coglink
-DOCS_DIR = ../CoglinDocs
+DOCS_DIR = ../CogLinDocs
 
 SRC_DIR = lib external
 OBJ_DIR = obj
@@ -45,8 +45,7 @@ uninstall:
 	rm -f $(LIBDIR)/libcoglink.a
 
 gen_docs:
+	rm -rf $(DOCS_DIR)/search $(DOCS_DIR)/*.png $(DOCS_DIR)/*.html $(DOCS_DIR)/*.svg $(DOCS_DIR)/*.js $(DOCS_DIR)/tabs.css
 	doxygen Doxyfile
-	rm -f $(DOCS_DIR)/* || true
-	rm -rf $(DOCS_DIR)/search
 	mv $(DOCS_DIR)/html/* $(DOCS_DIR)
 	rm -rf $(DOCS_DIR)/html
