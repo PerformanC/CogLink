@@ -372,6 +372,7 @@ int coglink_parse_load_tracks(struct coglink_load_tracks *response, const char *
       jsmnf_pair *data = jsmnf_find(pairs, json, "data", sizeof("data") - 1);
 
       struct coglink_track *track_info = malloc(sizeof(struct coglink_track));
+      track_info->info = malloc(sizeof(struct coglink_track_info));
 
       coglink_parse_track(track_info, data, json);
 
@@ -399,6 +400,7 @@ int coglink_parse_load_tracks(struct coglink_load_tracks *response, const char *
         jsmnf_pair *track_pair = jsmnf_find_path(pairs, json, track_path, 3);
 
         struct coglink_track *track_info = malloc(sizeof(struct coglink_track));
+        track_info->info = malloc(sizeof(struct coglink_track_info));
 
         coglink_parse_track(track_info, track_pair, json);
 
