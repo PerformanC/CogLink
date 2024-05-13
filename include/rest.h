@@ -120,12 +120,17 @@ struct coglink_update_player_filters_params {
   struct coglink_update_player_filters_lowPass_params *lowPass;
 };
 
+enum coglink_paused_state {
+  COGLINK_PAUSED_STATE_FALSE = 1,
+  COGLINK_PAUSED_STATE_TRUE = 2
+};
+
 struct coglink_update_player_params {
   struct coglink_update_player_track_params *track;
   int position;
   int endTime;
   int volume;
-  bool paused;
+  enum coglink_paused_state paused;
   struct coglink_update_player_filters_params *filters;
 };
 

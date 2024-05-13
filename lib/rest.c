@@ -383,9 +383,9 @@ int coglink_update_player(struct coglink_client *c_client, struct coglink_player
   if (params->track) {
     pjsonb_enter_object(&jsonber, "track");
 
-    if (params->track->encoded) pjsonb_set_string(&jsonber, "encoded", params->track->encoded);
-    if (params->track->identifier) pjsonb_set_string(&jsonber, "identifier", params->track->identifier);
-    if (params->track->userData) pjsonb_set_string(&jsonber, "userData", params->track->userData);
+    if (params->track->encoded != NULL) pjsonb_set_string(&jsonber, "encoded", params->track->encoded);
+    if (params->track->identifier != NULL) pjsonb_set_string(&jsonber, "identifier", params->track->identifier);
+    if (params->track->userData != NULL) pjsonb_set_string(&jsonber, "userData", params->track->userData);
 
     pjsonb_leave_object(&jsonber);
   }
@@ -403,7 +403,7 @@ int coglink_update_player(struct coglink_client *c_client, struct coglink_player
   }
 
   if (params->paused) {
-    pjsonb_set_bool(&jsonber, "paused", params->paused);
+    pjsonb_set_bool(&jsonber, "paused", params->paused == COGLINK_PAUSED_STATE_TRUE ? true : false);
   }
 
   if (params->filters) {
