@@ -121,7 +121,7 @@ void _ws_on_text(void *data, struct websockets *ws, struct ws_info *info, const 
 
       struct coglink_player_queue *queue = coglink_get_player_queue(c_info->c_client, player);
 
-      if (queue->size != 0) {
+      if (queue->size != 0 && (track_end->reason == COGLINK_TRACK_END_REASON_FINISHED || track_end->reason == COGLINK_TRACK_END_REASON_LOAD_FAILED)) {
         coglink_remove_track_from_queue(c_info->c_client, player, 0);
 
         if (queue->size != 0) {
