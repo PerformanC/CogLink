@@ -301,15 +301,11 @@ int coglink_decode_tracks(struct coglink_client *c_client, struct coglink_node *
 
   char *endpoint = "/decodetracks";
   struct pjsonb jsonber;
-  pjsonb_init(&jsonber);
-
-  pjsonb_enter_array(&jsonber, "tracks");
+  pjsonb_init(&jsonber, PJSONB_ARRAY);
 
   for (size_t i = 0; i < params->size; i++) {
     pjsonb_set_string(&jsonber, NULL, params->array[i]);
   }
-
-  pjsonb_leave_array(&jsonber);
 
   pjsonb_end(&jsonber);
 
@@ -358,7 +354,13 @@ int coglink_decode_tracks(struct coglink_client *c_client, struct coglink_node *
     response->array[i] = malloc(sizeof(struct coglink_track));
     response->array[i]->info = malloc(sizeof(struct coglink_track_info));
 
-    coglink_parse_track(response->array[i], pairs, res.body);
+    char i_str[16];
+    snprintf(i_str, sizeof(i_str), "%d", i);
+
+    char *array_path[] = { i_str };
+    jsmnf_pair *track = jsmnf_find_path(pairs, res.body, array_path, 1);
+
+    coglink_parse_track(response->array[i], track, res.body);
   }
 
   free(res.body);
@@ -378,7 +380,7 @@ int coglink_update_player(struct coglink_client *c_client, struct coglink_player
   snprintf(endpoint, endpoint_size * sizeof(char), "/sessions/%s/players/%" PRIu64 "", node->session_id, player->guild_id);
 
   struct pjsonb jsonber;
-  pjsonb_init(&jsonber);
+  pjsonb_init(&jsonber, PJSONB_OBJECT);
 
   if (params->track) {
     pjsonb_enter_object(&jsonber, "track");
@@ -572,7 +574,7 @@ int coglink_update_session(struct coglink_client *c_client, struct coglink_node 
   snprintf(endpoint, endpoint_size * sizeof(char), "/sessions/%s", node->session_id);
 
   struct pjsonb jsonber;
-  pjsonb_init(&jsonber);
+  pjsonb_init(&jsonber, PJSONB_OBJECT);
 
   if (params->resuming)
     pjsonb_set_bool(&jsonber, "resuming", params->resuming);

@@ -1,6 +1,11 @@
 #ifndef PJSONB_H
 #define PJSONB_H
 
+enum pjsonb_type {
+  PJSONB_OBJECT,
+  PJSONB_ARRAY
+};
+
 enum pjsonb_key_state {
   PJSONB_NONE,
   PJSONB_TO_CLOSE
@@ -12,7 +17,7 @@ struct pjsonb {
   enum pjsonb_key_state key_state;
 };
 
-void pjsonb_init(struct pjsonb *builder);
+void pjsonb_init(struct pjsonb *builder, enum pjsonb_type type);
 
 void pjsonb_end(struct pjsonb *builder);
 

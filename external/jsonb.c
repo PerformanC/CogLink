@@ -11,14 +11,14 @@
 
 #include "jsonb.h"
 
-void pjsonb_init(struct pjsonb *builder) {
+void pjsonb_init(struct pjsonb *builder, enum pjsonb_type type) {
   builder->string = malloc(1);
-  builder->string[0] = '{';
+  builder->string[0] = type == PJSONB_OBJECT ? '{' : '[';
   builder->position = 1;
 }
 
 void pjsonb_end(struct pjsonb *builder) {
-  builder->string[builder->position - 1] = '}';
+  builder->string[builder->position - 1] = builder->string[0] == '{' ? '}' : ']';
 }
 
 void pjsonb_free(struct pjsonb *builder) {
@@ -83,8 +83,8 @@ void pjsonb_set_string(struct pjsonb *builder, const char *key, const char *valu
   int value_length = strlen(value);
 
   if (key == NULL) {
-    builder->string = realloc(builder->string, builder->position + value_length + 3);
-    builder->position += snprintf(builder->string + builder->position, value_length + 3, "\"%s\",", value);
+    builder->string = realloc(builder->string, builder->position + value_length + 3 + 1);
+    builder->position += snprintf(builder->string + builder->position, value_length + 3 + 1, "\"%s\",", value);
     builder->key_state = PJSONB_TO_CLOSE;
 
     return;
