@@ -2,7 +2,7 @@ DOXYFILE_ENCODING      = UTF-8
 
 PROJECT_NAME           = "CogLink"
 
-PROJECT_NUMBER         = v3.0.0
+PROJECT_NUMBER         = v3.0.1
 
 PROJECT_BRIEF          =
 

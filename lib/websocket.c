@@ -400,7 +400,7 @@ int coglink_connect_nodes(struct coglink_client *c_client, struct discord *clien
     ws_add_header(nodes->array[i].ws, "Num-Shards", c_client->num_shards);
     ws_add_header(nodes->array[i].ws, "User-Id", bot_id_str);
     /* NodeLink/FrequenC Client-Name format */
-    ws_add_header(nodes->array[i].ws, "Client-Name", "Coglink/3.0.0 (https://github.com/PerformanC/CogLink)");
+    ws_add_header(nodes->array[i].ws, "Client-Name", "Coglink/3.0.1 (https://github.com/PerformanC/CogLink)");
     ws_add_header(nodes->array[i].ws, "Sec-WebSocket-Protocol", "13"); /* If not set, will be undefined */
 
     io_poller_curlm_add(client->io_poller, nodes->array[i].mhandle, _IO_poller, node_info);
