@@ -72,7 +72,7 @@ CogLink follows the PerformanC's [contribution guidelines](https://github.com/Pe
 
 ## Projects using CogLink
 
-None known yet, but if you are using CogLink, please let us know in [PerformanC's Discord server](https://discord.gg/uPveNfTuCJ) and we will add your project here.
+> [Limited-TNiC](https://github.com/at-elcapitan/Limited-TNiC) by [ElCaptain](https://github.com/at-elcapitan)
 
 ## License
 
