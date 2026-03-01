@@ -262,9 +262,10 @@ enum discord_event_scheduler _coglink_handle_scheduler(struct discord *client, c
           "\"voice\":{"
             "\"token\":\"%s\","
             "\"endpoint\":\"%s\","
-            "\"sessionId\":\"%s\""
+            "\"sessionId\":\"%s\","
+            "\"channelId\":\"%" PRIu64 "\""
           "}"
-        "}", voice_server_update.token, voice_server_update.endpoint, player->voice_data->session_id);
+        "}", voice_server_update.token, voice_server_update.endpoint, player->voice_data->session_id, voice_server_update.channel_id);
 
       _coglink_perform_request(node, &(struct coglink_request_params) {
         .endpoint = url_path,
